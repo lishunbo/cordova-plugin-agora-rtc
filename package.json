@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "ssh://git@git.agoralab.co/~lishunbo_agora.io/cordova-plugin-rtc.git"
+    "url": "https://github.com/lishunbo/cordova-plugin-rtc.git"
   },
   "keywords": [
     "cordova",
