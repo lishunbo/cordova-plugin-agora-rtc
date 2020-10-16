@@ -1,0 +1,24 @@
+{
+  "name": "cordova-plugin-rtc",
+  "version": "0.0.1",
+  "description": "sample from Cordova Device Plugin",
+  "cordova": {
+    "id": "cordova-plugin-rtc",
+    "platforms": [
+      "android"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "ssh://git@git.agoralab.co/~lishunbo_agora.io/cordova-plugin-rtc.git"
+  },
+  "keywords": [
+    "cordova",
+    "webrtc",
+    "rtc",
+    "ecosystem:cordova",
+    "cordova-android"
+  ],
+  "author": "shun",
+  "license": "Apache 2.0"
+}

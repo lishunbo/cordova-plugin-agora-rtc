@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        id="cordova-plugin-rtc" version="0.0.1">
+    <name>RTC</name>
+    <description>sample from Cordova Device Plugin</description>
+    <license>Apache 2.0</license>
+    <keywords>cordova,webrtc,rtc</keywords>
+    <js-module src="www/rtcplugin.js" name="rtcPlugin">
+        <clobbers target="window.plugins.rtcPlugin" />
+    </js-module>
+    <platform name="android">
+        <config-file target="config.xml" parent="/*">
+            <feature name="RTCPlugin">
+                <param name="android-package" value="com.example.cordova.plugin.RTCPlugin"/>
+            </feature>
+        </config-file>
+        <source-file src="src/android/RTCPlugin.java" target-dir="src/com/example/cordova/plugin"/>
+    </platform>
+</plugin>
