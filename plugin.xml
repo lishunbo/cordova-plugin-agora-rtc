@@ -6,8 +6,11 @@
     <description>sample from Cordova Device Plugin</description>
     <license>Apache 2.0</license>
     <keywords>cordova,webrtc,rtc</keywords>
-    <js-module src="www/rtcplugin.js" name="rtcPlugin">
+    <!-- <js-module src="www/rtcplugin.js" name="rtcPlugin">
         <clobbers target="window.plugins.rtcPlugin" />
+    </js-module> -->
+    <js-module src="www/RTCPeerConnection.js" name="RTCPeerConnection">
+        <clobbers target="RTCPeerConnection" />
     </js-module>
     <platform name="android">
         <config-file target="config.xml" parent="/*">

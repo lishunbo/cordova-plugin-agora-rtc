@@ -28,3 +28,5 @@ window.echo = function(str, callback) {
         callback('Nothing to echo.');
     }, "RTCPlugin", "echo", [str]);
 };
+
+console.log("=== rtcplujin.js done")

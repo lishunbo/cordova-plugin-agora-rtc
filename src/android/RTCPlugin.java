@@ -32,13 +32,14 @@ public class RTCPlugin extends CordovaPlugin {
         return false;
       }
       // Create the toast
-      Toast toast = Toast.makeText(cordova.getActivity(), message,         Toast.LENGTH_LONG );
-      // Display toast
-      toast.show();
+      // Toast toast = Toast.makeText(cordova.getActivity(), message,         Toast.LENGTH_LONG );
+      // // Display toast
+      // toast.show();
       // Send a positive result to the callbackContext
-    //   PluginResult pluginResult = new PluginResult(PluginResult.Status.OK);
+      PluginResult pluginResult = new PluginResult(PluginResult.Status.OK);
       callbackContext.success(message);
-    //   callbackContext.sendPluginResult(pluginResult);
+      callbackContext.sendPluginResult(pluginResult);
+      System.out.println("=== out rtcplugin");
       return true;
   }
 }

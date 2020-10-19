@@ -1,6 +1,7 @@
 {
   "name": "cordova-plugin-rtc",
   "version": "0.0.1",
+  "type": "module",
   "description": "sample from Cordova Device Plugin",
   "cordova": {
     "id": "cordova-plugin-rtc",
