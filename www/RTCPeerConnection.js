@@ -1,18 +1,23 @@
 
 
 class RTCPeerConnection {
-    constructor(name) {
-        if (name == undefined) {
-            this.name = "default"
+    constructor(config) {
+        if (config == undefined) {
+            this.config = "default"
         } else {
-            this.name = name
+            this.config = config
         }
-        console.log("class RTCPeerConnection has been created with name:" + this.name);
+
+        cordova.exec(function (ev) { }, function (ev) { },'RTCPeerConnection', 'echo', [message]);
+
+
+
 
         this.run = function (params) {
             console.log("RTCPeerConnection.run with " + params);
         }
     }
+
 }
 
 cordova.addConstructor(function () {
