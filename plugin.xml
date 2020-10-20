@@ -19,7 +19,8 @@
                 <param name="onload" value="true" />
             </feature>
         </config-file>
-        <source-file src="src/android/java/RTCPlugin.java" target-dir="src/com/agora/cordova/plugin"/>
+        <source-file src="src/android/java/RTCPlugin.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
+        <source-file src="src/android/java/RTCPeerConnectionHook.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
         <framework src="./src/android/build.gradle" custom="true" type="gradleReference" />
     </platform>
 </plugin>

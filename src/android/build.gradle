@@ -30,8 +30,6 @@ android {
 
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
-    implementation 'androidx.appcompat:appcompat:1.1.0'
-    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
     implementation 'org.webrtc:google-webrtc:1.0.30039'
     implementation "org.java-websocket:Java-WebSocket:1.4.0"
 //    implementation project(':webrtc-client')
@@ -41,10 +39,6 @@ dependencies {
     implementation 'org.slf4j:slf4j-nop:1.7.30'
 
     testImplementation 'junit:junit:4.12'
-    testImplementation 'androidx.test:core:1.0.0'
     testImplementation 'org.mockito:mockito-core:1.10.19'
-
-    androidTestImplementation 'androidx.test.ext:junit:1.1.1'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
 
 }
