@@ -1,4 +1,4 @@
-package com.example.cordova.plugin;
+package com.agora.cordova.plugin.webrtc;
 
 // The native Toast API
 
@@ -13,8 +13,6 @@ import org.json.JSONObject;
 
 
 public class RTCPeerConnectionHook extends CordovaPlugin {
-    @Override
-
 
     @Override
     public boolean execute(String action, JSONArray args,

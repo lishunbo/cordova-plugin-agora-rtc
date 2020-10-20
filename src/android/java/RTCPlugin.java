@@ -1,4 +1,4 @@
-package com.example.cordova.plugin;
+package com.agora.cordova.plugin.webrtc;
 
 // The native Toast API
 import android.widget.Toast;
