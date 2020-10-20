@@ -59,33 +59,38 @@ public class RTCPeerConnectionHook extends CordovaPlugin {
                            final CallbackContext callbackContext) {
         Log.v(TAG, "action:" + action + "\t" + "arguments:" + args.toString());
         // Verify that the user sent a 'show' action
-        String id = "";
-        switch (action) {
-            case "CreateInstance":
-                id = createInstance();
-                break;
-            case "GetInstance":
-            default:
-                callbackContext.error("RTCPeerConnection not implement action:" + action);
-                return false;
+        try {
+            String id = args.getString(0);
+            switch (action) {
+                case "CreateInstance":
+                    createInstance(id);
+                    break;
+                case "GetInstance":
+                default:
+                    callbackContext.error("RTCPeerConnection not implement action:" + action);
+                    return false;
+            }
+            // Send a positive result to the callbackContext
+            PluginResult pluginResult = new PluginResult(PluginResult.Status.OK);
+            callbackContext.success(id);
+            callbackContext.sendPluginResult(pluginResult);
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, e.toString());
+            return false;
         }
-        // Send a positive result to the callbackContext
-        PluginResult pluginResult = new PluginResult(PluginResult.Status.OK);
-        callbackContext.success(id);
-        callbackContext.sendPluginResult(pluginResult);
-        return true;
     }
 
     public class RTCPeerConnection {
         UUID id;
 
-        public RTCPeerConnection() {
-            this.id = UUID.randomUUID();
+        public RTCPeerConnection(String id) {
+            this.id = UUID.fromString(id);
         }
     }
 
-    String createInstance() {
-        RTCPeerConnection pc = new RTCPeerConnection();
+    String createInstance(String id) {
+        RTCPeerConnection pc = new RTCPeerConnection(id);
         allConnections.put(pc.id.toString(), pc);
         return pc.id.toString();
     }

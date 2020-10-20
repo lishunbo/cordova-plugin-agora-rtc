@@ -14,8 +14,8 @@
     </js-module>
     <platform name="android">
         <config-file target="config.xml" parent="/*">
-            <feature name="webrtc">
-                <param name="android-package" value="com.agora.cordova.plugin.webrtc"/>
+            <feature name="RTCPeerConnectionHook">
+                <param name="android-package" value="com.agora.cordova.plugin.webrtc.RTCPeerConnectionHook"/>
                 <param name="onload" value="true" />
             </feature>
         </config-file>
