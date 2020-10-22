@@ -16,9 +16,32 @@
         <config-file target="config.xml" parent="/*">
             <feature name="RTCPeerConnectionHook">
                 <param name="android-package" value="com.agora.cordova.plugin.webrtc.RTCPeerConnectionHook"/>
-                <param name="onload" value="true" />
+                <!-- <param name="onload" value="true" /> -->
             </feature>
         </config-file>
+        <config-file target="AndroidManifest.xml" parent="/*">
+            <uses-feature android:name="android.hardware.camera" />
+            <uses-feature android:name="android.hardware.camera.autofocus" />
+
+            <uses-permission android:name="android.permission.CAMERA" />
+            <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+            <uses-permission android:name="android.permission.RECORD_AUDIO" />
+            <uses-permission android:name="android.permission.INTERNET" />
+            <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+            <uses-permission android:name="android.permission.WAKE_LOCK" />
+            <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+        </config-file>
+        <!-- <config-file target="AndroidManifest.xml" parent="application">
+          <provider
+              android:name="org.apache.cordova.camera.FileProvider"
+              android:authorities="${applicationId}.cordova.plugin.camera.provider"
+              android:exported="false"
+              android:grantUriPermissions="true" >
+              <meta-data
+                  android:name="android.support.FILE_PROVIDER_PATHS"
+                  android:resource="@xml/camera_provider_paths"/>
+          </provider>
+        </config-file> -->
         <source-file src="src/android/java/RTCPlugin.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
         <source-file src="src/android/java/RTCPeerConnectionHook.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
         <framework src="./src/android/build.gradle" custom="true" type="gradleReference" />
