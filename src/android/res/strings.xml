@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Try4</string>
+    <string name="launcher_name">@string/app_name</string>
+    <string name="activity_name">@string/launcher_name</string>
+    <string name="internalws">ws://127.0.0.1:9999/</string>
+    <string name="hook_id">hook_id</string>
+    <string name="webrtclocal_id">webrtclocal_id</string>
+</resources>

@@ -37,6 +37,30 @@ class RTCPeerConnection {
 
     }
 
+    createOffer(cb) {
+        console.log("createOffer function");
+        cordova.exec(function (ev) {
+            console.log("Got one offer: " + ev);
+            // pc.id = ev
+            // console.log("check this.id done:" + pc.id)
+            cb(ev)
+        }, function (ev) {
+            console.log("Failed to create offer");
+        }, 'RTCPeerConnectionHook', 'createOffer', []);
+        return ""
+    }
+
+    setRemoteDescription(sdp){
+        console.log("setRemoteDescription "+sdp.type);
+        console.log("setRemoteDescription "+sdp.sdp);
+
+        cordova.exec(function (ev) {
+            console.log("Got one setRemoteDescription response: " + ev);
+        }, function (ev) {
+            console.log("Failed to setRemoteDescription");
+        }, 'RTCPeerConnectionHook', 'setRemoteDescription', [sdp.type,sdp.sdp]);
+    }
+
 }
 
 cordova.addConstructor(function () {
