@@ -12,20 +12,19 @@ function uuidv4() {
 
 class RTCPeerConnection {
     constructor(config) {
-        if (config == undefined) {
-            this.config = "default"
-        } else {
-            this.config = config
-        }
-
         this.id = uuidv4();
+        this.oniceconnectionstatechange = null;
+        this.onICEConnectionStateChange = null;
+        this.onconnectionstatechange = null;
+        this.onConnectionStateChange = null;
+        this.onsignalingstatechange = null;
+        this.onicecandidate = null;
+        this.ontrack = null;
 
-
+        //for original test only
         this.run = function (params) {
             console.log("RTCPeerConnection.run with " + params);
         }
-
-        console.log("check pc.id " + this.id)
 
         cordova.exec(function (ev) {
             console.log("Got one android object with id: " + ev);
@@ -33,34 +32,86 @@ class RTCPeerConnection {
             // console.log("check this.id done:" + pc.id)
         }, function (ev) {
             console.log("Failed to create RTCPeerConnection object");
-        }, 'RTCPeerConnectionHook', 'CreateInstance', [this.id, this.config]);
+        }, 'Hook', 'CreateInstance', [this.id, this.config]);
 
     }
 
-    createOffer(cb) {
-        console.log("createOffer function");
+    createOffer() {
+        return new Promise((resolve, reject) => {
+            console.log("createOffer function");
+            cordova.exec(function (ev) {
+                console.log("Got one offer: " + ev);
+                // pc.id = ev
+                // console.log("check this.id done:" + pc.id)
+                resolve(ev)
+            }, function (ev) {
+                console.log("Failed to create offer");
+                reject("failed to create offer");
+            }, 'Hook', 'createOffer', [this.id]);
+        })
+    }
+
+    setRemoteDescription(answer) {
+        return new Promise((resolve, reject) => {
+            cordova.exec(function (ev) {
+                resolve(ev);
+            }, function (ev) {
+                reject(ev);
+            }, 'Hook', 'setRemoteDescription', [this.id, answer.type, answer.sdp]);
+        })
+    }
+
+    addIceCandidate(candidate) {
+        return new Promise((resolve, reject) => {
+            cordova.exec(function (ev) {
+                resolve(ev);
+            }, function (ev) {
+                reject(ev);
+            }, 'Hook', 'addIceCandidate', [this.id, candidate]);
+        })
+    }
+
+    close() {
         cordova.exec(function (ev) {
-            console.log("Got one offer: " + ev);
-            // pc.id = ev
-            // console.log("check this.id done:" + pc.id)
-            cb(ev)
         }, function (ev) {
-            console.log("Failed to create offer");
-        }, 'RTCPeerConnectionHook', 'createOffer', []);
-        return ""
+        }, 'Hook', 'close', [this.id]);
     }
 
-    setRemoteDescription(sdp){
-        console.log("setRemoteDescription "+sdp.type);
-        console.log("setRemoteDescription "+sdp.sdp);
+    removeTrack() {
+        cordova.exec(function (ev) {
+        }, function (ev) {
+        }, 'Hook', 'removeTrack', [this.id]);
+    }
+
+    getTransceivers() {
 
         cordova.exec(function (ev) {
-            console.log("Got one setRemoteDescription response: " + ev);
         }, function (ev) {
-            console.log("Failed to setRemoteDescription");
-        }, 'RTCPeerConnectionHook', 'setRemoteDescription', [sdp.type,sdp.sdp]);
+        }, 'Hook', 'getTransceivers', [this.id]);
     }
 
+    addTransceiver() {
+
+        cordova.exec(function (ev) {
+        }, function (ev) {
+        }, 'Hook', 'addTransceiver', [this.id]);
+    }
+
+    addTrack() {
+        cordova.exec(function (ev) {
+        }, function (ev) {
+        }, 'Hook', 'addTrack', [this.id]);
+    }
+
+    getStats() {
+        return new Promise((resolve, reject) => {
+            cordova.exec(function (ev) {
+                resolve(ev);
+            }, function (ev) {
+                reject(ev);
+            }, 'Hook', 'getStats', [this.id]);
+        })
+    }
 }
 
 cordova.addConstructor(function () {

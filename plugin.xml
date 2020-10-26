@@ -14,8 +14,8 @@
     </js-module>
     <platform name="android">
         <config-file target="config.xml" parent="/*">
-            <feature name="RTCPeerConnectionHook">
-                <param name="android-package" value="com.agora.cordova.plugin.webrtc.RTCPeerConnectionHook"/>
+            <feature name="Hook">
+                <param name="android-package" value="com.agora.cordova.plugin.webrtc.Hook"/>
                 <!-- <param name="onload" value="true" /> -->
             </feature>
         </config-file>
@@ -46,9 +46,24 @@
           </provider>
         </config-file> -->
         <source-file src="src/android/java/RTCPlugin.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
-        <source-file src="src/android/java/RTCPeerConnectionHook.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
-        <source-file src="src/android/java/MessageBus.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
+        <source-file src="src/android/java/Hook.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
         <source-file src="src/android/java/WebRTCLocalActivity.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
+        <!-- utils -->
+        <source-file src="src/android/java/MessageBus.java" target-dir="src/com/agora/cordova/plugin/webrtc/utils"/>
+        <!-- enums -->
+        <source-file src="src/android/java/enums/RTCBundlePolicy.java" target-dir="src/com/agora/cordova/plugin/webrtc/enums"/>
+        <source-file src="src/android/java/enums/RTCIceCredentialType.java" target-dir="src/com/agora/cordova/plugin/webrtc/enums"/>
+        <source-file src="src/android/java/enums/RTCIceTransportPolicy.java" target-dir="src/com/agora/cordova/plugin/webrtc/enums"/>
+        <source-file src="src/android/java/enums/RTCRtcpMuxPolicy.java" target-dir="src/com/agora/cordova/plugin/webrtc/enums"/>
+        <!-- interfaces -->
+        <source-file src="src/android/java/interfaces/CredentialDetail.java" target-dir="src/com/agora/cordova/plugin/webrtc/interfaces"/>
+        <!-- models -->
+        <source-file src="src/android/java/models/RTCCertificate.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
+        <source-file src="src/android/java/models/RTCConfiguration.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
+        <source-file src="src/android/java/models/RTCIceServer.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
+        <source-file src="src/android/java/models/RTCOAuthCredential.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
+        <source-file src="src/android/java/models/RTCPeerConnection.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
+        <!-- resources -->
         <resource-file src="src/android/res/local_view.xml" target="res/layout/local_view.xml" />
         <resource-file src="src/android/res/strings.xml" target="res/values/strings.xml" />
         <framework src="./src/android/build.gradle" custom="true" type="gradleReference" />

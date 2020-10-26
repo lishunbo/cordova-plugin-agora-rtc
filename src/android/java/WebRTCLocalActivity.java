@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.agora.cordova.plugin.webrtc.utils.MessageBus;
 import com.agora.demo.four.R;
 
 import org.java_websocket.client.WebSocketClient;
@@ -30,7 +31,6 @@ import org.webrtc.VideoTrack;
 
 import java.net.URI;
 import java.util.LinkedList;
-import java.util.UUID;
 
 public class WebRTCLocalActivity extends Activity {
     private final static String TAG = WebRTCLocalActivity.class.getCanonicalName();
@@ -112,7 +112,7 @@ public class WebRTCLocalActivity extends Activity {
         mediaStream = factory.createLocalMediaStream("mediaStream");
         mediaStream.addTrack(videoTrack);
 
-        iceServers.add(PeerConnection.IceServer.builder("stun:10.80.1.227:3478").createIceServer());
+        iceServers.add(PeerConnection.IceServer.builder("stun:10.83.2.233:3478").createIceServer());
 
         local = factory.createPeerConnection(iceServers, new Peer("createPeerConnection"));
         local.addStream(mediaStream);
