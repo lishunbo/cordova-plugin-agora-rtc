@@ -1,6 +1,6 @@
-package com.agora.cordova.plugin.webrtc.model;
+package com.agora.cordova.plugin.webrtc.models;
 
-import com.agora.cordova.plugin.webrtc.enums.RTCIceCredentialType;
+import com.agora.cordova.plugin.webrtc.models.enums.RTCIceCredentialType;
 import com.agora.cordova.plugin.webrtc.interfaces.CredentialDetail;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;

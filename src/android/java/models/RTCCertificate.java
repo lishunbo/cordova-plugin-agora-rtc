@@ -1,4 +1,4 @@
-package com.agora.cordova.plugin.webrtc.model;
+package com.agora.cordova.plugin.webrtc.models;
 
 import java.util.LinkedList;
 import java.util.List;

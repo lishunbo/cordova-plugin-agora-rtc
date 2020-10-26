@@ -1,4 +1,4 @@
-package com.agora.cordova.plugin.webrtc.model;
+package com.agora.cordova.plugin.webrtc.models;
 
 import com.agora.cordova.plugin.webrtc.interfaces.CredentialDetail;
 

@@ -1,10 +1,10 @@
-package com.agora.cordova.plugin.webrtc.model;
+package com.agora.cordova.plugin.webrtc.models;
 
 import android.util.Log;
 
-import com.agora.cordova.plugin.webrtc.enums.RTCBundlePolicy;
-import com.agora.cordova.plugin.webrtc.enums.RTCIceTransportPolicy;
-import com.agora.cordova.plugin.webrtc.enums.RTCRtcpMuxPolicy;
+import com.agora.cordova.plugin.webrtc.models.enums.RTCBundlePolicy;
+import com.agora.cordova.plugin.webrtc.models.enums.RTCIceTransportPolicy;
+import com.agora.cordova.plugin.webrtc.models.enums.RTCRtcpMuxPolicy;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

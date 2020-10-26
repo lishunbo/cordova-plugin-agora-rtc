@@ -1,4 +1,4 @@
-package com.agora.cordova.plugin.webrtc.enums;
+package com.agora.cordova.plugin.webrtc.models.enums;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

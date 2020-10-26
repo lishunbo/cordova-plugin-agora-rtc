@@ -1,6 +1,6 @@
 package com.agora.cordova.plugin.webrtc.interfaces;
 
-import com.agora.cordova.plugin.webrtc.model.RTCOAuthCredential;
+import com.agora.cordova.plugin.webrtc.models.RTCOAuthCredential;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 
 @JsonSubTypes({
