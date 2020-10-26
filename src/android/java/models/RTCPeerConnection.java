@@ -1,7 +1,9 @@
 package com.agora.cordova.plugin.webrtc.models;
 
+import android.content.Intent;
 import android.util.Log;
 
+import com.agora.cordova.plugin.webrtc.WebRTCLocalActivity;
 import com.agora.cordova.plugin.webrtc.utils.MessageBus;
 import com.agora.demo.four.R;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -35,17 +37,28 @@ public class RTCPeerConnection {
         this.context = callbackContext;
         this.config = config;
 
-        cordova.getThreadPool().execute(()->{
+        cordova.getThreadPool().execute(() -> {
             try {
-                this.client = new MessageBusClient(new URI(cordova.getActivity().getString(R.string.internalws)+this.id));
+                this.client = new MessageBusClient(new URI(cordova.getActivity().getString(R.string.internalws) + this.id));
             } catch (URISyntaxException e) {
-                Log.e(TAG, "new MessageBusClient error:"+e.toString());
+                Log.e(TAG, "new MessageBusClient error:" + e.toString());
             }
         });
     }
 
     public String getId() {
         return id;
+    }
+
+
+    public void createOffer(final CallbackContext callbackContext) {
+        this.cordova.getThreadPool().execute(() -> {
+            Intent intent = new Intent(cordova.getActivity().getApplicationContext(), WebRTCLocalActivity.class);
+
+            intent.putExtra(cordova.getActivity().getString(R.string.hook_id), id);
+
+            cordova.getActivity().startActivity(intent);
+        });
     }
 
 

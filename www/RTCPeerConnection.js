@@ -1,6 +1,6 @@
 
 
-console.log("RTCPeerConnection.js onload");
+console.log("RTCPeerConnection.js onloading");
 
 function uuidv4() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
@@ -121,3 +121,5 @@ cordova.addConstructor(function () {
     window.RTCPeerConnection = RTCPeerConnection;
     return window.RTCPeerConnection;
 });
+
+console.log("RTCPeerConnection.js onloaded");

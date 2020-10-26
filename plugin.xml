@@ -12,6 +12,9 @@
     <js-module src="www/RTCPeerConnection.js" name="RTCPeerConnection">
         <clobbers target="RTCPeerConnection" />
     </js-module>
+    <js-module src="www/mediaDevice.js" name="mediaDevices">
+        <clobbers target="navigator.mediaDevices" />
+    </js-module>
     <platform name="android">
         <config-file target="config.xml" parent="/*">
             <feature name="Hook">
@@ -49,7 +52,7 @@
         <source-file src="src/android/java/Hook.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
         <source-file src="src/android/java/WebRTCLocalActivity.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
         <!-- utils -->
-        <source-file src="src/android/java/MessageBus.java" target-dir="src/com/agora/cordova/plugin/webrtc/utils"/>
+        <source-file src="src/android/java/utils/MessageBus.java" target-dir="src/com/agora/cordova/plugin/webrtc/utils"/>
         <!-- interfaces -->
         <source-file src="src/android/java/interfaces/CredentialDetail.java" target-dir="src/com/agora/cordova/plugin/webrtc/interfaces"/>
         <!-- models -->

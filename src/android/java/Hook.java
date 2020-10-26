@@ -5,6 +5,7 @@ package com.agora.cordova.plugin.webrtc;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.telecom.Call;
 import android.util.Log;
 
 import com.agora.cordova.plugin.webrtc.models.RTCConfiguration;
@@ -28,6 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.apache.cordova.PluginResult.Status.NO_RESULT;
 import static org.apache.cordova.PluginResult.Status.OK;
 
 // Cordova-required packages
@@ -127,7 +129,7 @@ public class Hook extends CordovaPlugin {
                 case "CreateInstance":
                     return createInstance(args, callbackContext);
                 case "createOffer":
-                    return impCreateOffer();
+                    return impCreateOffer(args, callbackContext);
                 case "setRemoteDescription":
                     return impSetRemoteDescription(args);
                 case "addIceCandidate":
@@ -218,10 +220,10 @@ public class Hook extends CordovaPlugin {
             }
         }
         if (cfg == null) {
+            Log.e(TAG, "Invalid RTCConfiguration config, using default");
             cfg = new RTCConfiguration();
         }
 
-//        Log.v(TAG, cfg.toString());
 
         RTCPeerConnection pc = new RTCPeerConnection(cordova, id, callbackContext, cfg);
         allConnections.put(pc.getId().toString(), pc);
@@ -233,19 +235,17 @@ public class Hook extends CordovaPlugin {
         return true;
     }
 
-    boolean impCreateOffer() {
-        if (!offer.equals("")) {
-            Log.e(TAG, "impCreatOffer:" + offer);
-            callbackContext.success(offer);
-            return true;
-        }
-        this.cordova.getThreadPool().execute(() -> {
-            Intent intent = new Intent(cordova.getActivity().getApplicationContext(), WebRTCLocalActivity.class);
+    boolean impCreateOffer(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        String id = args.getString(0);
 
-            intent.putExtra(cordova.getActivity().getString(R.string.hook_id), hook_id.toString());
+        RTCPeerConnection pc = allConnections.get(id);
+        assert pc != null;
+        pc.createOffer(callbackContext);
 
-            cordova.getActivity().startActivity(intent);
-        });
+        PluginResult result = new PluginResult(NO_RESULT);
+        result.setKeepCallback(true);
+
+        callbackContext.sendPluginResult(result);
 
         return true;
     }
