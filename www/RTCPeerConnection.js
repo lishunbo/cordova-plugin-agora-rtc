@@ -13,6 +13,8 @@ function uuidv4() {
 class RTCPeerConnection {
     constructor(config) {
         this.id = uuidv4();
+        this.config = config;
+
         this.oniceconnectionstatechange = null;
         this.onICEConnectionStateChange = null;
         this.onconnectionstatechange = null;

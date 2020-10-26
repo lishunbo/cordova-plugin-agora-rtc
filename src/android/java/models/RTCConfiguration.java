@@ -23,11 +23,10 @@ public class RTCConfiguration {
     public String peerIdentity;
     public RTCRtcpMuxPolicy rtcpMuxPolicy;
 
-    public static RTCConfiguration fromJson(JSONArray args) {
+    public static RTCConfiguration fromJson(String json) {
         ObjectMapper mapper = new ObjectMapper();
         try {
-            RTCConfiguration obj = mapper.readValue(args.toString(), RTCConfiguration.class);
-            return obj;
+            return mapper.readValue(json, RTCConfiguration.class);
         } catch (JsonProcessingException e) {
 //            System.out.println(e.toString());
             Log.e(TAG, e.toString());

@@ -28,6 +28,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.apache.cordova.PluginResult.Status.OK;
+
 // Cordova-required packages
 
 
@@ -49,7 +51,6 @@ public class Hook extends CordovaPlugin {
     Map<String, RTCPeerConnection> allConnections;
 
     MessageBus server;
-    MessageBusClient client;
     String hook_id = UUID.randomUUID().toString();
     String webrtclocal_id;
 
@@ -74,23 +75,6 @@ public class Hook extends CordovaPlugin {
                 server.setReuseAddr(true);
                 server.setTcpNoDelay(true);
                 server.start();
-            }
-        });
-
-        String url = this.cordova.getActivity().getString(R.string.internalws) + hook_id;
-
-        cordova.getThreadPool().execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Log.v(TAG, "connecting with url");
-                    client = new MessageBusClient(new URI(url));
-                    client.setReuseAddr(true);
-                    client.setTcpNoDelay(true);
-                    client.connect();
-                } catch (Exception e) {
-                    Log.e(TAG, "Fault cannot connect to server:" + e.toString());
-                }
             }
         });
 
@@ -119,7 +103,7 @@ public class Hook extends CordovaPlugin {
 
         if (!(cordova.hasPermission(CAMERA) && cordova.hasPermission(INTERNET)
                 && cordova.hasPermission(RECORD_AUDIO) && cordova.hasPermission(WAKE_LOCK))) {
-            getNecessaryPermission(NECESSARY_PERM_CODE);
+            getNecessaryPermission();
         } else {
             return continueWithPermissions(this.action, this.args, this.callbackContext);
         }
@@ -214,15 +198,60 @@ public class Hook extends CordovaPlugin {
             msg.Target = webrtclocal_id;
             msg.Action = type;
             msg.Payload = sdp;
-            client.send(msg.toString());
+//            client.send(msg.toString());
         } catch (Exception e) {
             Log.e(TAG, "Cannot impSetRemoteDescription:" + e.toString());
         }
         return true;
     }
 
-    protected void getNecessaryPermission(int requestCode) {
-        cordova.requestPermissions(this, requestCode,
+    boolean createInstance(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        String id = args.getString(0);
+//        Log.d(TAG, args.toString());
+
+        String json = null;
+        RTCConfiguration cfg = null;
+        if (args.length() > 1) {
+            json = args.get(1).toString();
+            if (json.length() != 0) {
+                cfg = RTCConfiguration.fromJson(json);
+            }
+        }
+        if (cfg == null) {
+            cfg = new RTCConfiguration();
+        }
+
+//        Log.v(TAG, cfg.toString());
+
+        RTCPeerConnection pc = new RTCPeerConnection(cordova, id, callbackContext, cfg);
+        allConnections.put(pc.getId().toString(), pc);
+
+        PluginResult result = new PluginResult(OK);
+        result.setKeepCallback(true);
+
+        callbackContext.sendPluginResult(result);
+        return true;
+    }
+
+    boolean impCreateOffer() {
+        if (!offer.equals("")) {
+            Log.e(TAG, "impCreatOffer:" + offer);
+            callbackContext.success(offer);
+            return true;
+        }
+        this.cordova.getThreadPool().execute(() -> {
+            Intent intent = new Intent(cordova.getActivity().getApplicationContext(), WebRTCLocalActivity.class);
+
+            intent.putExtra(cordova.getActivity().getString(R.string.hook_id), hook_id.toString());
+
+            cordova.getActivity().startActivity(intent);
+        });
+
+        return true;
+    }
+
+    protected void getNecessaryPermission() {
+        cordova.requestPermissions(this, Hook.NECESSARY_PERM_CODE,
                 new String[]{CAMERA,
                         INTERNET,
                         RECORD_AUDIO,
@@ -242,100 +271,4 @@ public class Hook extends CordovaPlugin {
         this.continueWithPermissions(this.action, this.args, this.callbackContext);
     }
 
-    boolean createInstance(JSONArray args, final CallbackContext callbackContext) throws JSONException {
-        String id = args.getString(0);
-
-        RTCConfiguration cfg = RTCConfiguration.fromJson(args);
-        Log.v(TAG, cfg.toString());
-
-        RTCPeerConnection pc = new RTCPeerConnection(id, callbackContext);
-        allConnections.put(pc.getId().toString(), pc);
-
-        return true;
-    }
-
-    boolean impCreateOffer() {
-        if (!offer.equals("")) {
-            Log.e(TAG, "impCreatOffer:" + offer);
-            callbackContext.success(offer);
-            return true;
-        }
-        this.cordova.getThreadPool().execute(new Runnable() {
-            public void run() {
-                Intent intent = new Intent(cordova.getActivity().getApplicationContext(), WebRTCLocalActivity.class);
-
-                intent.putExtra(cordova.getActivity().getString(R.string.hook_id), hook_id.toString());
-
-                cordova.getActivity().startActivity(intent);
-            }
-        });
-
-        return true;
-    }
-
-    public class MessageBusClient extends WebSocketClient {
-
-        public MessageBusClient(URI serverUri) {
-            super(serverUri);
-        }
-
-        @Override
-        public void onOpen(ServerHandshake handshakedata) {
-            Log.v(TAG, "Plugin connected to server:" + handshakedata.getHttpStatusMessage());
-        }
-
-        @Override
-        public void onMessage(String message) {
-            Log.e(TAG, "onMessage:" + message);
-            MessageBus.Message msg = MessageBus.Message.formString(message);
-            if (!msg.Target.equals(hook_id)) {
-                Log.e(TAG, "invalid message has been received");
-                return;
-            }
-            if (msg.Action.equals("offer")) {
-                offer = msg.Payload;
-                Log.e(TAG, "return offer to js:" + offer);
-//                PluginResult pluginResult = new PluginResult(PluginResult.Status.OK);
-//                MessageBus.Message msg = new MessageBus.Message();
-//                msg.Action = "offer";
-//                msg.Payload = offer;
-                callbackContext.success(offer);
-//                callbackContext.sendPluginResult(pluginResult);
-            }
-        }
-
-        @Override
-        public void onClose(int code, String reason, boolean remote) {
-            Log.e(TAG, "Plugin implement onClose: " + reason);
-            cordova.getThreadPool().execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        client.reconnect();
-                    } catch (Exception e) {
-                        Log.e(TAG, "cannot create Client" + e.toString());
-                    }
-                }
-            });
-        }
-
-        @Override
-        public void onError(Exception ex) {
-            Log.e(TAG, "Plugin not implement onError" + ex.toString());
-
-            cordova.getThreadPool().execute(new Runnable() {
-                @Override
-                public void run() {
-                    client.reconnect();
-                }
-            });
-        }
-
-        public void send(String type, String payload) {
-            MessageBus.Message msg = new MessageBus.Message();
-            msg.Target = webrtclocal_id;
-            msg.Action = "neecOffer";
-            client.send(msg.toString());
-        }
-    }
 }
