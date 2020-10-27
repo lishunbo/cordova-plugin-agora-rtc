@@ -38,7 +38,8 @@ class RTCPeerConnection {
 
     }
 
-    createOffer() {
+    //first class
+    createOffer(config) {
         return new Promise((resolve, reject) => {
             console.log("createOffer function");
             cordova.exec(function (ev) {
@@ -53,6 +54,7 @@ class RTCPeerConnection {
         })
     }
 
+    //first class
     setRemoteDescription(answer) {
         return new Promise((resolve, reject) => {
             cordova.exec(function (ev) {
@@ -63,6 +65,18 @@ class RTCPeerConnection {
         })
     }
 
+    //first class
+    setLocalDescription(offer) {
+        return new Promise((resolve, reject) => {
+            cordova.exec(function (ev) {
+                resolve(ev);
+            }, function (ev) {
+                reject(ev);
+            }, 'Hook', 'setLocalDescription', [this.id, offer.type, offer.sdp]);
+        })
+    }
+
+    //first class
     addIceCandidate(candidate) {
         return new Promise((resolve, reject) => {
             cordova.exec(function (ev) {
@@ -71,6 +85,13 @@ class RTCPeerConnection {
                 reject(ev);
             }, 'Hook', 'addIceCandidate', [this.id, candidate]);
         })
+    }
+
+    //first class
+    addTrack(track) {
+        cordova.exec(function (ev) {
+        }, function (ev) {
+        }, 'Hook', 'addTrack', [this.id, track]);
     }
 
     close() {
@@ -97,12 +118,6 @@ class RTCPeerConnection {
         cordova.exec(function (ev) {
         }, function (ev) {
         }, 'Hook', 'addTransceiver', [this.id]);
-    }
-
-    addTrack() {
-        cordova.exec(function (ev) {
-        }, function (ev) {
-        }, 'Hook', 'addTrack', [this.id]);
     }
 
     getStats() {

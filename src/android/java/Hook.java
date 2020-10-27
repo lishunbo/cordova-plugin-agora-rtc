@@ -5,21 +5,22 @@ package com.agora.cordova.plugin.webrtc;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.telecom.Call;
 import android.util.Log;
 
+import com.agora.cordova.plugin.webrtc.models.MediaStreamConstraints;
 import com.agora.cordova.plugin.webrtc.models.RTCConfiguration;
-import com.agora.cordova.plugin.webrtc.models.RTCPeerConnection;
+import com.agora.cordova.plugin.webrtc.models.SessionDescription;
+import com.agora.cordova.plugin.webrtc.services.PCFactory;
+import com.agora.cordova.plugin.webrtc.services.RTCPeerConnection;
 import com.agora.cordova.plugin.webrtc.utils.MessageBus;
 import com.agora.demo.four.R;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.PluginResult;
-import org.java_websocket.client.WebSocketClient;
-import org.java_websocket.handshake.ServerHandshake;
 import org.json.JSONArray;
 import org.json.JSONException;
 
@@ -45,6 +46,7 @@ public class Hook extends CordovaPlugin {
     public static final String RECORD_AUDIO = Manifest.permission.RECORD_AUDIO;
     public static final String MODIFY_AUDIO_SETTINGS = Manifest.permission.MODIFY_AUDIO_SETTINGS;
     public static final String WAKE_LOCK = Manifest.permission.WAKE_LOCK;
+    public static final String ALERT_WINDOW = Manifest.permission.SYSTEM_ALERT_WINDOW;
 
     public static final int NECESSARY_PERM_CODE = 900;
     private static final String PERMISSION_DENIED_ERROR = "Permission_Denied";
@@ -54,13 +56,14 @@ public class Hook extends CordovaPlugin {
 
     MessageBus server;
     String hook_id = UUID.randomUUID().toString();
-    String webrtclocal_id;
+    String webrtc_view_id;
 
-    String action;
-    JSONArray args;
-    CallbackContext callbackContext;
+    //Only for continue... function
+    String _action;
+    JSONArray _args;
+    CallbackContext _callbackContext;
 
-    String offer = "";
+    Wrapper wrapper = null;
 
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
@@ -80,7 +83,15 @@ public class Hook extends CordovaPlugin {
             }
         });
 
-        webrtclocal_id = cordova.getActivity().getString(R.string.webrtclocal_id);
+        webrtc_view_id = cordova.getActivity().getString(R.string.webrtc_view_id);
+
+        this.cordova.getThreadPool().execute(() -> {
+            Intent intent = new Intent(cordova.getActivity().getApplicationContext(), WebRTCViewActivity.class);
+
+            intent.putExtra(cordova.getActivity().getString(R.string.hook_id), hook_id);
+
+            cordova.getActivity().startActivity(intent);
+        });
     }
 
     @Override
@@ -99,111 +110,138 @@ public class Hook extends CordovaPlugin {
 
         Log.v(TAG, "action:" + action + "\t" + "arguments:" + args.toString());
         // Verify that the user sent a 'show' action
-        this.action = action;
-        this.args = args;
-        this.callbackContext = callbackContext;
+        this._action = action;
+        this._args = args;
+        this._callbackContext = callbackContext;
 
         if (!(cordova.hasPermission(CAMERA) && cordova.hasPermission(INTERNET)
-                && cordova.hasPermission(RECORD_AUDIO) && cordova.hasPermission(WAKE_LOCK))) {
+                && cordova.hasPermission(RECORD_AUDIO) && cordova.hasPermission(WAKE_LOCK) && cordova.hasPermission(ALERT_WINDOW))) {
             getNecessaryPermission();
         } else {
-            return continueWithPermissions(this.action, this.args, this.callbackContext);
+            return continueWithPermissions(this._action, this._args, this._callbackContext);
         }
         return true;
     }
 
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent intent) {
-        super.onActivityResult(requestCode, resultCode, intent);
-        if (requestCode == 800) {
-            webrtclocal_id = intent.getStringExtra(cordova.getActivity().getString(R.string.webrtclocal_id));
-            Log.i(TAG, "hook get webrtclocal_id:" + webrtclocal_id);
-        }
-    }
-
+    //Main hook point for Hook
     private boolean continueWithPermissions(String action, JSONArray args,
                                             final CallbackContext callbackContext) {
+        if (wrapper != null && !wrapper.isOpen()) {
+            Log.e(TAG, "Panic error, not connected to internal communicate ws server");
+
+            callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ILLEGAL_ACCESS_EXCEPTION));
+            return false;
+        }
+
         try {
-            switch (action) {
+            switch (Action.valueOf(action)) {
                 //Keep Instance context for callback
-                case "CreateInstance":
+                case createInstance:
                     return createInstance(args, callbackContext);
-                case "createOffer":
-                    return impCreateOffer(args, callbackContext);
-                case "setRemoteDescription":
-                    return impSetRemoteDescription(args);
-                case "addIceCandidate":
-                    return impAddIceCandidate(args);
-                case "close":
-                    return impClose(args);
-                case "removeTrack":
-                    return impRemoveTrack(args);
-                case "getTransceivers":
-                    return impGetTransceivers(args);
-                case "addTransceiver":
-                    return impAddTransceiver(args);
-                case "addTrack":
-                    return impAddTrack(args);
-                case "getStats":
-                    return impGetStats(args);
+                //PeerConnection sub functions
+                case createOffer:
+                    return createOffer(args, callbackContext);
+                case setRemoteDescription:
+                    return setRemoteDescription(args, callbackContext);
+                case addIceCandidate:
+                    return addIceCandidate(args);
+                case close:
+                    return close(args);
+                case removeTrack:
+                    return removeTrack(args);
+                case getTransceivers:
+                    return getTransceivers(args);
+                case addTransceiver:
+                    return addTransceiver(args);
+                case addTrack:
+                    return addTrack(args);
+                case getStats:
+                    return getStats(args);
+                //MediaDevice functions
+                case getUserMedia:
+                    return getUserMedia(args, callbackContext);
                 default:
                     callbackContext.error("RTCPeerConnection not implement action:" + action);
                     return false;
             }
-            // Send a positive result to the callbackContext
-//            PluginResult pluginResult = new PluginResult(PluginResult.Status.OK);
-//            callbackContext.success(id);
-//            callbackContext.sendPluginResult(pluginResult);
         } catch (Exception e) {
             Log.e(TAG, e.toString());
             return false;
         }
-//        return true;
     }
 
-    private boolean impGetStats(JSONArray args) {
-        return false;
-    }
+    private boolean getUserMedia(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        String id = args.getString(0);
 
-    private boolean impAddTrack(JSONArray args) {
-        return false;
-    }
+        MediaStreamConstraints constraints = null;
 
-    private boolean impAddTransceiver(JSONArray args) {
-        return false;
-    }
-
-    private boolean impGetTransceivers(JSONArray args) {
-        return false;
-    }
-
-    private boolean impRemoveTrack(JSONArray args) {
-        return false;
-    }
-
-    private boolean impClose(JSONArray args) {
-        return false;
-    }
-
-    private boolean impAddIceCandidate(JSONArray args) {
-        return false;
-    }
-
-    boolean impSetRemoteDescription(JSONArray args) {
-        Log.v(TAG, "impSetRemoteDescription...");
         try {
-            String type = args.getString(0);
-            String sdp = args.getString(1);
-            Log.v(TAG, "impSetRemoteDescription type:" + type);
-            Log.v(TAG, "impSetRemoteDescription sdp:" + sdp);
-            MessageBus.Message msg = new MessageBus.Message();
-            msg.Target = webrtclocal_id;
-            msg.Action = type;
-            msg.Payload = sdp;
-//            client.send(msg.toString());
+            ObjectMapper mapper = new ObjectMapper();
+            HashMap result = mapper.readValue(args.getJSONArray(1).toString(), HashMap.class);
+            constraints = new MediaStreamConstraints(result);
         } catch (Exception e) {
-            Log.e(TAG, "Cannot impSetRemoteDescription:" + e.toString());
+            Log.e(TAG, "fault, cannot unmarshal MediaStreamConstraints:" + e.toString() + args.toString());
         }
+        if (constraints == null) {
+            Log.e(TAG, "fault, setRemoteDescription no sdp data");
+            callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ILLEGAL_ACCESS_EXCEPTION));
+            return false;
+        }
+
+        wrapper.getUserMedia(id, callbackContext, constraints);
+
+        return true;
+    }
+
+    private boolean getStats(JSONArray args) {
+        return false;
+    }
+
+    private boolean addTrack(JSONArray args) {
+        return false;
+    }
+
+    private boolean addTransceiver(JSONArray args) {
+        return false;
+    }
+
+    private boolean getTransceivers(JSONArray args) {
+        return false;
+    }
+
+    private boolean removeTrack(JSONArray args) {
+        return false;
+    }
+
+    private boolean close(JSONArray args) {
+        return false;
+    }
+
+    private boolean addIceCandidate(JSONArray args) {
+        return false;
+    }
+
+    boolean setRemoteDescription(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        String id = args.getString(0);
+        SessionDescription sdp = null;
+        try {
+            String json = args.get(1).toString();
+            sdp = SessionDescription.fromJson(json);
+        } catch (Exception e) {
+            Log.e(TAG, "fault, cannot unmarshal SessionDescription:" + e.toString() + args.toString());
+        }
+        if (sdp == null) {
+            Log.e(TAG, "fault, setRemoteDescription no sdp data");
+            callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ILLEGAL_ACCESS_EXCEPTION));
+            return false;
+        }
+        wrapper.setRemoteDescription(id, callbackContext, sdp);
+
+        PluginResult result = new PluginResult(NO_RESULT);
+        result.setKeepCallback(true);
+
+        callbackContext.sendPluginResult(result);
+
         return true;
     }
 
@@ -211,10 +249,9 @@ public class Hook extends CordovaPlugin {
         String id = args.getString(0);
 //        Log.d(TAG, args.toString());
 
-        String json = null;
         RTCConfiguration cfg = null;
         if (args.length() > 1) {
-            json = args.get(1).toString();
+            String json = args.get(1).toString();
             if (json.length() != 0) {
                 cfg = RTCConfiguration.fromJson(json);
             }
@@ -223,10 +260,28 @@ public class Hook extends CordovaPlugin {
             Log.e(TAG, "Invalid RTCConfiguration config, using default");
             cfg = new RTCConfiguration();
         }
+        if (wrapper == null) {
+            URI uri = null;
+            try {
+                uri = new URI(cordova.getActivity().getString(R.string.internalws) + hook_id);
+            } catch (Exception e) {
+                Log.e(TAG, "Panic error, cannot parser internal communicate ws url:" + e.toString());
 
+                callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ILLEGAL_ACCESS_EXCEPTION));
+                return false;
+            }
+            wrapper = new Wrapper(uri, cordova, hook_id, webrtc_view_id);
+            try {
+                wrapper.connectBlocking();
+            } catch (Exception e) {
+                Log.e(TAG, "Panic error, cannot connect internal communicate ws server:" + e.toString());
 
-        RTCPeerConnection pc = new RTCPeerConnection(cordova, id, callbackContext, cfg);
-        allConnections.put(pc.getId().toString(), pc);
+                callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ILLEGAL_ACCESS_EXCEPTION));
+                return false;
+            }
+        }
+
+        wrapper.createInstance(id, callbackContext, cfg);
 
         PluginResult result = new PluginResult(OK);
         result.setKeepCallback(true);
@@ -235,12 +290,10 @@ public class Hook extends CordovaPlugin {
         return true;
     }
 
-    boolean impCreateOffer(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+    boolean createOffer(JSONArray args, final CallbackContext callbackContext) throws JSONException {
         String id = args.getString(0);
 
-        RTCPeerConnection pc = allConnections.get(id);
-        assert pc != null;
-        pc.createOffer(callbackContext);
+        wrapper.createOffer(id, callbackContext);
 
         PluginResult result = new PluginResult(NO_RESULT);
         result.setKeepCallback(true);
@@ -256,6 +309,7 @@ public class Hook extends CordovaPlugin {
                         INTERNET,
                         RECORD_AUDIO,
                         WAKE_LOCK,
+                        ALERT_WINDOW,
                 });
     }
 
@@ -264,11 +318,11 @@ public class Hook extends CordovaPlugin {
         super.onRequestPermissionResult(requestCode, permissions, grantResults);
         for (int r : grantResults) {
             if (r == PackageManager.PERMISSION_DENIED) {
-                this.callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, PERMISSION_DENIED_ERROR));
+                this._callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, PERMISSION_DENIED_ERROR));
                 return;
             }
         }
-        this.continueWithPermissions(this.action, this.args, this.callbackContext);
+        this.continueWithPermissions(this._action, this._args, this._callbackContext);
     }
 
 }

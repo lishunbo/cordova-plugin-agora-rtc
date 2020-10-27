@@ -22,7 +22,8 @@ public class MessageBus extends WebSocketServer {
 
     public static class Message {
         public String Target;
-        public String Action;
+        public String Object;
+        public com.agora.cordova.plugin.webrtc.Action Action;
         public String Payload;
 
         public static Message formString(String json) {

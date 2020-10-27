@@ -1,9 +1,10 @@
-package com.agora.cordova.plugin.webrtc.models;
+package com.agora.cordova.plugin.webrtc.services;
 
 import android.content.Intent;
 import android.util.Log;
 
 import com.agora.cordova.plugin.webrtc.WebRTCViewActivity;
+import com.agora.cordova.plugin.webrtc.models.RTCConfiguration;
 import com.agora.cordova.plugin.webrtc.utils.MessageBus;
 import com.agora.demo.four.R;
 
