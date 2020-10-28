@@ -74,28 +74,28 @@ public class Hook extends CordovaPlugin {
 //        cordova.getThreadPool().execute(new Runnable() {
 //            @Override
 //            public void run() {
-                server = new MessageBus(new InetSocketAddress("127.0.0.1", 9999));
-                server.setReuseAddr(true);
-                server.setTcpNoDelay(true);
-                server.start();
+        server = new MessageBus(new InetSocketAddress("127.0.0.1", 9999));
+        server.setReuseAddr(true);
+        server.setTcpNoDelay(true);
+        server.start();
 //            }
 //        });
 
 //        cordova.getActivity().runOnUiThread(()->{
-            if (!(cordova.hasPermission(CAMERA) && cordova.hasPermission(INTERNET)
-                    && cordova.hasPermission(RECORD_AUDIO) && cordova.hasPermission(WAKE_LOCK) && cordova.hasPermission(ALERT_WINDOW))) {
-                getNecessaryPermission();
-            }
+        if (!(cordova.hasPermission(CAMERA) && cordova.hasPermission(INTERNET)
+                && cordova.hasPermission(RECORD_AUDIO) && cordova.hasPermission(WAKE_LOCK) && cordova.hasPermission(ALERT_WINDOW))) {
+            getNecessaryPermission();
+        }
 
 
-            webrtc_view_id = cordova.getActivity().getString(R.string.webrtc_view_id);
+        webrtc_view_id = cordova.getActivity().getString(R.string.webrtc_view_id);
 
 //        this.cordova.getThreadPool().execute(() -> {
-            Intent intent = new Intent(cordova.getActivity().getApplicationContext(), WebRTCViewActivity.class);
+        Intent intent = new Intent(cordova.getActivity().getApplicationContext(), WebRTCViewActivity.class);
 
-            intent.putExtra(cordova.getActivity().getString(R.string.hook_id), hook_id);
+        intent.putExtra(cordova.getActivity().getString(R.string.hook_id), hook_id);
 
-            cordova.getActivity().startActivity(intent);
+        cordova.getActivity().startActivity(intent);
 //        });
 
 //        });
@@ -153,10 +153,14 @@ public class Hook extends CordovaPlugin {
                 //PeerConnection sub functions
                 case createOffer:
                     return createOffer(args, callbackContext);
+                case addTrack:
+                    return addTrack(args, callbackContext);
+                case setLocalDescription:
+                    return setLocalDescription(args, callbackContext);
                 case setRemoteDescription:
                     return setRemoteDescription(args, callbackContext);
                 case addIceCandidate:
-                    return addIceCandidate(args);
+                    return addIceCandidate(args, callbackContext);
                 case close:
                     return close(args);
                 case removeTrack:
@@ -165,8 +169,6 @@ public class Hook extends CordovaPlugin {
                     return getTransceivers(args);
                 case addTransceiver:
                     return addTransceiver(args);
-                case addTrack:
-                    return addTrack(args);
                 case getStats:
                     return getStats(args);
                 //MediaDevice functions
@@ -210,8 +212,25 @@ public class Hook extends CordovaPlugin {
         return false;
     }
 
-    private boolean addTrack(JSONArray args) {
-        return false;
+    private boolean addTrack(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        String id = args.getString(0);
+
+        wrapper.addTrack(id, callbackContext);
+        return true;
+    }
+
+    private boolean setLocalDescription(JSONArray args, CallbackContext callbackContext) throws JSONException {
+        String id = args.getString(0);
+
+        wrapper.setLocalDescription(id, callbackContext);
+        return true;
+    }
+
+    private boolean ad(JSONArray args, CallbackContext callbackContext) throws JSONException {
+        String id = args.getString(0);
+
+        wrapper.setLocalDescription(id, callbackContext);
+        return true;
     }
 
     private boolean addTransceiver(JSONArray args) {
@@ -230,8 +249,32 @@ public class Hook extends CordovaPlugin {
         return false;
     }
 
-    private boolean addIceCandidate(JSONArray args) {
-        return false;
+    boolean createInstance(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        String id = args.getString(0);
+//        Log.d(TAG, args.toString());
+
+        Log.e(TAG, "log for createInstance object:" + wrapper.toString());
+        RTCConfiguration cfg = null;
+        if (args.length() > 1) {
+            String json = args.get(1).toString();
+            if (json.length() != 0) {
+                cfg = RTCConfiguration.fromJson(json);
+            }
+        }
+        if (cfg == null) {
+            Log.e(TAG, "Invalid RTCConfiguration config, using default");
+            cfg = new RTCConfiguration();
+        }
+
+        wrapper.createInstance(id, callbackContext, cfg);
+
+//        Log.e(TAG, "log for wrapper object:" + wrapper.toString());
+
+        PluginResult result = new PluginResult(OK);
+        result.setKeepCallback(true);
+
+        callbackContext.sendPluginResult(result);
+        return true;
     }
 
     boolean setRemoteDescription(JSONArray args, final CallbackContext callbackContext) throws JSONException {
@@ -258,28 +301,11 @@ public class Hook extends CordovaPlugin {
         return true;
     }
 
-    boolean createInstance(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+    private boolean addIceCandidate(JSONArray args, final CallbackContext callbackContext) throws JSONException {
         String id = args.getString(0);
-//        Log.d(TAG, args.toString());
+        wrapper.addIceCandidate(id, callbackContext);
 
-        Log.e(TAG, "log for createInstance object:" + wrapper.toString());
-        RTCConfiguration cfg = null;
-        if (args.length() > 1) {
-            String json = args.get(1).toString();
-            if (json.length() != 0) {
-                cfg = RTCConfiguration.fromJson(json);
-            }
-        }
-        if (cfg == null) {
-            Log.e(TAG, "Invalid RTCConfiguration config, using default");
-            cfg = new RTCConfiguration();
-        }
-
-        wrapper.createInstance(id, callbackContext, cfg);
-
-//        Log.e(TAG, "log for wrapper object:" + wrapper.toString());
-
-        PluginResult result = new PluginResult(OK);
+        PluginResult result = new PluginResult(NO_RESULT);
         result.setKeepCallback(true);
 
         callbackContext.sendPluginResult(result);

@@ -12,6 +12,9 @@
     <js-module src="www/RTCPeerConnection.js" name="RTCPeerConnection">
         <clobbers target="RTCPeerConnection" />
     </js-module>
+    <js-module src="www/MediaStream.js" name="Stream">
+        <clobbers target="Stream" />
+    </js-module>
     <js-module src="www/mediaDevice.js" name="mediaDevices">
         <clobbers target="navigator.mediaDevices" />
     </js-module>
@@ -73,7 +76,6 @@
         <source-file src="src/android/java/models/RTCConfiguration.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
         <source-file src="src/android/java/models/RTCIceServer.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
         <source-file src="src/android/java/models/RTCOAuthCredential.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
-        <source-file src="src/android/java/models/RTCPeerConnection.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
         <source-file src="src/android/java/models/SessionDescription.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
         <!-- enums -->
         <source-file src="src/android/java/models/enums/RTCBundlePolicy.java" target-dir="src/com/agora/cordova/plugin/webrtc/models/enums"/>

@@ -3,6 +3,7 @@ package com.agora.cordova.plugin.webrtc;
 public enum Action {
     createInstance("createInstance"),
     createOffer("createOffer"),
+    setLocalDescription("setLocalDescription"),
     setRemoteDescription("setRemoteDescription"),
     addIceCandidate("addIceCandidate"),
     close("close"),

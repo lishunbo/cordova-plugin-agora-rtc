@@ -40,6 +40,7 @@ public class Wrapper extends WebSocketClient {
         this.instances = new HashMap<>();
     }
 
+    // to view activity
     public void createInstance(String id, final CallbackContext callbackContext, RTCConfiguration cfg) {
 
         Action action = Action.createInstance;
@@ -54,31 +55,7 @@ public class Wrapper extends WebSocketClient {
         send(msg.toString());
     }
 
-    public void createOffer(String id, final CallbackContext callbackContext) {
-        Action action = Action.createOffer;
-
-        this.instances.put(id + action, callbackContext);
-
-        MessageBus.Message msg = new MessageBus.Message();
-        msg.target = this.target;
-        msg.object = id;
-        msg.action = action;
-        send(msg.toString());
-    }
-
-    public void setRemoteDescription(String id, final CallbackContext callbackContext, SessionDescription sdp) {
-        Action action = Action.setRemoteDescription;
-
-        this.instances.put(id + action, callbackContext);
-
-        MessageBus.Message msg = new MessageBus.Message();
-        msg.target = this.target;
-        msg.object = id;
-        msg.action = action;
-        msg.payload = sdp.toString();
-        send(msg.toString());
-    }
-
+    // to view activity
     public void getUserMedia(String id, final CallbackContext callbackContext, MediaStreamConstraints constraints) {
         Action action = Action.getUserMedia;
 
@@ -89,6 +66,75 @@ public class Wrapper extends WebSocketClient {
         msg.object = id;
         msg.action = action;
         msg.payload = constraints.toString();
+        send(msg.toString());
+    }
+
+    //to PeerConnection
+    public void addTrack(String id, CallbackContext callbackContext) {
+        Action action = Action.addTrack;
+
+        this.instances.put(id + action, callbackContext);
+
+        MessageBus.Message msg = new MessageBus.Message();
+        msg.target = id;
+        msg.object = id;
+        msg.action = action;
+//        msg.payload = constraints.toString();
+        send(msg.toString());
+    }
+
+    //to PeerConnection
+    public void createOffer(String id, final CallbackContext callbackContext) {
+        Action action = Action.createOffer;
+
+        this.instances.put(id + action, callbackContext);
+
+        MessageBus.Message msg = new MessageBus.Message();
+        msg.target = id;
+        msg.object = id;
+        msg.action = action;
+        send(msg.toString());
+    }
+
+    //to PeerConnection
+    public void setLocalDescription(String id, CallbackContext callbackContext) {
+        Action action = Action.setLocalDescription;
+
+        this.instances.put(id + action, callbackContext);
+
+        MessageBus.Message msg = new MessageBus.Message();
+        msg.target = id;
+        msg.object = id;
+        msg.action = action;
+//        msg.payload = constraints.toString();
+        send(msg.toString());
+    }
+
+    //to PeerConnection
+    public void setRemoteDescription(String id, final CallbackContext callbackContext, SessionDescription sdp) {
+        Action action = Action.setRemoteDescription;
+
+        this.instances.put(id + action, callbackContext);
+
+        MessageBus.Message msg = new MessageBus.Message();
+        msg.target = id;
+        msg.object = id;
+        msg.action = action;
+        msg.payload = sdp.toString();
+        send(msg.toString());
+    }
+
+    //to PeerConnection
+    public void addIceCandidate(String id, CallbackContext callbackContext) {
+        Action action = Action.addIceCandidate;
+
+        this.instances.put(id + action, callbackContext);
+
+        MessageBus.Message msg = new MessageBus.Message();
+        msg.target = id;
+        msg.object = id;
+        msg.action = action;
+//        msg.payload = constraints.toString();
         send(msg.toString());
     }
 
@@ -111,6 +157,24 @@ public class Wrapper extends WebSocketClient {
                 callbackContext.sendPluginResult(result);
                 break;
             case getUserMedia:
+                callbackContext.success();
+//                PluginResult result = new PluginResult(OK);
+//                result.setKeepCallback(true);
+//                callbackContext.sendPluginResult(result);
+                break;
+            case addTrack:
+                callbackContext.success();
+//                PluginResult result = new PluginResult(OK);
+//                result.setKeepCallback(true);
+//                callbackContext.sendPluginResult(result);
+                break;
+            case createOffer:
+                callbackContext.success();
+//                PluginResult result = new PluginResult(OK);
+//                result.setKeepCallback(true);
+//                callbackContext.sendPluginResult(result);
+                break;
+            case setLocalDescription:
                 callbackContext.success();
 //                PluginResult result = new PluginResult(OK);
 //                result.setKeepCallback(true);

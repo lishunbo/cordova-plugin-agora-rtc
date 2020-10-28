@@ -3,6 +3,7 @@
 console.log("mediaDevice.js onloading");
 
 var Media = require('./Media');
+var stream = require('./Stream');
 
 var mediaDevice = {}
 
@@ -29,7 +30,7 @@ mediaDevice.getUserMedia = function (config) {
             console.log("after create  stream object");
             var track = new MediaStreamTrack();
             console.log("Ready to return stream object");
-            // stream.addTrack(track);
+            stream.addTrack(track);
             resolve(stream)
         }, function (ev) {
             console.log("Failed to create RTCPeerConnection object");
