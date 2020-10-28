@@ -34,7 +34,7 @@ class RTCPeerConnection {
             // console.log("check this.id done:" + pc.id)
         }, function (ev) {
             console.log("Failed to create RTCPeerConnection object");
-        }, 'Hook', 'CreateInstance', [this.id, this.config]);
+        }, 'Hook', 'createInstance', [this.id, this.config]);
 
     }
 

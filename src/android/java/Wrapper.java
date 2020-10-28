@@ -39,6 +39,7 @@ public class Wrapper extends WebSocketClient {
     }
 
     public void createInstance(String id, final CallbackContext callbackContext, RTCConfiguration cfg) {
+
         Action action = Action.createInstance;
 
         this.instances.put(id + action, callbackContext);
@@ -91,21 +92,21 @@ public class Wrapper extends WebSocketClient {
 
     @Override
     public void onOpen(ServerHandshake handshakedata) {
-        Log.i(TAG, "Wrapper connected with internal communicate server");
+        Log.e(TAG, "Wrapper onOpen: connected with internal communicate server");
     }
 
     @Override
     public void onMessage(String message) {
-
+        Log.e(TAG, "Wrapper onMessage:"+message);
     }
 
     @Override
     public void onClose(int code, String reason, boolean remote) {
-
+        Log.e(TAG, "Wrapper onClose: "+reason);
     }
 
     @Override
     public void onError(Exception ex) {
-
+        Log.e(TAG, "Wrapper onError: "+ex.toString());
     }
 }

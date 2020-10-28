@@ -1,7 +1,7 @@
 package com.agora.cordova.plugin.webrtc;
 
 public enum Action {
-    createInstance("CreateInstance"),
+    createInstance("createInstance"),
     createOffer("createOffer"),
     setRemoteDescription("setRemoteDescription"),
     addIceCandidate("addIceCandidate"),

@@ -54,13 +54,9 @@ public class WebRTCViewActivity extends Activity {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.local_view);
 
-        PCFactory.initializationOnce(getApplicationContext());
-
         Intent intent = getIntent();
         hook_id = intent.getStringExtra(getString(R.string.hook_id));
-        Log.e(TAG, "found holder:" + hook_id);
         webrtc_view_id = getString(R.string.webrtc_view_id);
-
         try {
             client = new MessageBusClient(new URI(getString(R.string.internalws) + webrtc_view_id.toString()));
             client.setReuseAddr(true);
@@ -69,6 +65,10 @@ public class WebRTCViewActivity extends Activity {
         } catch (Exception e) {
             Log.e(TAG, "Fault, cannot create messagebus client" + e.toString());
         }
+        Log.e(TAG, "found holder:" + hook_id);
+
+        PCFactory.initializationOnce(getApplicationContext());
+
 
 //        SurfaceTextureHelper surfaceTextureHelper = SurfaceTextureHelper.create("CaptureThread", PCFactory.eglBase());
 //        // create VideoCapturer

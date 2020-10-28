@@ -90,8 +90,12 @@ public class MessageBus extends WebSocketServer {
         }
 
         List<WebSocket> cs = targets.get(msg.Target);
-        for (WebSocket c : cs) {
-            c.send(message);
+        if (cs != null) {
+            for (WebSocket c : cs) {
+                c.send(message);
+            }
+        } else {
+            Log.e(TAG, "Error not found message consumer:" + message);
         }
     }
 

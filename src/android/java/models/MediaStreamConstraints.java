@@ -12,7 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class MediaStreamConstraints {
-    static final String TAG = RTCConfiguration.class.getCanonicalName();
+    static final String TAG = MediaStreamConstraints.class.getCanonicalName();
 
     Map<String, String> parameters;
 
@@ -23,7 +23,7 @@ public class MediaStreamConstraints {
     public String toString(){
         ObjectMapper mapper = new ObjectMapper();
         try {
-            return mapper.writeValueAsString(this);
+            return mapper.writeValueAsString(this.parameters);
         } catch (JsonProcessingException e) {
             Log.e(TAG, e.toString());
         }

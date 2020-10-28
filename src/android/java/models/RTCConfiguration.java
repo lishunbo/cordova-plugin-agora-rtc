@@ -29,7 +29,7 @@ public class RTCConfiguration {
             return mapper.readValue(json, RTCConfiguration.class);
         } catch (JsonProcessingException e) {
 //            System.out.println(e.toString());
-            Log.e(TAG, e.toString());
+            Log.e(TAG, "++++++++++++++"+ e.toString());
         }
         return null;
     }

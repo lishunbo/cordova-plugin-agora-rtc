@@ -29,6 +29,8 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static org.apache.cordova.PluginResult.Status.NO_RESULT;
 import static org.apache.cordova.PluginResult.Status.OK;
@@ -58,11 +60,6 @@ public class Hook extends CordovaPlugin {
     String hook_id = UUID.randomUUID().toString();
     String webrtc_view_id;
 
-    //Only for continue... function
-    String _action;
-    JSONArray _args;
-    CallbackContext _callbackContext;
-
     Wrapper wrapper = null;
 
     @Override
@@ -73,25 +70,50 @@ public class Hook extends CordovaPlugin {
 
         allConnections = new HashMap<>();
 
-        cordova.getThreadPool().execute(new Runnable() {
-            @Override
-            public void run() {
+
+//        cordova.getThreadPool().execute(new Runnable() {
+//            @Override
+//            public void run() {
                 server = new MessageBus(new InetSocketAddress("127.0.0.1", 9999));
                 server.setReuseAddr(true);
                 server.setTcpNoDelay(true);
                 server.start();
+//            }
+//        });
+
+//        cordova.getActivity().runOnUiThread(()->{
+            if (!(cordova.hasPermission(CAMERA) && cordova.hasPermission(INTERNET)
+                    && cordova.hasPermission(RECORD_AUDIO) && cordova.hasPermission(WAKE_LOCK) && cordova.hasPermission(ALERT_WINDOW))) {
+                getNecessaryPermission();
             }
-        });
 
-        webrtc_view_id = cordova.getActivity().getString(R.string.webrtc_view_id);
 
-        this.cordova.getThreadPool().execute(() -> {
+            webrtc_view_id = cordova.getActivity().getString(R.string.webrtc_view_id);
+
+//        this.cordova.getThreadPool().execute(() -> {
             Intent intent = new Intent(cordova.getActivity().getApplicationContext(), WebRTCViewActivity.class);
 
             intent.putExtra(cordova.getActivity().getString(R.string.hook_id), hook_id);
 
             cordova.getActivity().startActivity(intent);
-        });
+//        });
+
+//        });
+
+        URI uri = null;
+        try {
+            uri = new URI(cordova.getActivity().getString(R.string.internalws) + hook_id);
+        } catch (Exception e) {
+            Log.e(TAG, "Panic error, cannot parser internal communicate ws url:" + e.toString());
+
+        }
+        wrapper = new Wrapper(uri, cordova, hook_id, webrtc_view_id);
+        try {
+            wrapper.connectBlocking();
+        } catch (Exception e) {
+            Log.e(TAG, "Panic error, cannot connect internal communicate ws server:" + e.toString());
+        }
+        Log.e(TAG, "connected internal communicate ws server:");
     }
 
     @Override
@@ -108,19 +130,8 @@ public class Hook extends CordovaPlugin {
     public boolean execute(String action, JSONArray args,
                            final CallbackContext callbackContext) {
 
-        Log.v(TAG, "action:" + action + "\t" + "arguments:" + args.toString());
-        // Verify that the user sent a 'show' action
-        this._action = action;
-        this._args = args;
-        this._callbackContext = callbackContext;
 
-        if (!(cordova.hasPermission(CAMERA) && cordova.hasPermission(INTERNET)
-                && cordova.hasPermission(RECORD_AUDIO) && cordova.hasPermission(WAKE_LOCK) && cordova.hasPermission(ALERT_WINDOW))) {
-            getNecessaryPermission();
-        } else {
-            return continueWithPermissions(this._action, this._args, this._callbackContext);
-        }
-        return true;
+        return continueWithPermissions(action, args, callbackContext);
     }
 
     //Main hook point for Hook
@@ -134,6 +145,7 @@ public class Hook extends CordovaPlugin {
         }
 
         try {
+            Log.e(TAG, "actioin:" + Action.valueOf(action));
             switch (Action.valueOf(action)) {
                 //Keep Instance context for callback
                 case createInstance:
@@ -161,11 +173,12 @@ public class Hook extends CordovaPlugin {
                 case getUserMedia:
                     return getUserMedia(args, callbackContext);
                 default:
+                    Log.e(TAG, "Not implement action of :" + action);
                     callbackContext.error("RTCPeerConnection not implement action:" + action);
                     return false;
             }
         } catch (Exception e) {
-            Log.e(TAG, e.toString());
+            Log.e(TAG, "continueWithPermissions exception:" + e.toString());
             return false;
         }
     }
@@ -177,13 +190,13 @@ public class Hook extends CordovaPlugin {
 
         try {
             ObjectMapper mapper = new ObjectMapper();
-            HashMap result = mapper.readValue(args.getJSONArray(1).toString(), HashMap.class);
+            HashMap result = mapper.readValue(args.getJSONObject(1).toString(), HashMap.class);
             constraints = new MediaStreamConstraints(result);
         } catch (Exception e) {
             Log.e(TAG, "fault, cannot unmarshal MediaStreamConstraints:" + e.toString() + args.toString());
         }
         if (constraints == null) {
-            Log.e(TAG, "fault, setRemoteDescription no sdp data");
+            Log.e(TAG, "fault, getUserMedia no sdp data");
             callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ILLEGAL_ACCESS_EXCEPTION));
             return false;
         }
@@ -249,6 +262,7 @@ public class Hook extends CordovaPlugin {
         String id = args.getString(0);
 //        Log.d(TAG, args.toString());
 
+        Log.e(TAG, "log for createInstance object:" + wrapper.toString());
         RTCConfiguration cfg = null;
         if (args.length() > 1) {
             String json = args.get(1).toString();
@@ -260,28 +274,10 @@ public class Hook extends CordovaPlugin {
             Log.e(TAG, "Invalid RTCConfiguration config, using default");
             cfg = new RTCConfiguration();
         }
-        if (wrapper == null) {
-            URI uri = null;
-            try {
-                uri = new URI(cordova.getActivity().getString(R.string.internalws) + hook_id);
-            } catch (Exception e) {
-                Log.e(TAG, "Panic error, cannot parser internal communicate ws url:" + e.toString());
-
-                callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ILLEGAL_ACCESS_EXCEPTION));
-                return false;
-            }
-            wrapper = new Wrapper(uri, cordova, hook_id, webrtc_view_id);
-            try {
-                wrapper.connectBlocking();
-            } catch (Exception e) {
-                Log.e(TAG, "Panic error, cannot connect internal communicate ws server:" + e.toString());
-
-                callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ILLEGAL_ACCESS_EXCEPTION));
-                return false;
-            }
-        }
 
         wrapper.createInstance(id, callbackContext, cfg);
+
+//        Log.e(TAG, "log for wrapper object:" + wrapper.toString());
 
         PluginResult result = new PluginResult(OK);
         result.setKeepCallback(true);
@@ -304,6 +300,7 @@ public class Hook extends CordovaPlugin {
     }
 
     protected void getNecessaryPermission() {
+        Log.v(TAG, "getNecessaryPermission:");
         cordova.requestPermissions(this, Hook.NECESSARY_PERM_CODE,
                 new String[]{CAMERA,
                         INTERNET,
@@ -318,11 +315,10 @@ public class Hook extends CordovaPlugin {
         super.onRequestPermissionResult(requestCode, permissions, grantResults);
         for (int r : grantResults) {
             if (r == PackageManager.PERMISSION_DENIED) {
-                this._callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, PERMISSION_DENIED_ERROR));
+                Log.e(TAG, "Some permission has been denied");
                 return;
             }
         }
-        this.continueWithPermissions(this._action, this._args, this._callbackContext);
     }
 
 }

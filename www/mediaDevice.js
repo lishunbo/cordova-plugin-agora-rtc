@@ -69,12 +69,18 @@ class MediaDeviceInfo {
 
 var mediaDevice = {}
 
+// first class
 mediaDevice.getUserMedia = function (config) {
     return new Promise((resolve, reject) => {
         var args = {}
         if (config.video !== undefined) {
             if (typeof config.video === 'boolean') {
                 args.video = config.video.toString();
+            }
+        }
+        if (config.audio !== undefined) {
+            if (typeof config.audio === 'boolean') {
+                args.audio = config.video.toString();
             }
         }
 
@@ -88,11 +94,12 @@ mediaDevice.getUserMedia = function (config) {
             resolve(stream)
         }, function (ev) {
             console.log("Failed to create RTCPeerConnection object");
-        }, 'Hook', 'CreateInstance', [this.id, args]);
+        }, 'Hook', 'getUserMedia', [this.id, args]);
 
     })
 }
 
+// first class
 mediaDevice.enumerateDevices = function () {
     return new Promise((resolve, reject) => {
         resolve(new MediaDeviceInfo());
