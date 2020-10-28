@@ -21,10 +21,10 @@ public class MessageBus extends WebSocketServer {
     Map<String, List<WebSocket>> targets = new HashMap<>();
 
     public static class Message {
-        public String Target;
-        public String Object;
-        public com.agora.cordova.plugin.webrtc.Action Action;
-        public String Payload;
+        public String target;
+        public String object;
+        public com.agora.cordova.plugin.webrtc.Action action;
+        public String payload;
 
         public static Message formString(String json) {
             ObjectMapper mapper = new ObjectMapper();
@@ -84,12 +84,12 @@ public class MessageBus extends WebSocketServer {
     @Override
     public void onMessage(WebSocket conn, String message) {
         Message msg = Message.formString(message);
-        if (msg == null || msg.Target == null || msg.Target.equals("")) {
+        if (msg == null || msg.target == null || msg.target.equals("")) {
             Log.e(TAG, "Invalid message received:" + message);
             return;
         }
 
-        List<WebSocket> cs = targets.get(msg.Target);
+        List<WebSocket> cs = targets.get(msg.target);
         if (cs != null) {
             for (WebSocket c : cs) {
                 c.send(message);

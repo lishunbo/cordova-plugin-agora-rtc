@@ -14,16 +14,31 @@ import java.util.Map;
 public class MediaStreamConstraints {
     static final String TAG = MediaStreamConstraints.class.getCanonicalName();
 
-    Map<String, String> parameters;
+    public Map<String, String> parameters;
+
+    public MediaStreamConstraints() {
+        parameters = new HashMap<>();
+    }
 
     public MediaStreamConstraints(HashMap<String, String> pairs) {
         parameters = pairs;
     }
 
-    public String toString(){
+    public static MediaStreamConstraints fromJson(String json) {
         ObjectMapper mapper = new ObjectMapper();
         try {
-            return mapper.writeValueAsString(this.parameters);
+            return mapper.readValue(json, MediaStreamConstraints.class);
+        } catch (JsonProcessingException e) {
+//            System.out.println(e.toString());
+            Log.e(TAG, "++++++++++++++" + e.toString());
+        }
+        return null;
+    }
+
+    public String toString() {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            return mapper.writeValueAsString(this);
         } catch (JsonProcessingException e) {
             Log.e(TAG, e.toString());
         }

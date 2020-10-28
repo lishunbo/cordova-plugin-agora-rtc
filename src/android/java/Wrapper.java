@@ -1,6 +1,5 @@
 package com.agora.cordova.plugin.webrtc;
 
-import android.app.Activity;
 import android.util.Log;
 
 import com.agora.cordova.plugin.webrtc.models.MediaStreamConstraints;
@@ -10,12 +9,15 @@ import com.agora.cordova.plugin.webrtc.utils.MessageBus;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaInterface;
+import org.apache.cordova.PluginResult;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.apache.cordova.PluginResult.Status.OK;
 
 public class Wrapper extends WebSocketClient {
 
@@ -45,10 +47,10 @@ public class Wrapper extends WebSocketClient {
         this.instances.put(id + action, callbackContext);
 
         MessageBus.Message msg = new MessageBus.Message();
-        msg.Target = this.target;
-        msg.Object = id;
-        msg.Action = action;
-        msg.Payload = cfg.toString();
+        msg.target = this.target;
+        msg.object = id;
+        msg.action = action;
+        msg.payload = cfg.toString();
         send(msg.toString());
     }
 
@@ -58,9 +60,9 @@ public class Wrapper extends WebSocketClient {
         this.instances.put(id + action, callbackContext);
 
         MessageBus.Message msg = new MessageBus.Message();
-        msg.Target = this.target;
-        msg.Object = id;
-        msg.Action = action;
+        msg.target = this.target;
+        msg.object = id;
+        msg.action = action;
         send(msg.toString());
     }
 
@@ -70,23 +72,23 @@ public class Wrapper extends WebSocketClient {
         this.instances.put(id + action, callbackContext);
 
         MessageBus.Message msg = new MessageBus.Message();
-        msg.Target = this.target;
-        msg.Object = id;
-        msg.Action = action;
-        msg.Payload = sdp.toString();
+        msg.target = this.target;
+        msg.object = id;
+        msg.action = action;
+        msg.payload = sdp.toString();
         send(msg.toString());
     }
 
-    public void getUserMedia(String id, final  CallbackContext callbackContext, MediaStreamConstraints constraints){
+    public void getUserMedia(String id, final CallbackContext callbackContext, MediaStreamConstraints constraints) {
         Action action = Action.getUserMedia;
 
-        this.instances.put(id+action, callbackContext);
+        this.instances.put(id + action, callbackContext);
 
         MessageBus.Message msg = new MessageBus.Message();
-        msg.Target = this.target;
-        msg.Object = id;
-        msg.Action = action;
-        msg.Payload = constraints.toString();
+        msg.target = this.target;
+        msg.object = id;
+        msg.action = action;
+        msg.payload = constraints.toString();
         send(msg.toString());
     }
 
@@ -97,16 +99,35 @@ public class Wrapper extends WebSocketClient {
 
     @Override
     public void onMessage(String message) {
-        Log.e(TAG, "Wrapper onMessage:"+message);
+        Log.e(TAG, "Wrapper onMessage:" + message);
+        MessageBus.Message msg = MessageBus.Message.formString(message);
+        assert msg != null;
+        CallbackContext callbackContext = this.instances.get(msg.object + msg.action);
+        assert callbackContext != null;
+        switch (msg.action) {
+            case createInstance:
+                PluginResult result = new PluginResult(OK, msg.object);
+                result.setKeepCallback(true);
+                callbackContext.sendPluginResult(result);
+                break;
+            case getUserMedia:
+                callbackContext.success();
+//                PluginResult result = new PluginResult(OK);
+//                result.setKeepCallback(true);
+//                callbackContext.sendPluginResult(result);
+                break;
+            default:
+                Log.e(TAG, "unknown action message internal");
+        }
     }
 
     @Override
     public void onClose(int code, String reason, boolean remote) {
-        Log.e(TAG, "Wrapper onClose: "+reason);
+        Log.e(TAG, "Wrapper onClose: " + reason);
     }
 
     @Override
     public void onError(Exception ex) {
-        Log.e(TAG, "Wrapper onError: "+ex.toString());
+        Log.e(TAG, "Wrapper onError: " + ex.toString());
     }
 }

@@ -29,9 +29,7 @@ class RTCPeerConnection {
         }
 
         cordova.exec(function (ev) {
-            console.log("Got one android object with id: " + ev);
-            // pc.id = ev
-            // console.log("check this.id done:" + pc.id)
+            console.log("createInstance done id: " + ev);
         }, function (ev) {
             console.log("Failed to create RTCPeerConnection object");
         }, 'Hook', 'createInstance', [this.id, this.config]);

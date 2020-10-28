@@ -66,7 +66,9 @@
         <!-- interfaces -->
         <source-file src="src/android/java/interfaces/CredentialDetail.java" target-dir="src/com/agora/cordova/plugin/webrtc/interfaces"/>
         <!-- models -->
+        <source-file src="src/android/java/models/MediaStream.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
         <source-file src="src/android/java/models/MediaStreamConstraints.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
+        <source-file src="src/android/java/models/MediaStreamTrack.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
         <source-file src="src/android/java/models/RTCCertificate.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
         <source-file src="src/android/java/models/RTCConfiguration.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
         <source-file src="src/android/java/models/RTCIceServer.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>

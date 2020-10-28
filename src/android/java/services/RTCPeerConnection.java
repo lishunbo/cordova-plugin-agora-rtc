@@ -73,11 +73,11 @@ public class RTCPeerConnection {
         public void onMessage(String message) {
             Log.e(TAG, "onMessage:" + message);
             MessageBus.Message msg = MessageBus.Message.formString(message);
-            if (!msg.Target.equals(id.toString())) {
+            if (!msg.target.equals(id.toString())) {
                 Log.e(TAG, "invalid message has been received");
                 return;
             }
-            if (msg.Action.equals("offer")) {
+            if (msg.action.equals("offer")) {
 //                offer = msg.Payload;
 //                Log.e(TAG, "return offer to js:" + offer);
 ////                PluginResult pluginResult = new PluginResult(PluginResult.Status.OK);

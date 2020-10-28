@@ -2,13 +2,14 @@ package com.agora.cordova.plugin.webrtc;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.view.Window;
 
+import com.agora.cordova.plugin.webrtc.models.MediaStreamConstraints;
+import com.agora.cordova.plugin.webrtc.models.RTCConfiguration;
+import com.agora.cordova.plugin.webrtc.models.RTCPeerConnection;
 import com.agora.cordova.plugin.webrtc.services.PCFactory;
 import com.agora.cordova.plugin.webrtc.utils.MessageBus;
 import com.agora.demo.four.R;
@@ -18,30 +19,26 @@ import org.java_websocket.handshake.ServerHandshake;
 import org.webrtc.Camera1Enumerator;
 import org.webrtc.DataChannel;
 import org.webrtc.IceCandidate;
-import org.webrtc.MediaConstraints;
 import org.webrtc.MediaStream;
-import org.webrtc.PeerConnection;
 import org.webrtc.RtpReceiver;
 import org.webrtc.SdpObserver;
 import org.webrtc.SessionDescription;
-import org.webrtc.SurfaceTextureHelper;
 import org.webrtc.SurfaceViewRenderer;
 import org.webrtc.VideoCapturer;
-import org.webrtc.VideoSource;
-import org.webrtc.VideoTrack;
 
 import java.net.URI;
 import java.util.LinkedList;
 
-public class WebRTCViewActivity extends Activity {
+public class WebRTCViewActivity extends Activity implements RTCPeerConnection.PCViewer {
     private final static String TAG = WebRTCViewActivity.class.getCanonicalName();
 
     String webrtc_view_id;
     String hook_id;
 
-    private LinkedList<PeerConnection.IceServer> iceServers = new LinkedList<>();
+//    private LinkedList<PeerConnection.IceServer> iceServers = new LinkedList<>();
 
-    PeerConnection local;
+    RTCPeerConnection pc_local;
+    RTCPeerConnection pc_remote;
     SurfaceViewRenderer localView;
     MediaStream mediaStream;
 
@@ -143,111 +140,12 @@ public class WebRTCViewActivity extends Activity {
     public void onCallClicked(View view) {
     }
 
+    void createInstance(String id, RTCConfiguration cfg) {
+        pc_local = new RTCPeerConnection(this, hook_id, id, getString(R.string.internalws), cfg);
+    }
 
-    private class Peer implements SdpObserver, PeerConnection.Observer {
-        private PeerConnection pc;
-        private String id;
-        private int endPoint;
-        private String usage;
-
-        public Peer(String u) {
-            usage = u;
-        }
-
-        @Override
-        public void onSignalingChange(PeerConnection.SignalingState signalingState) {
-            Log.v(TAG, usage + " onSignalingChange " + signalingState.toString());
-        }
-
-        @Override
-        public void onIceConnectionChange(PeerConnection.IceConnectionState iceConnectionState) {
-            Log.v(TAG, usage + " onIceConnectionChange " + iceConnectionState.toString());
-
-        }
-
-        @Override
-        public void onIceConnectionReceivingChange(boolean b) {
-
-            Log.v(TAG, usage + " onIceConnectionReceivingChange ");
-        }
-
-        @Override
-        public void onIceGatheringChange(PeerConnection.IceGatheringState iceGatheringState) {
-
-            Log.v(TAG, usage + " onIceGatheringChange " + iceGatheringState.toString());
-            if (iceGatheringState.toString().equals("COMPLETE")) {
-                Log.v(TAG, usage + " onIceGatheringChange has completed");
-                SessionDescription sdp = local.getLocalDescription();
-                client.send(sdp.type.canonicalForm(), sdp.description);
-            }
-        }
-
-        @Override
-        public void onIceCandidate(IceCandidate iceCandidate) {
-
-            Log.v(TAG, usage + " onIceCandidate " + iceCandidate.toString());
-            Log.v(TAG, usage + " onIceCandidateSDP " + iceCandidate.sdp);
-//            client.send("candidate", iceCandidate.toString());
-        }
-
-        @Override
-        public void onIceCandidatesRemoved(IceCandidate[] iceCandidates) {
-
-            Log.v(TAG, usage + " onIceCandidatesRemoved ");
-        }
-
-        @Override
-        public void onAddStream(MediaStream mediaStream) {
-
-            Log.v(TAG, usage + " onAddStream ");
-        }
-
-        @Override
-        public void onRemoveStream(MediaStream mediaStream) {
-
-            Log.v(TAG, usage + " onRemoveStream ");
-        }
-
-        @Override
-        public void onDataChannel(DataChannel dataChannel) {
-
-            Log.v(TAG, usage + " onDataChannel ");
-        }
-
-        @Override
-        public void onRenegotiationNeeded() {
-
-            Log.v(TAG, usage + " onRenegotiationNeeded ");
-        }
-
-        @Override
-        public void onAddTrack(RtpReceiver rtpReceiver, MediaStream[] mediaStreams) {
-
-        }
-
-        @Override
-        public void onCreateSuccess(SessionDescription sessionDescription) {
-
-            Log.v(TAG, usage + " onCreateSuccess" + sessionDescription.description.toString());
-        }
-
-        @Override
-        public void onSetSuccess() {
-
-            Log.v(TAG, usage + " onSetSuccess");
-        }
-
-        @Override
-        public void onCreateFailure(String s) {
-
-            Log.v(TAG, usage + " onCreateFailure" + s.toString());
-        }
-
-        @Override
-        public void onSetFailure(String s) {
-
-            Log.v(TAG, usage + " onSetFailure" + s.toString());
-        }
+    void getUserMedia(MediaStreamConstraints constraints){
+        client.getUserMediaResp();
     }
 
     private class MessageBusClient extends WebSocketClient {
@@ -266,11 +164,18 @@ public class WebRTCViewActivity extends Activity {
 
             Log.e(TAG, "onMessage:" + message);
             MessageBus.Message msg = MessageBus.Message.formString(message);
-            Log.e(TAG, "onMessage 2:" + msg.Target + msg.Action);
-            if (msg.Action.equals("answer")) {
-                Log.v(TAG, "onMessage have answer:" + msg.Payload);
-                local.setRemoteDescription(new Peer("setoffer"), new SessionDescription(SessionDescription.Type.ANSWER, msg.Payload));
+            assert msg != null;
+            switch (msg.action) {
+                case createInstance:
+                    createInstance(msg.object, RTCConfiguration.fromJson(msg.payload));
+                    break;
+                case getUserMedia:
+                    getUserMedia(MediaStreamConstraints.fromJson(msg.payload));
+                    break;
+                default:
+                    Log.e(TAG, "onMessage not implement action:" + msg.action);
             }
+
         }
 
         @Override
@@ -283,12 +188,119 @@ public class WebRTCViewActivity extends Activity {
             Log.e(TAG, "not implement onError" + ex.toString());
         }
 
-        public void send(String type, String payload) {
+        void getUserMediaResp(){
             MessageBus.Message msg = new MessageBus.Message();
-            msg.Target = hook_id;
-            msg.Action = Action.valueOf(type);
-            msg.Payload = payload;
+            msg.target = hook_id;
+            msg.action = Action.getUserMedia;
+            msg.payload = "{}";
             send(msg.toString());
         }
     }
+
+//    private class Peer implements SdpObserver, PeerConnection.Observer {
+//        private PeerConnection pc;
+//        private String id;
+//        private int endPoint;
+//        private String usage;
+//
+//        public Peer(String u) {
+//            usage = u;
+//        }
+//
+//        @Override
+//        public void onSignalingChange(PeerConnection.SignalingState signalingState) {
+//            Log.v(TAG, usage + " onSignalingChange " + signalingState.toString());
+//        }
+//
+//        @Override
+//        public void onIceConnectionChange(PeerConnection.IceConnectionState iceConnectionState) {
+//            Log.v(TAG, usage + " onIceConnectionChange " + iceConnectionState.toString());
+//
+//        }
+//
+//        @Override
+//        public void onIceConnectionReceivingChange(boolean b) {
+//
+//            Log.v(TAG, usage + " onIceConnectionReceivingChange ");
+//        }
+//
+//        @Override
+//        public void onIceGatheringChange(PeerConnection.IceGatheringState iceGatheringState) {
+//
+//            Log.v(TAG, usage + " onIceGatheringChange " + iceGatheringState.toString());
+//            if (iceGatheringState.toString().equals("COMPLETE")) {
+//                Log.v(TAG, usage + " onIceGatheringChange has completed");
+////                SessionDescription sdp = local.getLocalDescription();
+////                client.send(sdp.type.canonicalForm(), sdp.description);
+//            }
+//        }
+//
+//        @Override
+//        public void onIceCandidate(IceCandidate iceCandidate) {
+//
+//            Log.v(TAG, usage + " onIceCandidate " + iceCandidate.toString());
+//            Log.v(TAG, usage + " onIceCandidateSDP " + iceCandidate.sdp);
+////            client.send("candidate", iceCandidate.toString());
+//        }
+//
+//        @Override
+//        public void onIceCandidatesRemoved(IceCandidate[] iceCandidates) {
+//
+//            Log.v(TAG, usage + " onIceCandidatesRemoved ");
+//        }
+//
+//        @Override
+//        public void onAddStream(MediaStream mediaStream) {
+//
+//            Log.v(TAG, usage + " onAddStream ");
+//        }
+//
+//        @Override
+//        public void onRemoveStream(MediaStream mediaStream) {
+//
+//            Log.v(TAG, usage + " onRemoveStream ");
+//        }
+//
+//        @Override
+//        public void onDataChannel(DataChannel dataChannel) {
+//
+//            Log.v(TAG, usage + " onDataChannel ");
+//        }
+//
+//        @Override
+//        public void onRenegotiationNeeded() {
+//
+//            Log.v(TAG, usage + " onRenegotiationNeeded ");
+//        }
+//
+//        @Override
+//        public void onAddTrack(RtpReceiver rtpReceiver, MediaStream[] mediaStreams) {
+//
+//        }
+//
+//        @Override
+//        public void onCreateSuccess(SessionDescription sessionDescription) {
+//
+//            Log.v(TAG, usage + " onCreateSuccess" + sessionDescription.description.toString());
+//        }
+//
+//        @Override
+//        public void onSetSuccess() {
+//
+//            Log.v(TAG, usage + " onSetSuccess");
+//        }
+//
+//        @Override
+//        public void onCreateFailure(String s) {
+//
+//            Log.v(TAG, usage + " onCreateFailure" + s.toString());
+//        }
+//
+//        @Override
+//        public void onSetFailure(String s) {
+//
+//            Log.v(TAG, usage + " onSetFailure" + s.toString());
+//        }
+//    }
+
 }
