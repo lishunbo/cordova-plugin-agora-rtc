@@ -1,6 +1,7 @@
 package com.agora.cordova.plugin.webrtc;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -18,8 +19,11 @@ import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.webrtc.Camera1Enumerator;
 import org.webrtc.MediaStream;
+import org.webrtc.SurfaceTextureHelper;
 import org.webrtc.SurfaceViewRenderer;
 import org.webrtc.VideoCapturer;
+import org.webrtc.VideoSink;
+import org.webrtc.VideoSource;
 
 import java.net.URI;
 
@@ -61,6 +65,9 @@ public class WebRTCViewActivity extends Activity implements RTCPeerConnection.PC
         PCFactory.initializationOnce(getApplicationContext());
 
 
+        localView = findViewById(R.id.local_view);
+        localView.setMirror(true);
+        localView.init(PCFactory.eglBase(), null);
 //        SurfaceTextureHelper surfaceTextureHelper = SurfaceTextureHelper.create("CaptureThread", PCFactory.eglBase());
 //        // create VideoCapturer
 //        VideoCapturer videoCapturer = createCameraCapturer(true);
@@ -115,7 +122,6 @@ public class WebRTCViewActivity extends Activity implements RTCPeerConnection.PC
             Log.v(TAG, "camera names" + deviceName);
             if (isFront ? enumerator.isFrontFacing(deviceName) : enumerator.isBackFacing(deviceName)) {
                 VideoCapturer videoCapturer = enumerator.createCapturer(deviceName, null);
-
                 if (videoCapturer != null) {
                     return videoCapturer;
                 }
@@ -138,14 +144,24 @@ public class WebRTCViewActivity extends Activity implements RTCPeerConnection.PC
         pc_local = new RTCPeerConnection(this, hook_id, id, getString(R.string.internalws), cfg);
     }
 
-    void getUserMedia(MediaStreamConstraints constraints){
+    void getUserMedia(MediaStreamConstraints constraints) {
         client.getUserMediaResp();
     }
 
-//    @Override
-//    public PeerConnection createPeerConnection(LinkedList<PeerConnection.IceServer> iceServers, RTCPeerConnection.Observer observer) {
-//        return ;
-//    }
+    @Override
+    public VideoSink getLocalViewer() {
+        return localView;
+    }
+
+    @Override
+    public VideoCapturer getVideoCapturer() {
+        return createCameraCapturer(true);
+    }
+
+    @Override
+    public Context getAppContext() {
+        return getApplicationContext();
+    }
 
     private class MessageBusClient extends WebSocketClient {
         MessageBusClient(URI uri) {
@@ -187,7 +203,7 @@ public class WebRTCViewActivity extends Activity implements RTCPeerConnection.PC
             Log.e(TAG, "not implement onError" + ex.toString());
         }
 
-        void getUserMediaResp(){
+        void getUserMediaResp() {
             MessageBus.Message msg = new MessageBus.Message();
             msg.target = hook_id;
             msg.action = Action.getUserMedia;

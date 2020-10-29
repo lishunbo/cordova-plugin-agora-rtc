@@ -23,6 +23,7 @@ import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -221,15 +222,10 @@ public class Hook extends CordovaPlugin {
 
     private boolean setLocalDescription(JSONArray args, CallbackContext callbackContext) throws JSONException {
         String id = args.getString(0);
-
-        wrapper.setLocalDescription(id, callbackContext);
-        return true;
-    }
-
-    private boolean ad(JSONArray args, CallbackContext callbackContext) throws JSONException {
-        String id = args.getString(0);
-
-        wrapper.setLocalDescription(id, callbackContext);
+        JSONObject sdp = new JSONObject();
+        sdp.put("type", args.getString(1));
+        sdp.put("description", args.getString(2));
+        wrapper.setLocalDescription(id, sdp.toString(), callbackContext);
         return true;
     }
 
@@ -279,10 +275,10 @@ public class Hook extends CordovaPlugin {
 
     boolean setRemoteDescription(JSONArray args, final CallbackContext callbackContext) throws JSONException {
         String id = args.getString(0);
-        SessionDescription sdp = null;
+        JSONObject sdp = new JSONObject();
         try {
-            String json = args.get(1).toString();
-            sdp = SessionDescription.fromJson(json);
+            sdp.put("type", args.getString(1));
+            sdp.put("description", args.getString(2));
         } catch (Exception e) {
             Log.e(TAG, "fault, cannot unmarshal SessionDescription:" + e.toString() + args.toString());
         }
@@ -291,7 +287,7 @@ public class Hook extends CordovaPlugin {
             callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ILLEGAL_ACCESS_EXCEPTION));
             return false;
         }
-        wrapper.setRemoteDescription(id, callbackContext, sdp);
+        wrapper.setRemoteDescription(id, callbackContext, sdp.toString());
 
         PluginResult result = new PluginResult(NO_RESULT);
         result.setKeepCallback(true);
@@ -303,7 +299,8 @@ public class Hook extends CordovaPlugin {
 
     private boolean addIceCandidate(JSONArray args, final CallbackContext callbackContext) throws JSONException {
         String id = args.getString(0);
-        wrapper.addIceCandidate(id, callbackContext);
+
+        wrapper.addIceCandidate(id, args.getJSONObject(1).toString(), callbackContext);
 
         PluginResult result = new PluginResult(NO_RESULT);
         result.setKeepCallback(true);

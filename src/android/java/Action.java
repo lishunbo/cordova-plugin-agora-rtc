@@ -12,7 +12,8 @@ public enum Action {
     addTransceiver("addTransceiver"),
     addTrack("addTrack"),
     getStats("getStats"),
-    getUserMedia("getUserMedia");
+    getUserMedia("getUserMedia"),
+    onIceCandidate("onIceCandidate");
 
     private String name;
 

@@ -1,20 +1,31 @@
 package com.agora.cordova.plugin.webrtc.services;
 
+import android.content.Context;
 import android.util.Log;
 
 import com.agora.cordova.plugin.webrtc.Action;
 import com.agora.cordova.plugin.webrtc.models.RTCConfiguration;
 import com.agora.cordova.plugin.webrtc.utils.MessageBus;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.webrtc.DataChannel;
 import org.webrtc.IceCandidate;
+import org.webrtc.MediaConstraints;
 import org.webrtc.MediaStream;
 import org.webrtc.PeerConnection;
 import org.webrtc.RtpReceiver;
 import org.webrtc.SdpObserver;
 import org.webrtc.SessionDescription;
+import org.webrtc.SurfaceTextureHelper;
+import org.webrtc.VideoCapturer;
+import org.webrtc.VideoSink;
+import org.webrtc.VideoSource;
+import org.webrtc.VideoTrack;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -34,7 +45,12 @@ public class RTCPeerConnection {
 
 
     public interface PCViewer {
-//        PeerConnection createPeerConnection(LinkedList<PeerConnection.IceServer> iceServers, Observer observer);
+        //        PeerConnection createPeerConnection(LinkedList<PeerConnection.IceServer> iceServers, Observer observer);
+        Context getAppContext();
+
+        VideoSink getLocalViewer();
+
+        VideoCapturer getVideoCapturer();
     }
 
     public RTCPeerConnection(PCViewer pcviewer, String hook_id, String id, String internalws, RTCConfiguration config) {
@@ -66,22 +82,83 @@ public class RTCPeerConnection {
     }
 
     void addTrack() {
+        VideoCapturer videoCapturer = pcViewer.getVideoCapturer();
+        if (videoCapturer == null) {
+            client.addTrackResp();
+            return;
+        }
+        SurfaceTextureHelper surfaceTextureHelper = SurfaceTextureHelper.create("CaptureThread", PCFactory.eglBase());
+        VideoSource videoSource = PCFactory.factory().createVideoSource(videoCapturer.isScreencast());
+
+        videoCapturer.initialize(surfaceTextureHelper, pcViewer.getAppContext(), videoSource.getCapturerObserver());
+        videoCapturer.startCapture(810, 1080, 20);
+
+        // create VideoTrack
+        VideoTrack videoTrack = PCFactory.factory().createVideoTrack("100", videoSource);
+        // display in localView
+        videoTrack.addSink(pcViewer.getLocalViewer());
+        MediaStream mediaStream = PCFactory.factory().createLocalMediaStream("localMediaStream");
+        mediaStream.addTrack(videoTrack);
+
+        peerConnection.addStream(mediaStream);
         client.addTrackResp();
     }
 
     void createOffer() {
-        client.createOfferResp();
+        peerConnection.createOffer(new Observer("createOffer:" + id) {
+            @Override
+            public void onCreateSuccess(SessionDescription sessionDescription) {
+                String offer = "";
+                try {
+                    JSONObject sdp = new JSONObject();
+                    sdp.put("type", "offer");
+                    sdp.put("sdp", sessionDescription.description);
+                    offer = sdp.toString();
+                } catch (JSONException e) {
+                    Log.e(TAG, "CreateOffer success buf to json string failed:" + e.toString());
+                } finally {
+                    client.createOfferResp(offer);
+                }
+
+            }
+        }, new MediaConstraints());
     }
 
-    void setLocalDescription() {
+    void setLocalDescription(String sdp) {
+        try {
+            JSONObject obj = new JSONObject(sdp);
+            peerConnection.setLocalDescription(new Observer("setLocalDescription:" + id) {
+            }, new SessionDescription(SessionDescription.Type.fromCanonicalForm(obj.getString("type")), obj.getString("description")));
+        } catch (Exception e) {
+            Log.e(TAG, "setLocalDescription exception:" + e.toString());
+        }
         client.setLocalDescriptionResp();
     }
 
-    void setRemoteDescription() {
+    void setRemoteDescription(String answer) {
+        Log.e(TAG, "Debug....addIceCandidate:" + answer);
+        try {
+            JSONObject obj = new JSONObject(answer);
+            Log.e(TAG, "Debug....type:" + obj.getString("type"));
+            Log.e(TAG, "Debug....sdp:" + obj.getString("description"));
+            peerConnection.setRemoteDescription(new Observer("setRemoteDescription:" + id), new SessionDescription(SessionDescription.Type.fromCanonicalForm(obj.getString("type")), obj.getString("description")));
+        } catch (Exception e) {
+            Log.e(TAG, "setLocalDescription exception:" + e.toString());
+        }
         client.setRemoteDescriptionResp();
     }
 
-    void addIceCandidate() {
+    void addIceCandidate(String candidate) {
+        try {
+            JSONObject obj = new JSONObject(candidate);
+            Log.e(TAG, "Debug....addIceCandidate:" + candidate);
+            Log.e(TAG, "Debug....sdpMid:" + obj.getString("sdpMid"));
+            Log.e(TAG, "Debug....sdpMLineIndex:" + obj.getInt("sdpMLineIndex"));
+            Log.e(TAG, "Debug....candidate:" + obj.getString("candidate"));
+            peerConnection.addIceCandidate(new IceCandidate(obj.getString("sdpMid"), obj.getInt("sdpMLineIndex"), obj.getString("candidate")));
+        } catch (Exception e) {
+            Log.e(TAG, "setLocalDescription exception:" + e.toString());
+        }
         client.addIceCandidateResp();
     }
 
@@ -124,13 +201,13 @@ public class RTCPeerConnection {
                     createOffer();
                     break;
                 case setLocalDescription:
-                    setLocalDescription();
+                    setLocalDescription(msg.payload);
                     break;
                 case setRemoteDescription:
-                    setRemoteDescription();
+                    setRemoteDescription(msg.payload);
                     break;
                 case addIceCandidate:
-                    addIceCandidate();
+                    addIceCandidate(msg.payload);
                     break;
                 default:
                     Log.e(TAG, "onMessage not implement action:" + message);
@@ -144,6 +221,7 @@ public class RTCPeerConnection {
             msg.action = Action.createInstance;
 //            msg.payload = "{}";
             send(msg.toString());
+            Log.d(TAG, "Debug.................. createInstanceResp");
         }
 
 
@@ -156,12 +234,12 @@ public class RTCPeerConnection {
             send(msg.toString());
         }
 
-        public void createOfferResp() {
+        public void createOfferResp(String offer) {
             MessageBus.Message msg = new MessageBus.Message();
             msg.target = hook_id;
             msg.object = id;
             msg.action = Action.createOffer;
-//            msg.payload = "{}";
+            msg.payload = offer;
             send(msg.toString());
         }
 
@@ -191,9 +269,18 @@ public class RTCPeerConnection {
 //            msg.payload = "{}";
             send(msg.toString());
         }
+
+        public void onIceCandidate(String candidate) {
+            MessageBus.Message msg = new MessageBus.Message();
+            msg.target = hook_id;
+            msg.object = id;
+            msg.action = Action.onIceCandidate;
+            msg.payload = candidate;
+            send(msg.toString());
+        }
     }
 
-    public static class Observer implements SdpObserver, PeerConnection.Observer {
+    public class Observer implements SdpObserver, PeerConnection.Observer {
         private PeerConnection pc;
         private String id;
         private int endPoint;
@@ -236,7 +323,15 @@ public class RTCPeerConnection {
 
             Log.v(TAG, usage + " onIceCandidate " + iceCandidate.toString());
             Log.v(TAG, usage + " onIceCandidateSDP " + iceCandidate.sdp);
-//            client.send("candidate", iceCandidate.toString());
+            JSONObject obj = new JSONObject();
+            try {
+                obj.put("sdpMid", iceCandidate.sdpMid);
+                obj.put("sdpMLineIndex", iceCandidate.sdpMLineIndex);
+                obj.put("candidate", iceCandidate.sdp);
+            } catch (Exception e) {
+                Log.e(TAG, e.toString());
+            }
+            client.onIceCandidate(obj.toString());
         }
 
         @Override

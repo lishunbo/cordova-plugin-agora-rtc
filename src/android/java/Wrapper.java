@@ -1,5 +1,6 @@
 package com.agora.cordova.plugin.webrtc;
 
+import android.util.JsonReader;
 import android.util.Log;
 
 import com.agora.cordova.plugin.webrtc.models.MediaStreamConstraints;
@@ -12,6 +13,7 @@ import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.PluginResult;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
+import org.json.JSONObject;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -46,6 +48,7 @@ public class Wrapper extends WebSocketClient {
         Action action = Action.createInstance;
 
         this.instances.put(id + action, callbackContext);
+        this.instances.put(id, callbackContext);
 
         MessageBus.Message msg = new MessageBus.Message();
         msg.target = this.target;
@@ -97,7 +100,7 @@ public class Wrapper extends WebSocketClient {
     }
 
     //to PeerConnection
-    public void setLocalDescription(String id, CallbackContext callbackContext) {
+    public void setLocalDescription(String id, String sdp, CallbackContext callbackContext) {
         Action action = Action.setLocalDescription;
 
         this.instances.put(id + action, callbackContext);
@@ -106,12 +109,12 @@ public class Wrapper extends WebSocketClient {
         msg.target = id;
         msg.object = id;
         msg.action = action;
-//        msg.payload = constraints.toString();
+        msg.payload = sdp;
         send(msg.toString());
     }
 
     //to PeerConnection
-    public void setRemoteDescription(String id, final CallbackContext callbackContext, SessionDescription sdp) {
+    public void setRemoteDescription(String id, final CallbackContext callbackContext, String sdp) {
         Action action = Action.setRemoteDescription;
 
         this.instances.put(id + action, callbackContext);
@@ -120,12 +123,12 @@ public class Wrapper extends WebSocketClient {
         msg.target = id;
         msg.object = id;
         msg.action = action;
-        msg.payload = sdp.toString();
+        msg.payload = sdp;
         send(msg.toString());
     }
 
     //to PeerConnection
-    public void addIceCandidate(String id, CallbackContext callbackContext) {
+    public void addIceCandidate(String id, String candidata, CallbackContext callbackContext) {
         Action action = Action.addIceCandidate;
 
         this.instances.put(id + action, callbackContext);
@@ -134,7 +137,7 @@ public class Wrapper extends WebSocketClient {
         msg.target = id;
         msg.object = id;
         msg.action = action;
-//        msg.payload = constraints.toString();
+        msg.payload = candidata;
         send(msg.toString());
     }
 
@@ -149,13 +152,18 @@ public class Wrapper extends WebSocketClient {
         MessageBus.Message msg = MessageBus.Message.formString(message);
         assert msg != null;
         CallbackContext callbackContext = this.instances.get(msg.object + msg.action);
+        this.instances.remove(msg.object + msg.action);
+        if (msg.action == Action.onIceCandidate) {
+            callbackContext = this.instances.get(msg.object);
+        }
         assert callbackContext != null;
         switch (msg.action) {
-            case createInstance:
+            case createInstance: {
                 PluginResult result = new PluginResult(OK, msg.object);
                 result.setKeepCallback(true);
                 callbackContext.sendPluginResult(result);
                 break;
+            }
             case getUserMedia:
                 callbackContext.success();
 //                PluginResult result = new PluginResult(OK);
@@ -169,17 +177,33 @@ public class Wrapper extends WebSocketClient {
 //                callbackContext.sendPluginResult(result);
                 break;
             case createOffer:
-                callbackContext.success();
+                callbackContext.success(msg.payload);
 //                PluginResult result = new PluginResult(OK);
 //                result.setKeepCallback(true);
 //                callbackContext.sendPluginResult(result);
                 break;
             case setLocalDescription:
+            case addIceCandidate:
                 callbackContext.success();
 //                PluginResult result = new PluginResult(OK);
 //                result.setKeepCallback(true);
 //                callbackContext.sendPluginResult(result);
                 break;
+
+            case onIceCandidate: {
+                JSONObject obj = new JSONObject();
+                try {
+                    obj.put("event", msg.action.toString());
+                    obj.put("id", msg.object);
+                    obj.put("payload", msg.payload);
+                } catch (Exception e) {
+                    Log.e(TAG, "event exception:" + msg.action);
+                }
+                PluginResult result = new PluginResult(OK, obj);
+                result.setKeepCallback(true);
+                callbackContext.sendPluginResult(result);
+                break;
+            }
             default:
                 Log.e(TAG, "unknown action message internal");
         }

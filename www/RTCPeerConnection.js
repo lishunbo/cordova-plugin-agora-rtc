@@ -10,6 +10,10 @@ function uuidv4() {
 }
 
 
+const EventType = {
+    onIceCandidate: "onIceCandidate",
+}
+
 class RTCPeerConnection {
     constructor(config) {
         this.id = uuidv4();
@@ -28,11 +32,31 @@ class RTCPeerConnection {
             console.log("RTCPeerConnection.run with " + params);
         }
 
+        this.eventHandler = function (ev) {
+            console.log("createInstance done id: " + JSON.stringify(ev));
+            // console.log("createInstance done id: " + ev.event);
+            // console.log("createInstance done id: " + ev.payload);
+            // console.log("createInstance done id: " + ev.id);
+            // console.log("createInstance done id: " + this.id);
+            // console.log("createInstance done id: " + this.onicecandidate);
+            switch (ev.event) {
+                case EventType.onIceCandidate:
+                    console.log("got event " + EventType.onIceCandidate);
+                    if (this.onicecandidate != null) {
+                        // this.onicecandidate(new RTCPeerConnectionIceEvent("icecandidate", { candidate: JSON.parse(ev.payload)}));
+                        this.onicecandidate({type:"icecandidate",candidate:JSON.parse(ev.payload)});
+                    } else {
+                        console.log("not found RTCPeerConnection.onicecandidate function");
+                    }
+            }
+        }
+        var self = this;
         cordova.exec(function (ev) {
-            console.log("createInstance done id: " + ev);
-        }, function (ev) {
-            console.log("Failed to create RTCPeerConnection object");
-        }, 'Hook', 'createInstance', [this.id, this.config]);
+            self.eventHandler(ev);
+        },
+            function (ev) {
+                console.log("Failed to create RTCPeerConnection object");
+            }, 'Hook', 'createInstance', [this.id, this.config]);
 
     }
 
@@ -44,22 +68,11 @@ class RTCPeerConnection {
                 console.log("Got one offer: " + ev);
                 // pc.id = ev
                 // console.log("check this.id done:" + pc.id)
-                resolve(ev)
+                resolve(JSON.parse(ev))
             }, function (ev) {
                 console.log("Failed to create offer");
                 reject("failed to create offer");
             }, 'Hook', 'createOffer', [this.id]);
-        })
-    }
-
-    //first class
-    setRemoteDescription(answer) {
-        return new Promise((resolve, reject) => {
-            cordova.exec(function (ev) {
-                resolve(ev);
-            }, function (ev) {
-                reject(ev);
-            }, 'Hook', 'setRemoteDescription', [this.id, answer.type, answer.sdp]);
         })
     }
 
@@ -71,6 +84,17 @@ class RTCPeerConnection {
             }, function (ev) {
                 reject(ev);
             }, 'Hook', 'setLocalDescription', [this.id, offer.type, offer.sdp]);
+        })
+    }
+
+    //first class
+    setRemoteDescription(answer) {
+        return new Promise((resolve, reject) => {
+            cordova.exec(function (ev) {
+                resolve(ev);
+            }, function (ev) {
+                reject(ev);
+            }, 'Hook', 'setRemoteDescription', [this.id, answer.type, answer.sdp]);
         })
     }
 
