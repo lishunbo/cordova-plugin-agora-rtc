@@ -6,16 +6,6 @@
     android:orientation="vertical">
 
     <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
-        <org.webrtc.SurfaceViewRenderer
-            android:id="@+id/local_view"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
-    </FrameLayout>
-
-    <FrameLayout
         android:id="@+id/local_video_view_container"
         android:layout_width="112dp"
         android:layout_height="150dp"
@@ -28,9 +18,20 @@
 
         <org.webrtc.SurfaceViewRenderer
             android:id="@+id/remote_view"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="#827b92" />
+            android:elevation="1dp"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            />
+    </FrameLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <org.webrtc.SurfaceViewRenderer
+            android:id="@+id/local_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
     </FrameLayout>
 
     <RelativeLayout

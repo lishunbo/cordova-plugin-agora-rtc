@@ -38,6 +38,7 @@ public class WebRTCViewActivity extends Activity implements RTCPeerConnection.PC
     RTCPeerConnection pc_local;
     RTCPeerConnection pc_remote;
     SurfaceViewRenderer localView;
+    SurfaceViewRenderer remoteView;
     MediaStream mediaStream;
 
     MessageBusClient client;
@@ -68,6 +69,10 @@ public class WebRTCViewActivity extends Activity implements RTCPeerConnection.PC
         localView = findViewById(R.id.local_view);
         localView.setMirror(true);
         localView.init(PCFactory.eglBase(), null);
+
+        remoteView = findViewById(R.id.remote_view);
+        remoteView.setMirror(false);
+        remoteView.init(PCFactory.eglBase(), null);
 //        SurfaceTextureHelper surfaceTextureHelper = SurfaceTextureHelper.create("CaptureThread", PCFactory.eglBase());
 //        // create VideoCapturer
 //        VideoCapturer videoCapturer = createCameraCapturer(true);
@@ -153,6 +158,10 @@ public class WebRTCViewActivity extends Activity implements RTCPeerConnection.PC
         return localView;
     }
 
+    @Override
+    public VideoSink getRemoteViewer() {
+        return remoteView;
+    }
     @Override
     public VideoCapturer getVideoCapturer() {
         return createCameraCapturer(true);

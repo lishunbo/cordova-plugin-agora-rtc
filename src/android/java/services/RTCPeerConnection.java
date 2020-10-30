@@ -50,6 +50,8 @@ public class RTCPeerConnection {
 
         VideoSink getLocalViewer();
 
+        VideoSink getRemoteViewer();
+
         VideoCapturer getVideoCapturer();
     }
 
@@ -105,6 +107,10 @@ public class RTCPeerConnection {
     }
 
     void createOffer() {
+        MediaConstraints mediaConstraints = new MediaConstraints();
+        mediaConstraints.mandatory.add(new MediaConstraints.KeyValuePair("OfferToReceiveAudio", "true"));
+        mediaConstraints.mandatory.add(new MediaConstraints.KeyValuePair("OfferToReceiveVideo", "true"));
+        mediaConstraints.optional.add(new MediaConstraints.KeyValuePair("DtlsSrtpKeyAgreement", "true"));
         peerConnection.createOffer(new Observer("createOffer:" + id) {
             @Override
             public void onCreateSuccess(SessionDescription sessionDescription) {
@@ -119,9 +125,8 @@ public class RTCPeerConnection {
                 } finally {
                     client.createOfferResp(offer);
                 }
-
             }
-        }, new MediaConstraints());
+        }, mediaConstraints);
     }
 
     void setLocalDescription(String sdp) {
@@ -136,7 +141,7 @@ public class RTCPeerConnection {
     }
 
     void setRemoteDescription(String answer) {
-        Log.e(TAG, "Debug....addIceCandidate:" + answer);
+        Log.e(TAG, "Debug....setRemoteDescription:" + answer);
         try {
             JSONObject obj = new JSONObject(answer);
             Log.e(TAG, "Debug....type:" + obj.getString("type"));
@@ -343,7 +348,12 @@ public class RTCPeerConnection {
         @Override
         public void onAddStream(MediaStream mediaStream) {
 
-            Log.v(TAG, usage + " onAddStream ");
+            Log.v(TAG, usage + " onAddStream " + mediaStream.videoTracks.size());
+            for (VideoTrack track :
+                    mediaStream.videoTracks) {
+                Log.v(TAG, usage + " onAddVideoTrack to remote Viewer " + track.toString());
+                track.addSink(pcViewer.getRemoteViewer());
+            }
         }
 
         @Override
