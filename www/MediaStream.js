@@ -1,10 +1,16 @@
 
+var { uuidv4 } = require('./util');
+
+
 class MediaStream {
 
     constructor() {
-        this.active = false;
-        this.id = "";
+        this.active = true;
+        this.id = uuidv4();
+        console.log("new MediaStreamTrack:" + this.id);
 
+        this.onactive = null;
+        this.oninactive = null;
         this.onaddtrack = null;
         this.onremovetrack = null;
 
@@ -14,10 +20,37 @@ class MediaStream {
     addTrack(track) { this.track.push(track); }
     clone() { return new MediaStream() }
 
-    getAudioTracks() { }
-    getTrackById(trackId) { }
+    getAudioTracks() {
+        var audioTrack = [];
+
+        this.track.forEach(track => {
+            if (track.kind == "audio") {
+                audioTrack.push(track)
+            }
+        })
+
+        return audioTrack;
+    }
+    getTrackById(trackId) {
+        this.track.forEach(track => {
+            if (track.id == trackId) {
+                return track;
+            }
+        })
+        return null;
+    }
     getTracks() { return this.track; }
-    getVideoTracks() { }
+    getVideoTracks() {
+        var videoTrack = [];
+
+        this.track.forEach(track => {
+            if (track.kind == "video") {
+                videoTrack.push(track)
+            }
+        })
+
+        return videoTrack;
+    }
     removeTrack() { }
     //addEventListener
     //removeEventListener
@@ -26,6 +59,17 @@ class MediaStream {
 class MediaStreamTrack {
     constructor() {
         console.log("new MediaStreamTrack");
+        this.contentHint = "";
+        this.enabled = true;
+        this.id = uuidv4();
+        this.kind = "";
+        this.label = "";
+        this.muted = false;
+
+        this.onended = null;
+        this.onmute = null;
+        this.onunmute = null;
+        this.readyState = "live";
         // this.enabled = false;
         // this.id = "";
         // this.isolated = false;
@@ -53,27 +97,26 @@ class MediaStreamTrack {
 cordova.addConstructor(function () {
     window.MediaStream = MediaStream;
     window.MediaStreamTrack = MediaStreamTrack;
-    window.MediaDeviceInfo=MediaDeviceInfo;
     return window.MediaStreamTrack;
 });
 
-class MediaDeviceInfo {
-    constructor() {
-        this.deviceId = "";
-        this.groupId = "";
-        this.Kind = Media.audioinput;
-        this.label = "";
-    }
-    toJson() {
-        return JSON.stringify(this);
-    }
-}
-
-// /**
-//  * @module Stream
-//  */
-// module.exports = {
-//     // MediaStream,
-//     // MediaStreamTrack,
-//     MediaDeviceInfo,
+// class MediaDeviceInfo {
+//     constructor() {
+//         this.deviceId = "";
+//         this.groupId = "";
+//         this.Kind = Media.audioinput;
+//         this.label = "";
+//     }
+//     toJson() {
+//         return JSON.stringify(this);
+//     }
 // }
+
+/**
+ * @module Stream
+ */
+module.exports = {
+    MediaStream,
+    MediaStreamTrack,
+    // MediaDeviceInfo,
+}

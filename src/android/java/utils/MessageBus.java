@@ -19,6 +19,7 @@ public class MessageBus extends WebSocketServer {
     static final String TAG = MessageBus.class.getCanonicalName();
 
     Map<String, List<WebSocket>> targets = new HashMap<>();
+    List<Message> cache = new LinkedList<>();
 
     public static class Message {
         public String target;
@@ -64,6 +65,19 @@ public class MessageBus extends WebSocketServer {
         }
         t.add(conn);
         targets.put(id, t);
+
+        for (Message msg :
+                cache) {
+
+            List<WebSocket> cs = targets.get(msg.target);
+            if (cs != null) {
+                for (WebSocket c : cs) {
+                    c.send(msg.toString());
+                }
+            } else {
+                Log.e(TAG, "Error not found message consumer: still caching"+msg.toString() );
+            }
+        }
     }
 
     @Override
@@ -95,7 +109,8 @@ public class MessageBus extends WebSocketServer {
                 c.send(message);
             }
         } else {
-            Log.e(TAG, "Error not found message consumer:" + message);
+            Log.e(TAG, "Error not found message consumer: caching" + message);
+            cache.add(msg);
         }
     }
 

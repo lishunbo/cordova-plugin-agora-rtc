@@ -18,8 +18,14 @@
     <js-module src="www/mediaDevice.js" name="mediaDevices">
         <clobbers target="navigator.mediaDevices" />
     </js-module>
+    <js-module src="www/webkitGetUserMedia.js" name="webkitGetUserMedia">
+        <clobbers target="navigator.webkitGetUserMedia" />
+    </js-module>
     <js-module src="www/MediaConstants.js" name="Media">
         <clobbers target="Media" />
+    </js-module>
+    <js-module src="www/util.js" name="util">
+        <clobbers target="util" />
     </js-module>
     <platform name="android">
         <config-file target="config.xml" parent="/*">

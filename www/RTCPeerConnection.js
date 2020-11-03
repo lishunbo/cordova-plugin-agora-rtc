@@ -19,6 +19,8 @@ class RTCPeerConnection {
         this.id = uuidv4();
         this.config = config;
 
+        this.stream = null;
+
         this.oniceconnectionstatechange = null;
         this.onICEConnectionStateChange = null;
         this.onconnectionstatechange = null;
@@ -44,7 +46,7 @@ class RTCPeerConnection {
                     console.log("got event " + EventType.onIceCandidate);
                     if (this.onicecandidate != null) {
                         // this.onicecandidate(new RTCPeerConnectionIceEvent("icecandidate", { candidate: JSON.parse(ev.payload)}));
-                        this.onicecandidate({type:"icecandidate",candidate:JSON.parse(ev.payload)});
+                        this.onicecandidate({ type: "icecandidate", candidate: JSON.parse(ev.payload) });
                     } else {
                         console.log("not found RTCPeerConnection.onicecandidate function");
                     }
@@ -142,7 +144,8 @@ class RTCPeerConnection {
         }, 'Hook', 'addTransceiver', [this.id]);
     }
 
-    getStats() {
+    getStats(slector) {
+        return new Promise((resolve, reject) => {})
         return new Promise((resolve, reject) => {
             cordova.exec(function (ev) {
                 resolve(ev);
@@ -151,11 +154,29 @@ class RTCPeerConnection {
             }, 'Hook', 'getStats', [this.id]);
         })
     }
+
+    /**
+     * Deprecated
+     * This feature is no longer recommended. 
+     * Though some browsers might still support it, it may have already been removed from the relevant web standards,
+     *  may be in the process of being dropped, or may only be kept for compatibility purposes. 
+     * Avoid using it, and update existing code if possible;
+     *  see the compatibility table at the bottom of this page to guide your decision. 
+     * Be aware that this feature may cease to work at any time.
+     */
+    addStream(stream) {
+        console.log("peerconnection addStream:", stream)
+        this.stream = stream
+        stream.getTracks().forEach(track => {
+            this.addTrack(track)
+        })
+    }
 }
 
 cordova.addConstructor(function () {
     // console.log("RTCPeerConnection.js addConstructor");
     window.RTCPeerConnection = RTCPeerConnection;
+    window.webkitRTCPeerConnection = RTCPeerConnection;
     return window.RTCPeerConnection;
 });
 
