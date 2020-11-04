@@ -12,6 +12,9 @@ function uuidv4() {
 
 const EventType = {
     onIceCandidate: "onIceCandidate",
+    onICEConnectionStateChange: "onICEConnectionStateChange",
+    onConnectionStateChange: "onConnectionStateChange",
+    onSignalingStateChange: "onSignalingStateChange",
 }
 
 class RTCPeerConnection {
@@ -21,10 +24,12 @@ class RTCPeerConnection {
 
         this.stream = null;
 
+        this.connectionState = "";
+        this.iceConnectionState = "";
+        this.signalingState = "";
+
         this.oniceconnectionstatechange = null;
-        this.onICEConnectionStateChange = null;
         this.onconnectionstatechange = null;
-        this.onConnectionStateChange = null;
         this.onsignalingstatechange = null;
         this.onicecandidate = null;
         this.ontrack = null;
@@ -36,20 +41,52 @@ class RTCPeerConnection {
 
         this.eventHandler = function (ev) {
             console.log("createInstance done id: " + JSON.stringify(ev));
-            // console.log("createInstance done id: " + ev.event);
-            // console.log("createInstance done id: " + ev.payload);
-            // console.log("createInstance done id: " + ev.id);
-            // console.log("createInstance done id: " + this.id);
-            // console.log("createInstance done id: " + this.onicecandidate);
             switch (ev.event) {
                 case EventType.onIceCandidate:
                     console.log("got event " + EventType.onIceCandidate);
                     if (this.onicecandidate != null) {
                         // this.onicecandidate(new RTCPeerConnectionIceEvent("icecandidate", { candidate: JSON.parse(ev.payload)}));
-                        this.onicecandidate({ type: "icecandidate", candidate: JSON.parse(ev.payload) });
+                        if (ev.payload != "") {
+                            this.onicecandidate({ type: "icecandidate", candidate: JSON.parse(ev.payload) });
+                        } else {
+                            this.onicecandidate({ type: "icecandidate", candidate: null });
+                        }
                     } else {
                         console.log("not found RTCPeerConnection.onicecandidate function");
                     }
+                    break;
+                case EventType.onICEConnectionStateChange:
+                    console.log("got event " + EventType.onICEConnectionStateChange, ev);
+                    this.iceConnectionState = ev.payload;
+                    if (this.oniceconnectionstatechange != null) {
+                        // this.onicecandidate(new RTCPeerConnectionIceEvent("icecandidate", { candidate: JSON.parse(ev.payload)}));
+                        this.oniceconnectionstatechange();
+                    } else {
+                        console.log("not found RTCPeerConnection.onICEConnectionStateChange function");
+                    }
+                    break;
+                case EventType.onConnectionStateChange:
+                    console.log("got event " + EventType.onConnectionStateChange);
+                    this.connectionState = ev.payload;
+                    if (this.onConnectionStateChange != null) {
+                        // this.onicecandidate(new RTCPeerConnectionIceEvent("icecandidate", { candidate: JSON.parse(ev.payload)}));
+                        this.onicecanonConnectionStateChangedidate();
+                    } else {
+                        console.log("not found RTCPeerConnection.onConnectionStateChange function");
+                    }
+                    break;
+                case EventType.onSignalingStateChange:
+                    console.log("got event " + EventType.onSignalingStateChange);
+                    this.signalingState = ev.payload;
+                    if (this.onsignalingstatechange != null) {
+                        // this.onicecandidate(new RTCPeerConnectionIceEvent("icecandidate", { candidate: JSON.parse(ev.payload)}));
+                        this.onsignalingstatechange();
+                    } else {
+                        console.log("not found RTCPeerConnection.onConnectionStateChange function");
+                    }
+                    break;
+                default:
+                    console.log("not implement RTCPeerConnection eventhandler function " + ev.event);
             }
         }
         var self = this;
@@ -145,7 +182,7 @@ class RTCPeerConnection {
     }
 
     getStats(slector) {
-        return new Promise((resolve, reject) => {})
+        return new Promise((resolve, reject) => { })
         return new Promise((resolve, reject) => {
             cordova.exec(function (ev) {
                 resolve(ev);

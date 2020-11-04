@@ -153,7 +153,8 @@ public class Wrapper extends WebSocketClient {
         assert msg != null;
         CallbackContext callbackContext = this.instances.get(msg.object + msg.action);
         this.instances.remove(msg.object + msg.action);
-        if (msg.action == Action.onIceCandidate) {
+        if (msg.action == Action.onIceCandidate || msg.action == Action.onSignalingStateChange
+                || msg.action == Action.onICEConnectionStateChange || msg.action == Action.onConnectionStateChange) {
             callbackContext = this.instances.get(msg.object);
         }
         assert callbackContext != null;
@@ -191,7 +192,10 @@ public class Wrapper extends WebSocketClient {
 //                callbackContext.sendPluginResult(result);
                 break;
 
-            case onIceCandidate: {
+            case onIceCandidate:
+            case onICEConnectionStateChange:
+            case onSignalingStateChange:
+            case onConnectionStateChange: {
                 JSONObject obj = new JSONObject();
                 try {
                     obj.put("event", msg.action.toString());

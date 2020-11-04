@@ -13,7 +13,13 @@ public enum Action {
     addTrack("addTrack"),
     getStats("getStats"),
     getUserMedia("getUserMedia"),
-    onIceCandidate("onIceCandidate");
+
+    onIceCandidate("onIceCandidate"),
+    onICEConnectionStateChange("onICEConnectionStateChange"),
+    onConnectionStateChange("onConnectionStateChange"),
+    onSignalingStateChange("onSignalingStateChange"),
+
+    MaxAction("maxAction");
 
     private String name;
 

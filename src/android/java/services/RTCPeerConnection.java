@@ -283,6 +283,33 @@ public class RTCPeerConnection {
             msg.payload = candidate;
             send(msg.toString());
         }
+
+        public void onICEConnectionStateChange(String state) {
+            MessageBus.Message msg = new MessageBus.Message();
+            msg.target = hook_id;
+            msg.object = id;
+            msg.action = Action.onICEConnectionStateChange;
+            msg.payload = state;
+            send(msg.toString());
+        }
+
+        public void onConnectionStateChange(String state) {
+            MessageBus.Message msg = new MessageBus.Message();
+            msg.target = hook_id;
+            msg.object = id;
+            msg.action = Action.onConnectionStateChange;
+            msg.payload = state;
+            send(msg.toString());
+        }
+
+        public void onSignalingStateChange(String state) {
+            MessageBus.Message msg = new MessageBus.Message();
+            msg.target = hook_id;
+            msg.object = id;
+            msg.action = Action.onSignalingStateChange;
+            msg.payload = state;
+            send(msg.toString());
+        }
     }
 
     public class Observer implements SdpObserver, PeerConnection.Observer {
@@ -298,12 +325,21 @@ public class RTCPeerConnection {
         @Override
         public void onSignalingChange(PeerConnection.SignalingState signalingState) {
             Log.v(TAG, usage + " onSignalingChange " + signalingState.toString());
+            client.onSignalingStateChange(signalingState.toString().toLowerCase());
         }
 
         @Override
         public void onIceConnectionChange(PeerConnection.IceConnectionState iceConnectionState) {
             Log.v(TAG, usage + " onIceConnectionChange " + iceConnectionState.toString());
 
+            client.onICEConnectionStateChange(iceConnectionState.toString().toLowerCase());
+        }
+
+        @Override
+        public void onConnectionChange(PeerConnection.PeerConnectionState newState) {
+            Log.v(TAG, usage + " onConnectionChange " + newState.toString());
+
+            client.onConnectionStateChange(newState.toString().toLowerCase());
         }
 
         @Override
@@ -316,10 +352,8 @@ public class RTCPeerConnection {
         public void onIceGatheringChange(PeerConnection.IceGatheringState iceGatheringState) {
 
             Log.v(TAG, usage + " onIceGatheringChange " + iceGatheringState.toString());
-            if (iceGatheringState.toString().equals("COMPLETE")) {
-                Log.v(TAG, usage + " onIceGatheringChange has completed");
-//                SessionDescription sdp = local.getLocalDescription();
-//                client.send(sdp.type.canonicalForm(), sdp.description);
+            if (iceGatheringState == PeerConnection.IceGatheringState.COMPLETE) {
+                client.onIceCandidate("");
             }
         }
 
