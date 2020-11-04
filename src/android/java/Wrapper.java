@@ -183,6 +183,7 @@ public class Wrapper extends WebSocketClient {
 //                callbackContext.sendPluginResult(result);
                 break;
             case setLocalDescription:
+            case setRemoteDescription:
             case addIceCandidate:
                 callbackContext.success();
 //                PluginResult result = new PluginResult(OK);

@@ -70,6 +70,8 @@ class MediaStreamTrack {
         this.onmute = null;
         this.onunmute = null;
         this.readyState = "live";
+
+        this.eventhandle = new Map();
         // this.enabled = false;
         // this.id = "";
         // this.isolated = false;
@@ -92,11 +94,71 @@ class MediaStreamTrack {
         // removeEventListener<K extends keyof MediaStreamTrackEventMap>(type: K, listener: (this: MediaStreamTrack, ev: MediaStreamTrackEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
         // removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
     }
+
+    addEventListener(eventType, func) {
+        var queue = this.eventhandle.get(eventType);
+        if (queue !== undefined) {
+            queue.push(func)
+            this.eventhandle.set(eventType, queue);
+        } else {
+            this.eventhandle.set(eventType, [func]);
+        }
+    }
+    removeEventListener(eventType, func) {
+        var queue = this.eventhandle.get(eventType);
+        if (queue !== undefined) {
+            queue.splice(queue.indexOf(func), 1)
+            this.eventhandle.set(eventType, queue);
+        }
+    }
+}
+
+class MediaStreamAudioSourceNode {
+    constructor(stream) { 
+    }
+    connect() { }
+    disconnect() { }
+}
+
+class AudioContext {
+    constructor(){
+        this.destination = null;
+        this.state = "running";
+        this.currentTime = null;
+    }
+    createMediaStreamSource(stream){return new MediaStreamAudioSourceNode(stream);}
+    createGain(){return new MediaStreamAudioSourceNode();}
+    createAnalyser(){}
+    createScriptProcessor(){}
+    createMediaStreamDestination(){}
+    resume(){}
+}
+
+class AudioTrackSource {
+    constructor(){
+        console.log("++++++++++++++++++++ create plugin AudioTrackSource")
+        this.outputTrack = null;
+        this.outputNode = new MediaStreamAudioSourceNode();
+    }
+    setVolume(){}
+    createOutputTrack(){return null;}
+    getAudioLeve(){return 0}
+    removeAllListeners(){}
+    stopGetAudioBuffer(){}
+    startGetAudioBuffer(){}
+    on(){}
+    play(){}
+    stop(){}
+    destory(){}
+    updateTrack(){}
 }
 
 cordova.addConstructor(function () {
     window.MediaStream = MediaStream;
     window.MediaStreamTrack = MediaStreamTrack;
+    window.AudioContext = AudioContext;
+    AgoraRTC.AudioTrackSource = AudioTrackSource;
+    window.MediaStreamAudioSourceNode = MediaStreamAudioSourceNode
     return window.MediaStreamTrack;
 });
 
