@@ -19,6 +19,9 @@ public enum Action {
     onConnectionStateChange("onConnectionStateChange"),
     onSignalingStateChange("onSignalingStateChange"),
 
+    onAddTrack("onAddTrack"),
+
+
     MaxAction("maxAction");
 
     private String name;

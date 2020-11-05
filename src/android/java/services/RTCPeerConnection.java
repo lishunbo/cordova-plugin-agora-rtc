@@ -6,19 +6,19 @@ import android.util.Log;
 import com.agora.cordova.plugin.webrtc.Action;
 import com.agora.cordova.plugin.webrtc.models.RTCConfiguration;
 import com.agora.cordova.plugin.webrtc.utils.MessageBus;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.webrtc.AudioTrack;
 import org.webrtc.DataChannel;
 import org.webrtc.IceCandidate;
 import org.webrtc.MediaConstraints;
 import org.webrtc.MediaStream;
 import org.webrtc.PeerConnection;
 import org.webrtc.RtpReceiver;
+import org.webrtc.RtpTransceiver;
 import org.webrtc.SdpObserver;
 import org.webrtc.SessionDescription;
 import org.webrtc.SurfaceTextureHelper;
@@ -98,7 +98,7 @@ public class RTCPeerConnection {
         // create VideoTrack
         VideoTrack videoTrack = PCFactory.factory().createVideoTrack("100", videoSource);
         // display in localView
-        videoTrack.addSink(pcViewer.getLocalViewer());
+        videoTrack.addSink(pcViewer.getRemoteViewer());
         MediaStream mediaStream = PCFactory.factory().createLocalMediaStream("localMediaStream");
         mediaStream.addTrack(videoTrack);
 
@@ -310,7 +310,20 @@ public class RTCPeerConnection {
             msg.payload = state;
             send(msg.toString());
         }
+
+        public void onAddTrack(String type) {
+            MessageBus.Message msg = new MessageBus.Message();
+            msg.target = hook_id;
+            msg.object = id;
+            msg.action = Action.onAddTrack;
+            msg.payload = type;
+            send(msg.toString());
+        }
+
     }
+
+    static boolean setRemote = false;
+    RtpReceiver videoTrack;
 
     public class Observer implements SdpObserver, PeerConnection.Observer {
         private PeerConnection pc;
@@ -385,8 +398,9 @@ public class RTCPeerConnection {
             Log.v(TAG, usage + " onAddStream " + mediaStream.videoTracks.size());
             for (VideoTrack track :
                     mediaStream.videoTracks) {
-                Log.v(TAG, usage + " onAddVideoTrack to remote Viewer " + track.toString());
-                track.addSink(pcViewer.getRemoteViewer());
+                Log.v(TAG, usage + " onAddVideoTrack to remote Viewer " + track.kind() + track.id());
+                track.setEnabled(true);
+                track.addSink(pcViewer.getLocalViewer());
             }
         }
 
@@ -410,7 +424,9 @@ public class RTCPeerConnection {
 
         @Override
         public void onAddTrack(RtpReceiver rtpReceiver, MediaStream[] mediaStreams) {
-            Log.v(TAG, usage + " onAddTrack ");
+            Log.v(TAG, usage + " onAddTrack " + rtpReceiver.track().kind());
+            client.onAddTrack(rtpReceiver.track().kind().toLowerCase());
+
         }
 
 

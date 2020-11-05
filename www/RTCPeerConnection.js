@@ -2,19 +2,15 @@
 
 console.log("RTCPeerConnection.js onloading");
 
-function uuidv4() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-    });
-}
-
+var { uuidv4 } = require('./util');
+var Stream = require('./Stream');
 
 const EventType = {
     onIceCandidate: "onIceCandidate",
     onICEConnectionStateChange: "onICEConnectionStateChange",
     onConnectionStateChange: "onConnectionStateChange",
     onSignalingStateChange: "onSignalingStateChange",
+    onAddTrack: "onAddTrack",
 }
 
 class RTCPeerConnection {
@@ -40,10 +36,10 @@ class RTCPeerConnection {
         }
 
         this.eventHandler = function (ev) {
-            console.log("createInstance done id: " + JSON.stringify(ev));
+            console.log("PeerConnection Event: " + JSON.stringify(ev));
             switch (ev.event) {
                 case EventType.onIceCandidate:
-                    console.log("got event " + EventType.onIceCandidate);
+                    // console.log("got event " + EventType.onIceCandidate);
                     if (this.onicecandidate != null) {
                         // this.onicecandidate(new RTCPeerConnectionIceEvent("icecandidate", { candidate: JSON.parse(ev.payload)}));
                         if (ev.payload != "") {
@@ -56,7 +52,7 @@ class RTCPeerConnection {
                     }
                     break;
                 case EventType.onICEConnectionStateChange:
-                    console.log("got event " + EventType.onICEConnectionStateChange, ev);
+                    // console.log("got event " + EventType.onICEConnectionStateChange, ev);
                     this.iceConnectionState = ev.payload;
                     if (this.oniceconnectionstatechange != null) {
                         // this.onicecandidate(new RTCPeerConnectionIceEvent("icecandidate", { candidate: JSON.parse(ev.payload)}));
@@ -66,7 +62,7 @@ class RTCPeerConnection {
                     }
                     break;
                 case EventType.onConnectionStateChange:
-                    console.log("got event " + EventType.onConnectionStateChange);
+                    // console.log("got event " + EventType.onConnectionStateChange);
                     this.connectionState = ev.payload;
                     if (this.onConnectionStateChange != null) {
                         // this.onicecandidate(new RTCPeerConnectionIceEvent("icecandidate", { candidate: JSON.parse(ev.payload)}));
@@ -76,11 +72,22 @@ class RTCPeerConnection {
                     }
                     break;
                 case EventType.onSignalingStateChange:
-                    console.log("got event " + EventType.onSignalingStateChange);
+                    // console.log("got event " + EventType.onSignalingStateChange);
                     this.signalingState = ev.payload;
                     if (this.onsignalingstatechange != null) {
                         // this.onicecandidate(new RTCPeerConnectionIceEvent("icecandidate", { candidate: JSON.parse(ev.payload)}));
                         this.onsignalingstatechange();
+                    } else {
+                        console.log("not found RTCPeerConnection.onConnectionStateChange function");
+                    }
+                    break;
+                case EventType.onAddTrack:
+                    console.log("got event " + EventType.onAddTrack);
+                    if (this.stream != null) {
+                    }
+                    if (this.ontrack != null) {
+                        // this.onicecandidate(new RTCPeerConnectionIceEvent("icecandidate", { candidate: JSON.parse(ev.payload)}));
+                        this.ontrack({track:new Stream.MediaStreamTrack(ev.payload), streams:[this.stream]});
                     } else {
                         console.log("not found RTCPeerConnection.onConnectionStateChange function");
                     }

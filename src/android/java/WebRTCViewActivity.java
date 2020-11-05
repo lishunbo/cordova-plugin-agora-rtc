@@ -26,6 +26,8 @@ import org.webrtc.VideoSink;
 import org.webrtc.VideoSource;
 
 import java.net.URI;
+import java.util.LinkedList;
+import java.util.List;
 
 public class WebRTCViewActivity extends Activity implements RTCPeerConnection.PCViewer {
     private final static String TAG = WebRTCViewActivity.class.getCanonicalName();
@@ -35,6 +37,7 @@ public class WebRTCViewActivity extends Activity implements RTCPeerConnection.PC
 
 //    private LinkedList<PeerConnection.IceServer> iceServers = new LinkedList<>();
 
+    List<RTCPeerConnection> allPC = new LinkedList<>();
     RTCPeerConnection pc_local;
     RTCPeerConnection pc_remote;
     SurfaceViewRenderer localView;
@@ -146,7 +149,8 @@ public class WebRTCViewActivity extends Activity implements RTCPeerConnection.PC
     }
 
     void createInstance(String id, RTCConfiguration cfg) {
-        pc_local = new RTCPeerConnection(this, hook_id, id, getString(R.string.internalws), cfg);
+//        pc_local = ;
+        allPC.add(new RTCPeerConnection(this, hook_id, id, getString(R.string.internalws), cfg));
     }
 
     void getUserMedia(MediaStreamConstraints constraints) {

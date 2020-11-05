@@ -57,13 +57,13 @@ class MediaStream {
 }
 
 class MediaStreamTrack {
-    constructor() {
+    constructor(track) {
         console.log("new MediaStreamTrack");
         this.contentHint = "";
         this.enabled = true;
         this.id = uuidv4();
-        this.kind = "";
-        this.label = "";
+        this.kind = track;
+        this.label = track;
         this.muted = false;
 
         this.onended = null;
@@ -114,43 +114,43 @@ class MediaStreamTrack {
 }
 
 class MediaStreamAudioSourceNode {
-    constructor(stream) { 
+    constructor(stream) {
     }
     connect() { }
     disconnect() { }
 }
 
 class AudioContext {
-    constructor(){
+    constructor() {
         this.destination = null;
         this.state = "running";
         this.currentTime = null;
     }
-    createMediaStreamSource(stream){return new MediaStreamAudioSourceNode(stream);}
-    createGain(){return new MediaStreamAudioSourceNode();}
-    createAnalyser(){}
-    createScriptProcessor(){}
-    createMediaStreamDestination(){}
-    resume(){}
+    createMediaStreamSource(stream) { return new MediaStreamAudioSourceNode(stream); }
+    createGain() { return new MediaStreamAudioSourceNode(); }
+    createAnalyser() { }
+    createScriptProcessor() { }
+    createMediaStreamDestination() { }
+    resume() { }
 }
 
 class AudioTrackSource {
-    constructor(){
+    constructor() {
         console.log("++++++++++++++++++++ create plugin AudioTrackSource")
         this.outputTrack = null;
         this.outputNode = new MediaStreamAudioSourceNode();
     }
-    setVolume(){}
-    createOutputTrack(){return null;}
-    getAudioLeve(){return 0}
-    removeAllListeners(){}
-    stopGetAudioBuffer(){}
-    startGetAudioBuffer(){}
-    on(){}
-    play(){}
-    stop(){}
-    destory(){}
-    updateTrack(){}
+    setVolume() { }
+    createOutputTrack() { return null; }
+    getAudioLeve() { return 0 }
+    removeAllListeners() { }
+    stopGetAudioBuffer() { }
+    startGetAudioBuffer() { }
+    on() { }
+    play() { }
+    stop() { }
+    destory() { }
+    updateTrack() { }
 }
 
 cordova.addConstructor(function () {

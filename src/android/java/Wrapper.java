@@ -16,8 +16,11 @@ import org.java_websocket.handshake.ServerHandshake;
 import org.json.JSONObject;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import static org.apache.cordova.PluginResult.Status.OK;
 
@@ -30,7 +33,7 @@ public class Wrapper extends WebSocketClient {
     String target;
 
     Map<String, CallbackContext> instances;
-
+    Set<Action> eventActions;
 
     public Wrapper(URI uri, CordovaInterface cordova, String id, String target) {
         super(uri);
@@ -40,6 +43,13 @@ public class Wrapper extends WebSocketClient {
         this.target = target;
 
         this.instances = new HashMap<>();
+        this.eventActions = new HashSet<>();
+        this.eventActions.add(Action.onIceCandidate);
+        this.eventActions.add(Action.onSignalingStateChange);
+        this.eventActions.add(Action.onICEConnectionStateChange);
+        this.eventActions.add(Action.onConnectionStateChange);
+        this.eventActions.add(Action.onAddTrack);
+
     }
 
     // to view activity
@@ -153,9 +163,22 @@ public class Wrapper extends WebSocketClient {
         assert msg != null;
         CallbackContext callbackContext = this.instances.get(msg.object + msg.action);
         this.instances.remove(msg.object + msg.action);
-        if (msg.action == Action.onIceCandidate || msg.action == Action.onSignalingStateChange
-                || msg.action == Action.onICEConnectionStateChange || msg.action == Action.onConnectionStateChange) {
+        if (callbackContext == null && this.eventActions.contains(msg.action)) {
             callbackContext = this.instances.get(msg.object);
+
+            Log.e(TAG, "Wrapper onMessageEvent:" + msg.action);
+            JSONObject obj = new JSONObject();
+            try {
+                obj.put("event", msg.action.toString());
+                obj.put("id", msg.object);
+                obj.put("payload", msg.payload);
+            } catch (Exception e) {
+                Log.e(TAG, "event exception:" + msg.action);
+            }
+            PluginResult result = new PluginResult(OK, obj);
+            result.setKeepCallback(true);
+            callbackContext.sendPluginResult(result);
+            return;
         }
         assert callbackContext != null;
         switch (msg.action) {
@@ -192,23 +215,6 @@ public class Wrapper extends WebSocketClient {
 //                callbackContext.sendPluginResult(result);
                 break;
 
-            case onIceCandidate:
-            case onICEConnectionStateChange:
-            case onSignalingStateChange:
-            case onConnectionStateChange: {
-                JSONObject obj = new JSONObject();
-                try {
-                    obj.put("event", msg.action.toString());
-                    obj.put("id", msg.object);
-                    obj.put("payload", msg.payload);
-                } catch (Exception e) {
-                    Log.e(TAG, "event exception:" + msg.action);
-                }
-                PluginResult result = new PluginResult(OK, obj);
-                result.setKeepCallback(true);
-                callbackContext.sendPluginResult(result);
-                break;
-            }
             default:
                 Log.e(TAG, "unknown action message internal");
         }
