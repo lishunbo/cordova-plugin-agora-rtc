@@ -9,9 +9,6 @@
     <!-- <js-module src="www/rtcplugin.js" name="rtcPlugin">
         <clobbers target="window.plugins.rtcPlugin" />
     </js-module> -->
-    <js-module src="www/RTCPeerConnection.js" name="RTCPeerConnection">
-        <clobbers target="RTCPeerConnection" />
-    </js-module>
     <js-module src="www/MediaStream.js" name="Stream">
         <clobbers target="Stream" />
     </js-module>
@@ -24,8 +21,14 @@
     <js-module src="www/MediaConstants.js" name="Media">
         <clobbers target="Media" />
     </js-module>
+    <!-- <js-module src="www/MediaControl.js" name="anyway">
+        <clobbers target="anyway" />
+    </js-module> -->
     <js-module src="www/util.js" name="util">
         <clobbers target="util" />
+    </js-module>
+    <js-module src="www/RTCPeerConnection.js" name="RTCPeerConnection">
+        <clobbers target="RTCPeerConnection" />
     </js-module>
     <platform name="android">
         <config-file target="config.xml" parent="/*">

@@ -17,6 +17,9 @@ import org.webrtc.IceCandidate;
 import org.webrtc.MediaConstraints;
 import org.webrtc.MediaStream;
 import org.webrtc.PeerConnection;
+import org.webrtc.RTCStats;
+import org.webrtc.RTCStatsCollectorCallback;
+import org.webrtc.RTCStatsReport;
 import org.webrtc.RtpReceiver;
 import org.webrtc.RtpTransceiver;
 import org.webrtc.SdpObserver;
@@ -30,9 +33,12 @@ import org.webrtc.VideoTrack;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.LinkedList;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 
-public class RTCPeerConnection {
+public class RTCPeerConnection implements RTCStatsCollectorCallback {
     static final String TAG = RTCPeerConnection.class.getCanonicalName();
 
     PCViewer pcViewer;
@@ -42,6 +48,8 @@ public class RTCPeerConnection {
 
     RTCConfiguration config;
     PeerConnection peerConnection;
+
+    Timer timer = new Timer();
 
 
     public interface PCViewer {
@@ -69,7 +77,6 @@ public class RTCPeerConnection {
         }
     }
 
-
     public String getId() {
         return id;
     }
@@ -81,7 +88,28 @@ public class RTCPeerConnection {
         peerConnection = PCFactory.factory().createPeerConnection(iceServers, new Observer("createPeerConnection:" + id));
 
         client.createInstanceResp();
+
+
+        RTCPeerConnection that = this;
+        TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+                peerConnection.getStats(that);
+            }
+        };
+        timer.scheduleAtFixedRate(task, 1000L, 5000L);
     }
+
+    @Override
+    public void onStatsDelivered(RTCStatsReport rtcStatsReport) {
+        for (Map.Entry<String , RTCStats>stat:
+             rtcStatsReport.getStatsMap().entrySet()) {
+            if (stat.getValue().getType().equals("inbound-rtp")||stat.getValue().getType().equals("track")){
+                Log.v(TAG, id+" "+stat.getValue().toString());
+            }
+        }
+    }
+
 
     void addTrack() {
         VideoCapturer videoCapturer = pcViewer.getVideoCapturer();

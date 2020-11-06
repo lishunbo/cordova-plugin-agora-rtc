@@ -20,9 +20,10 @@ class RTCPeerConnection {
 
         this.stream = null;
 
-        this.connectionState = "";
+        this._connectionState = "";
         this.iceConnectionState = "";
         this.signalingState = "";
+        this.jsEventHandle = new Map();
 
         this.oniceconnectionstatechange = null;
         this.onconnectionstatechange = null;
@@ -35,75 +36,77 @@ class RTCPeerConnection {
             console.log("RTCPeerConnection.run with " + params);
         }
 
-        this.eventHandler = function (ev) {
-            console.log("PeerConnection Event: " + JSON.stringify(ev));
-            switch (ev.event) {
-                case EventType.onIceCandidate:
-                    // console.log("got event " + EventType.onIceCandidate);
-                    if (this.onicecandidate != null) {
-                        // this.onicecandidate(new RTCPeerConnectionIceEvent("icecandidate", { candidate: JSON.parse(ev.payload)}));
-                        if (ev.payload != "") {
-                            this.onicecandidate({ type: "icecandidate", candidate: JSON.parse(ev.payload) });
-                        } else {
-                            this.onicecandidate({ type: "icecandidate", candidate: null });
-                        }
-                    } else {
-                        console.log("not found RTCPeerConnection.onicecandidate function");
-                    }
-                    break;
-                case EventType.onICEConnectionStateChange:
-                    // console.log("got event " + EventType.onICEConnectionStateChange, ev);
-                    this.iceConnectionState = ev.payload;
-                    if (this.oniceconnectionstatechange != null) {
-                        // this.onicecandidate(new RTCPeerConnectionIceEvent("icecandidate", { candidate: JSON.parse(ev.payload)}));
-                        this.oniceconnectionstatechange();
-                    } else {
-                        console.log("not found RTCPeerConnection.onICEConnectionStateChange function");
-                    }
-                    break;
-                case EventType.onConnectionStateChange:
-                    // console.log("got event " + EventType.onConnectionStateChange);
-                    this.connectionState = ev.payload;
-                    if (this.onConnectionStateChange != null) {
-                        // this.onicecandidate(new RTCPeerConnectionIceEvent("icecandidate", { candidate: JSON.parse(ev.payload)}));
-                        this.onicecanonConnectionStateChangedidate();
-                    } else {
-                        console.log("not found RTCPeerConnection.onConnectionStateChange function");
-                    }
-                    break;
-                case EventType.onSignalingStateChange:
-                    // console.log("got event " + EventType.onSignalingStateChange);
-                    this.signalingState = ev.payload;
-                    if (this.onsignalingstatechange != null) {
-                        // this.onicecandidate(new RTCPeerConnectionIceEvent("icecandidate", { candidate: JSON.parse(ev.payload)}));
-                        this.onsignalingstatechange();
-                    } else {
-                        console.log("not found RTCPeerConnection.onConnectionStateChange function");
-                    }
-                    break;
-                case EventType.onAddTrack:
-                    console.log("got event " + EventType.onAddTrack);
-                    if (this.stream != null) {
-                    }
-                    if (this.ontrack != null) {
-                        // this.onicecandidate(new RTCPeerConnectionIceEvent("icecandidate", { candidate: JSON.parse(ev.payload)}));
-                        this.ontrack({track:new Stream.MediaStreamTrack(ev.payload), streams:[this.stream]});
-                    } else {
-                        console.log("not found RTCPeerConnection.onConnectionStateChange function");
-                    }
-                    break;
-                default:
-                    console.log("not implement RTCPeerConnection eventhandler function " + ev.event);
-            }
-        }
+        // this.eventHandler = cordovaEventHandler
         var self = this;
         cordova.exec(function (ev) {
-            self.eventHandler(ev);
+            self.cordovaEventHandler(ev);
         },
             function (ev) {
                 console.log("Failed to create RTCPeerConnection object");
             }, 'Hook', 'createInstance', [this.id, this.config]);
 
+    }
+
+    cordovaEventHandler(ev){
+        console.log("PeerConnection Event: " + JSON.stringify(ev));
+        switch (ev.event) {
+            case EventType.onIceCandidate:
+                // console.log("got event " + EventType.onIceCandidate);
+                if (this.onicecandidate != null) {
+                    // this.onicecandidate(new RTCPeerConnectionIceEvent("icecandidate", { candidate: JSON.parse(ev.payload)}));
+                    if (ev.payload != "") {
+                        this.onicecandidate({ type: "icecandidate", candidate: JSON.parse(ev.payload) });
+                    } else {
+                        this.onicecandidate({ type: "icecandidate", candidate: null });
+                    }
+                } else {
+                    console.log("not found RTCPeerConnection.onicecandidate function");
+                }
+                break;
+            case EventType.onICEConnectionStateChange:
+                // console.log("got event " + EventType.onICEConnectionStateChange, ev);
+                this.iceConnectionState = ev.payload;
+                if (this.oniceconnectionstatechange != null) {
+                    // this.onicecandidate(new RTCPeerConnectionIceEvent("icecandidate", { candidate: JSON.parse(ev.payload)}));
+                    this.oniceconnectionstatechange();
+                } else {
+                    console.log("not found RTCPeerConnection.onICEConnectionStateChange function");
+                }
+                break;
+            case EventType.onConnectionStateChange:
+                // console.log("got event " + EventType.onConnectionStateChange);
+                this.connectionState = ev.payload;
+                if (this.onConnectionStateChange != null) {
+                    // this.onicecandidate(new RTCPeerConnectionIceEvent("icecandidate", { candidate: JSON.parse(ev.payload)}));
+                    this.onicecanonConnectionStateChangedidate();
+                } else {
+                    console.log("not found RTCPeerConnection.onConnectionStateChange function");
+                }
+                break;
+            case EventType.onSignalingStateChange:
+                // console.log("got event " + EventType.onSignalingStateChange);
+                this.signalingState = ev.payload;
+                if (this.onsignalingstatechange != null) {
+                    // this.onicecandidate(new RTCPeerConnectionIceEvent("icecandidate", { candidate: JSON.parse(ev.payload)}));
+                    this.onsignalingstatechange();
+                } else {
+                    console.log("not found RTCPeerConnection.onConnectionStateChange function");
+                }
+                break;
+            case EventType.onAddTrack:
+                console.log("got event " + EventType.onAddTrack);
+                if (this.stream != null) {
+                }
+                if (this.ontrack != null) {
+                    // this.onicecandidate(new RTCPeerConnectionIceEvent("icecandidate", { candidate: JSON.parse(ev.payload)}));
+                    this.ontrack({track:new Stream.MediaStreamTrack(ev.payload), streams:[this.stream]});
+                } else {
+                    console.log("not found RTCPeerConnection.onConnectionStateChange function");
+                }
+                break;
+            default:
+                console.log("not implement RTCPeerConnection eventhandler function " + ev.event);
+        }
     }
 
     //first class
@@ -135,6 +138,7 @@ class RTCPeerConnection {
 
     //first class
     setRemoteDescription(answer) {
+        console.log("Got one answer ", answer)
         return new Promise((resolve, reject) => {
             cordova.exec(function (ev) {
                 resolve(ev);
@@ -214,6 +218,24 @@ class RTCPeerConnection {
         stream.getTracks().forEach(track => {
             this.addTrack(track)
         })
+    }
+
+    
+    addEventListener(eventType, func) {
+        var queue = this.jsEventHandle.get(eventType);
+        if (queue !== undefined) {
+            queue.push(func)
+            this.jsEventHandle.set(eventType, queue);
+        } else {
+            this.jsEventHandle.set(eventType, [func]);
+        }
+    }
+    removeEventListener(eventType, func) {
+        var queue = this.jsEventHandle.get(eventType);
+        if (queue !== undefined) {
+            queue.splice(queue.indexOf(func), 1)
+            this.jsEventHandle.set(eventType, queue);
+        }
     }
 }
 

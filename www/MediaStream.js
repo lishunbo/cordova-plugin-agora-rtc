@@ -157,7 +157,7 @@ cordova.addConstructor(function () {
     window.MediaStream = MediaStream;
     window.MediaStreamTrack = MediaStreamTrack;
     window.AudioContext = AudioContext;
-    AgoraRTC.AudioTrackSource = AudioTrackSource;
+    // AgoraRTC.AudioTrackSource = AudioTrackSource;
     window.MediaStreamAudioSourceNode = MediaStreamAudioSourceNode
     return window.MediaStreamTrack;
 });
