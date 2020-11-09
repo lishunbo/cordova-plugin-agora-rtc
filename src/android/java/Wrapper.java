@@ -151,6 +151,18 @@ public class Wrapper extends WebSocketClient {
         send(msg.toString());
     }
 
+    public void getStats(String id, CallbackContext callbackContext) {
+        Action action = Action.getStats;
+
+        this.instances.put(id + action, callbackContext);
+
+        MessageBus.Message msg = new MessageBus.Message();
+        msg.target = id;
+        msg.object = id;
+        msg.action = action;
+        send(msg.toString());
+    }
+
     @Override
     public void onOpen(ServerHandshake handshakedata) {
         Log.e(TAG, "Wrapper onOpen: connected with internal communicate server");
@@ -200,6 +212,7 @@ public class Wrapper extends WebSocketClient {
 //                result.setKeepCallback(true);
 //                callbackContext.sendPluginResult(result);
                 break;
+            case getStats:
             case createOffer:
                 callbackContext.success(msg.payload);
 //                PluginResult result = new PluginResult(OK);

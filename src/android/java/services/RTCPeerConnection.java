@@ -9,6 +9,7 @@ import com.agora.cordova.plugin.webrtc.utils.MessageBus;
 
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.webrtc.AudioTrack;
@@ -32,6 +33,7 @@ import org.webrtc.VideoTrack;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Timer;
@@ -89,27 +91,73 @@ public class RTCPeerConnection implements RTCStatsCollectorCallback {
 
         client.createInstanceResp();
 
+//        RTCPeerConnection that = this;
+//
+//        TimerTask task = new TimerTask() {
+//            @Override
+//            public void run() {
+//                that.getStats();
+//            }
+//        };
+//        timer.scheduleAtFixedRate(task, 1000L, 5000L);
+    }
 
-        RTCPeerConnection that = this;
-        TimerTask task = new TimerTask() {
-            @Override
-            public void run() {
-                peerConnection.getStats(that);
-            }
-        };
-        timer.scheduleAtFixedRate(task, 1000L, 5000L);
+    void getStats() {
+        peerConnection.getStats(this);
     }
 
     @Override
     public void onStatsDelivered(RTCStatsReport rtcStatsReport) {
-        for (Map.Entry<String , RTCStats>stat:
-             rtcStatsReport.getStatsMap().entrySet()) {
-            if (stat.getValue().getType().equals("inbound-rtp")||stat.getValue().getType().equals("track")){
-                Log.v(TAG, id+" "+stat.getValue().toString());
+        StringBuilder report = new StringBuilder();
+        boolean bFirst = true;
+
+        for (Map.Entry<String, RTCStats> stat :
+                rtcStatsReport.getStatsMap().entrySet()) {
+            if (!bFirst) {
+                report.append(",");
+            } else {
+                bFirst = false;
+                report.append("[");
             }
+//            report.append("\"").append(stat.getKey()).append("\":");
+            report.append("{\"timestamp\":").append((long) stat.getValue().getTimestampUs() / 1000)
+                    .append(",\"type\":\"").append(stat.getValue().getType())
+                    .append("\",\"id\":\"").append(stat.getValue().getId()).append("\"");
+
+            Iterator it = stat.getValue().getMembers().entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry<String, Object> entry = (Map.Entry) it.next();
+                report.append(", \"").append((String) entry.getKey()).append("\"").append(": ");
+                appendValue(report, entry.getValue());
+            }
+            report.append("}");
         }
+        report.append("]");
+
+        client.getStatsResp(report.toString());
     }
 
+    private static void appendValue(StringBuilder builder, Object value) {
+        if (value instanceof Object[]) {
+            Object[] arrayValue = (Object[]) value;
+            builder.append('[');
+
+            for (int i = 0; i < arrayValue.length; ++i) {
+                if (i != 0) {
+                    builder.append(", ");
+                }
+
+                appendValue(builder, arrayValue[i]);
+            }
+
+            builder.append(']');
+        } else if (value instanceof String) {
+            builder.append('"').append(value).append('"');
+        } else {
+            builder.append(value);
+        }
+
+    }
 
     void addTrack() {
         VideoCapturer videoCapturer = pcViewer.getVideoCapturer();
@@ -242,6 +290,9 @@ public class RTCPeerConnection implements RTCStatsCollectorCallback {
                 case addIceCandidate:
                     addIceCandidate(msg.payload);
                     break;
+                case getStats:
+                    getStats();
+                    break;
                 default:
                     Log.e(TAG, "onMessage not implement action:" + message);
             }
@@ -348,6 +399,15 @@ public class RTCPeerConnection implements RTCStatsCollectorCallback {
             send(msg.toString());
         }
 
+        public void getStatsResp(String stats) {
+            MessageBus.Message msg = new MessageBus.Message();
+            msg.target = hook_id;
+            msg.object = id;
+            msg.action = Action.getStats;
+            msg.payload = stats;
+            Log.v(TAG, id + " stats len" + msg.payload);
+            send(msg.toString());
+        }
     }
 
     static boolean setRemote = false;

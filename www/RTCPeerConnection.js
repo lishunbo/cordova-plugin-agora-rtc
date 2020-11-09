@@ -13,6 +13,23 @@ const EventType = {
     onAddTrack: "onAddTrack",
 }
 
+class RTCStatsReport {
+    constructor(json) {
+        this.stats = JSON.parse(json);
+    }
+    forEach(callbackfn) {
+        this.stats.forEach((v, i, a) => {
+            callbackfn(v, i, a);
+        })
+    }
+    get(id) {
+        return this.stats.find(x => x.id === id);
+    }
+    values() {
+        return this.stats;
+    }
+}
+
 class RTCPeerConnection {
     constructor(config) {
         this.id = uuidv4();
@@ -47,7 +64,7 @@ class RTCPeerConnection {
 
     }
 
-    cordovaEventHandler(ev){
+    cordovaEventHandler(ev) {
         console.log("PeerConnection Event: " + JSON.stringify(ev));
         switch (ev.event) {
             case EventType.onIceCandidate:
@@ -99,7 +116,7 @@ class RTCPeerConnection {
                 }
                 if (this.ontrack != null) {
                     // this.onicecandidate(new RTCPeerConnectionIceEvent("icecandidate", { candidate: JSON.parse(ev.payload)}));
-                    this.ontrack({track:new Stream.MediaStreamTrack(ev.payload), streams:[this.stream]});
+                    this.ontrack({ track: new Stream.MediaStreamTrack(ev.payload), streams: [this.stream] });
                 } else {
                     console.log("not found RTCPeerConnection.onConnectionStateChange function");
                 }
@@ -193,10 +210,10 @@ class RTCPeerConnection {
     }
 
     getStats(slector) {
-        return new Promise((resolve, reject) => { })
+        // return new Promise((resolve, reject) => { })
         return new Promise((resolve, reject) => {
             cordova.exec(function (ev) {
-                resolve(ev);
+                resolve(new RTCStatsReport(ev));
             }, function (ev) {
                 reject(ev);
             }, 'Hook', 'getStats', [this.id]);
@@ -220,7 +237,7 @@ class RTCPeerConnection {
         })
     }
 
-    
+
     addEventListener(eventType, func) {
         var queue = this.jsEventHandle.get(eventType);
         if (queue !== undefined) {

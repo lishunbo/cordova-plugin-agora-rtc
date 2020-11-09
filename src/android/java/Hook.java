@@ -171,7 +171,7 @@ public class Hook extends CordovaPlugin {
                 case addTransceiver:
                     return addTransceiver(args);
                 case getStats:
-                    return getStats(args);
+                    return getStats(args, callbackContext);
                 //MediaDevice functions
                 case getUserMedia:
                     return getUserMedia(args, callbackContext);
@@ -209,8 +209,11 @@ public class Hook extends CordovaPlugin {
         return true;
     }
 
-    private boolean getStats(JSONArray args) {
-        return false;
+    private boolean getStats(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        String id = args.getString(0);
+
+        wrapper.getStats(id, callbackContext);
+        return true;
     }
 
     private boolean addTrack(JSONArray args, final CallbackContext callbackContext) throws JSONException {
