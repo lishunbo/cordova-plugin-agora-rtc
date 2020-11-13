@@ -146,7 +146,9 @@ public class Hook extends CordovaPlugin {
         }
 
         try {
-            Log.e(TAG, "actioin:" + Action.valueOf(action));
+            if (Config.logInternalMessage) {
+                Log.e(TAG, "actioin:" + Action.valueOf(action));
+            }
             switch (Action.valueOf(action)) {
                 //Keep Instance context for callback
                 case createInstance:

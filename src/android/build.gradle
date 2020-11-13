@@ -26,13 +26,19 @@ android {
     testOptions {
         unitTests.includeAndroidResources = true
     }
+    repositories {
+        flatDir {
+            dirs 'src/main/libs'
+        }
+    }
 }
 
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
-    implementation 'org.webrtc:google-webrtc:1.0.30039'
+    // implementation 'org.webrtc:google-webrtc:1.0.30039'
     implementation "org.java-websocket:Java-WebSocket:1.4.0"
 //    implementation project(':webrtc-client')
+    compile(name:"libwebrtc",ext:"aar")
 
     implementation 'com.fasterxml.jackson.core:jackson-core:2.11.3'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.11.3'

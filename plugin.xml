@@ -65,6 +65,7 @@
           </provider>
         </config-file> -->
         <source-file src="src/android/java/Action.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
+        <source-file src="src/android/java/Config.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
         <source-file src="src/android/java/Hook.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
         <source-file src="src/android/java/RTCPlugin.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
         <source-file src="src/android/java/WebRTCViewActivity.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>

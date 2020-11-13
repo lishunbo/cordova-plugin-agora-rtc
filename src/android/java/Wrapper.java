@@ -170,7 +170,9 @@ public class Wrapper extends WebSocketClient {
 
     @Override
     public void onMessage(String message) {
-        Log.e(TAG, "Wrapper onMessage:" + message);
+        if (Config.logInternalMessage) {
+            Log.e(TAG, "Wrapper onMessage:" + message);
+        }
         MessageBus.Message msg = MessageBus.Message.formString(message);
         assert msg != null;
         CallbackContext callbackContext = this.instances.get(msg.object + msg.action);

@@ -4,15 +4,14 @@ import android.content.Context;
 import android.util.Log;
 
 import com.agora.cordova.plugin.webrtc.Action;
+import com.agora.cordova.plugin.webrtc.Config;
 import com.agora.cordova.plugin.webrtc.models.RTCConfiguration;
 import com.agora.cordova.plugin.webrtc.utils.MessageBus;
 
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.webrtc.AudioTrack;
 import org.webrtc.DataChannel;
 import org.webrtc.IceCandidate;
 import org.webrtc.MediaConstraints;
@@ -22,7 +21,6 @@ import org.webrtc.RTCStats;
 import org.webrtc.RTCStatsCollectorCallback;
 import org.webrtc.RTCStatsReport;
 import org.webrtc.RtpReceiver;
-import org.webrtc.RtpTransceiver;
 import org.webrtc.SdpObserver;
 import org.webrtc.SessionDescription;
 import org.webrtc.SurfaceTextureHelper;
@@ -37,7 +35,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Timer;
-import java.util.TimerTask;
 
 
 public class RTCPeerConnection implements RTCStatsCollectorCallback {
@@ -267,7 +264,9 @@ public class RTCPeerConnection implements RTCStatsCollectorCallback {
 
         @Override
         public void onMessage(String message) {
-            Log.e(TAG, "onMessage:" + message);
+            if (Config.logInternalMessage) {
+                Log.e(TAG, "onMessage:" + message);
+            }
             MessageBus.Message msg = MessageBus.Message.formString(message);
             if (!msg.target.equals(id.toString())) {
                 Log.e(TAG, "invalid message has been received");
@@ -405,7 +404,7 @@ public class RTCPeerConnection implements RTCStatsCollectorCallback {
             msg.object = id;
             msg.action = Action.getStats;
             msg.payload = stats;
-            Log.v(TAG, id + " stats len" + msg.payload);
+//            Log.v(TAG, id + " stats len" + msg.payload);
             send(msg.toString());
         }
     }
