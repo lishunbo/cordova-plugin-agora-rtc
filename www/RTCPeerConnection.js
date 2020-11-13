@@ -63,6 +63,9 @@ class RTCPeerConnection {
             }, 'Hook', 'createInstance', [this.id, this.config]);
 
     }
+    getConfiguration(){
+        return this.config;
+    }
 
     cordovaEventHandler(ev) {
         console.log("PeerConnection Event: " + JSON.stringify(ev));
@@ -92,7 +95,7 @@ class RTCPeerConnection {
                 break;
             case EventType.onConnectionStateChange:
                 // console.log("got event " + EventType.onConnectionStateChange);
-                this.connectionState = ev.payload;
+                this._connectionState = ev.payload;
                 if (this.onConnectionStateChange != null) {
                     // this.onicecandidate(new RTCPeerConnectionIceEvent("icecandidate", { candidate: JSON.parse(ev.payload)}));
                     this.onicecanonConnectionStateChangedidate();
