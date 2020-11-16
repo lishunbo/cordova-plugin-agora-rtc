@@ -6,4 +6,5 @@
     <string name="internalws">ws://127.0.0.1:9999/</string>
     <string name="hook_id">hook_id</string>
     <string name="webrtc_view_id">webrtc_view_id</string>
+    <string name="service_id">service_id</string>
 </resources>

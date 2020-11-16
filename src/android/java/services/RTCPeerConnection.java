@@ -53,13 +53,17 @@ public class RTCPeerConnection implements RTCStatsCollectorCallback {
 
     public interface PCViewer {
         //        PeerConnection createPeerConnection(LinkedList<PeerConnection.IceServer> iceServers, Observer observer);
-        Context getAppContext();
+//        Context getAppContext();
 
-        VideoSink getLocalViewer();
+//        VideoSink getLocalViewer();
 
-        VideoSink getRemoteViewer();
+//        VideoSink getRemoteViewer();
 
-        VideoCapturer getVideoCapturer();
+//        VideoCapturer getVideoCapturer();
+
+        VideoTrack getLocalVideoTrackAndPlay(boolean isFront, int w, int h, int fps);
+
+        void onAddStream(MediaStream stream, String usage);
     }
 
     public RTCPeerConnection(PCViewer pcviewer, String hook_id, String id, String internalws, RTCConfiguration config) {
@@ -157,21 +161,12 @@ public class RTCPeerConnection implements RTCStatsCollectorCallback {
     }
 
     void addTrack() {
-        VideoCapturer videoCapturer = pcViewer.getVideoCapturer();
-        if (videoCapturer == null) {
+        VideoTrack videoTrack = pcViewer.getLocalVideoTrackAndPlay(true, 300, 400, 20);
+        if (videoTrack == null) {
             client.addTrackResp();
             return;
         }
-        SurfaceTextureHelper surfaceTextureHelper = SurfaceTextureHelper.create("CaptureThread", PCFactory.eglBase());
-        VideoSource videoSource = PCFactory.factory().createVideoSource(videoCapturer.isScreencast());
 
-        videoCapturer.initialize(surfaceTextureHelper, pcViewer.getAppContext(), videoSource.getCapturerObserver());
-        videoCapturer.startCapture(810, 1080, 20);
-
-        // create VideoTrack
-        VideoTrack videoTrack = PCFactory.factory().createVideoTrack("100", videoSource);
-        // display in localView
-        videoTrack.addSink(pcViewer.getRemoteViewer());
         MediaStream mediaStream = PCFactory.factory().createLocalMediaStream("localMediaStream");
         mediaStream.addTrack(videoTrack);
 
@@ -264,13 +259,13 @@ public class RTCPeerConnection implements RTCStatsCollectorCallback {
 
         @Override
         public void onMessage(String message) {
-            if (Config.logInternalMessage) {
-                Log.e(TAG, "onMessage:" + message);
-            }
             MessageBus.Message msg = MessageBus.Message.formString(message);
             if (!msg.target.equals(id.toString())) {
                 Log.e(TAG, "invalid message has been received");
                 return;
+            }
+            if (Config.logInternalMessage&&msg.action!=Action.getStats) {
+                Log.e(TAG, "onMessage:" + message);
             }
 
             switch (msg.action) {
@@ -483,12 +478,8 @@ public class RTCPeerConnection implements RTCStatsCollectorCallback {
         public void onAddStream(MediaStream mediaStream) {
 
             Log.v(TAG, usage + " onAddStream " + mediaStream.videoTracks.size());
-            for (VideoTrack track :
-                    mediaStream.videoTracks) {
-                Log.v(TAG, usage + " onAddVideoTrack to remote Viewer " + track.kind() + track.id());
-                track.setEnabled(true);
-                track.addSink(pcViewer.getLocalViewer());
-            }
+
+            pcViewer.onAddStream(mediaStream, usage);
         }
 
         @Override

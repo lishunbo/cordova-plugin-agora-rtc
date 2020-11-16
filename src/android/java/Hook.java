@@ -5,6 +5,9 @@ package com.agora.cordova.plugin.webrtc;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Build;
+import android.provider.Settings;
 import android.util.Log;
 
 import com.agora.cordova.plugin.webrtc.models.MediaStreamConstraints;
@@ -52,6 +55,7 @@ public class Hook extends CordovaPlugin {
     public static final String ALERT_WINDOW = Manifest.permission.SYSTEM_ALERT_WINDOW;
 
     public static final int NECESSARY_PERM_CODE = 900;
+    public static final int OVERLAY_PERMISSION_CODE = 1000;
     private static final String PERMISSION_DENIED_ERROR = "Permission_Denied";
 
     //TODO maybe should protected by RWlock
@@ -60,6 +64,7 @@ public class Hook extends CordovaPlugin {
     MessageBus server;
     String hook_id = UUID.randomUUID().toString();
     String webrtc_view_id;
+    String service_id;
 
     Wrapper wrapper = null;
 
@@ -67,40 +72,59 @@ public class Hook extends CordovaPlugin {
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
         super.initialize(cordova, webView);
 
-        Log.e(TAG, "=== Realy in initialize");
+        Log.v(TAG, "Hook initializing");
 
         allConnections = new HashMap<>();
 
+        StartMessageBus();
 
-//        cordova.getThreadPool().execute(new Runnable() {
-//            @Override
-//            public void run() {
-        server = new MessageBus(new InetSocketAddress("127.0.0.1", 9999));
-        server.setReuseAddr(true);
-        server.setTcpNoDelay(true);
-        server.start();
-//            }
-//        });
-
-//        cordova.getActivity().runOnUiThread(()->{
         if (!(cordova.hasPermission(CAMERA) && cordova.hasPermission(INTERNET)
                 && cordova.hasPermission(RECORD_AUDIO) && cordova.hasPermission(WAKE_LOCK) && cordova.hasPermission(ALERT_WINDOW))) {
             getNecessaryPermission();
         }
 
-
         webrtc_view_id = cordova.getActivity().getString(R.string.webrtc_view_id);
+        service_id = cordova.getActivity().getString(R.string.service_id);
 
-//        this.cordova.getThreadPool().execute(() -> {
-        Intent intent = new Intent(cordova.getActivity().getApplicationContext(), WebRTCViewActivity.class);
+        if (Build.VERSION.SDK_INT >= 23 && (!Settings.canDrawOverlays(cordova.getActivity()))) {
+            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:" + cordova.getActivity().getPackageName()));
 
+            cordova.startActivityForResult(new CordovaPlugin() {
+                @Override
+                public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+                    super.onActivityResult(requestCode, resultCode, intent);
+
+                    Log.v(TAG, "onActivityResult " + requestCode + " " + resultCode);
+                    if (requestCode == OVERLAY_PERMISSION_CODE) {
+                        if (resultCode != PackageManager.PERMISSION_DENIED) {
+                            StartBackgroundService(cordova);
+                        }
+                    }
+                }
+            }, intent, OVERLAY_PERMISSION_CODE);
+        } else {
+            StartBackgroundService(cordova);
+        }
+
+        initialWrapper(cordova);
+        Log.v(TAG, "Hook initialized");
+    }
+
+    void StartMessageBus() {
+        server = new MessageBus(new InetSocketAddress("127.0.0.1", 9999));
+        server.setReuseAddr(true);
+        server.setTcpNoDelay(true);
+        server.start();
+    }
+
+    void StartBackgroundService(CordovaInterface cordova) {
+        Intent intent = new Intent(cordova.getActivity(), BackgroundService.class);
         intent.putExtra(cordova.getActivity().getString(R.string.hook_id), hook_id);
+        cordova.getActivity().startService(intent);
+    }
 
-        cordova.getActivity().startActivity(intent);
-//        });
-
-//        });
-
+    void initialWrapper(CordovaInterface cordova) {
         URI uri = null;
         try {
             uri = new URI(cordova.getActivity().getString(R.string.internalws) + hook_id);
@@ -108,7 +132,7 @@ public class Hook extends CordovaPlugin {
             Log.e(TAG, "Panic error, cannot parser internal communicate ws url:" + e.toString());
 
         }
-        wrapper = new Wrapper(uri, cordova, hook_id, webrtc_view_id);
+        wrapper = new Wrapper(uri, cordova, hook_id, service_id);
         try {
             wrapper.connectBlocking();
         } catch (Exception e) {
@@ -121,6 +145,8 @@ public class Hook extends CordovaPlugin {
     public void onDestroy() {
         super.onDestroy();
         try {
+            cordova.getActivity().stopService(new Intent(cordova.getActivity(), BackgroundService.class));
+            wrapper.close();
             server.stop(300);
         } catch (Exception e) {
             Log.e(TAG, "MessageBus stop exception:" + e.toString());
@@ -146,7 +172,7 @@ public class Hook extends CordovaPlugin {
         }
 
         try {
-            if (Config.logInternalMessage) {
+            if (Config.logInternalMessage && !action.equals("getStats")) {
                 Log.e(TAG, "actioin:" + Action.valueOf(action));
             }
             switch (Action.valueOf(action)) {
@@ -332,19 +358,22 @@ public class Hook extends CordovaPlugin {
         cordova.requestPermissions(this, Hook.NECESSARY_PERM_CODE,
                 new String[]{CAMERA,
                         INTERNET,
+                        ALERT_WINDOW,
                         RECORD_AUDIO,
                         WAKE_LOCK,
-                        ALERT_WINDOW,
                 });
     }
 
     @Override
     public void onRequestPermissionResult(int requestCode, String[] permissions, int[] grantResults) throws JSONException {
+        Log.e(TAG, "Some permission checking" + requestCode);
         super.onRequestPermissionResult(requestCode, permissions, grantResults);
         for (int r : grantResults) {
             if (r == PackageManager.PERMISSION_DENIED) {
-                Log.e(TAG, "Some permission has been denied");
-                return;
+                Log.e(TAG, "Some permission has been denied" + requestCode);
+//                return;
+            } else {
+                Log.e(TAG, "Some permission has been allowed" + requestCode);
             }
         }
     }

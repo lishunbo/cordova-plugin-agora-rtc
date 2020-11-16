@@ -24,6 +24,7 @@ import org.webrtc.SurfaceViewRenderer;
 import org.webrtc.VideoCapturer;
 import org.webrtc.VideoSink;
 import org.webrtc.VideoSource;
+import org.webrtc.VideoTrack;
 
 import java.net.URI;
 import java.util.LinkedList;
@@ -157,24 +158,35 @@ public class WebRTCViewActivity extends Activity implements RTCPeerConnection.PC
         client.getUserMediaResp();
     }
 
+    // implement PCViewer
     @Override
-    public VideoSink getLocalViewer() {
-        return localView;
+    public VideoTrack getLocalVideoTrackAndPlay(boolean isFront, int w, int h, int fps) {
+        return null;
     }
 
     @Override
-    public VideoSink getRemoteViewer() {
-        return remoteView;
-    }
-    @Override
-    public VideoCapturer getVideoCapturer() {
-        return createCameraCapturer(true);
+    public void onAddStream(MediaStream stream, String usage) {
+
     }
 
-    @Override
-    public Context getAppContext() {
-        return getApplicationContext();
-    }
+//    @Override
+//    public VideoSink getLocalViewer() {
+//        return localView;
+//    }
+//
+//    @Override
+//    public VideoSink getRemoteViewer() {
+//        return remoteView;
+//    }
+//    @Override
+//    public VideoCapturer getVideoCapturer() {
+//        return createCameraCapturer(true);
+//    }
+//
+//    @Override
+//    public Context getAppContext() {
+//        return getApplicationContext();
+//    }
 
     private class MessageBusClient extends WebSocketClient {
         MessageBusClient(URI uri) {
