@@ -58,15 +58,7 @@ public class Hook extends CordovaPlugin {
     public static final int OVERLAY_PERMISSION_CODE = 1000;
     private static final String PERMISSION_DENIED_ERROR = "Permission_Denied";
 
-    //TODO maybe should protected by RWlock
-    Map<String, RTCPeerConnection> allConnections;
-
-    MessageBus server;
-    String hook_id = UUID.randomUUID().toString();
-    String webrtc_view_id;
-    String service_id;
-
-    Wrapper wrapper = null;
+    WebRTCService _service;
 
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
@@ -74,17 +66,12 @@ public class Hook extends CordovaPlugin {
 
         Log.v(TAG, "Hook initializing");
 
-        allConnections = new HashMap<>();
-
-        StartMessageBus();
+        _service = new WebRTCService(cordova.getActivity());
 
         if (!(cordova.hasPermission(CAMERA) && cordova.hasPermission(INTERNET)
                 && cordova.hasPermission(RECORD_AUDIO) && cordova.hasPermission(WAKE_LOCK) && cordova.hasPermission(ALERT_WINDOW))) {
             getNecessaryPermission();
         }
-
-        webrtc_view_id = cordova.getActivity().getString(R.string.webrtc_view_id);
-        service_id = cordova.getActivity().getString(R.string.service_id);
 
         if (Build.VERSION.SDK_INT >= 23 && (!Settings.canDrawOverlays(cordova.getActivity()))) {
             Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
@@ -96,113 +83,63 @@ public class Hook extends CordovaPlugin {
                     super.onActivityResult(requestCode, resultCode, intent);
 
                     Log.v(TAG, "onActivityResult " + requestCode + " " + resultCode);
-                    if (requestCode == OVERLAY_PERMISSION_CODE) {
-                        if (resultCode != PackageManager.PERMISSION_DENIED) {
-                            StartBackgroundService(cordova);
-                        }
-                    }
                 }
             }, intent, OVERLAY_PERMISSION_CODE);
-        } else {
-            StartBackgroundService(cordova);
         }
 
-        initialWrapper(cordova);
         Log.v(TAG, "Hook initialized");
-    }
-
-    void StartMessageBus() {
-        server = new MessageBus(new InetSocketAddress("127.0.0.1", 9999));
-        server.setReuseAddr(true);
-        server.setTcpNoDelay(true);
-        server.start();
-    }
-
-    void StartBackgroundService(CordovaInterface cordova) {
-        Intent intent = new Intent(cordova.getActivity(), BackgroundService.class);
-        intent.putExtra(cordova.getActivity().getString(R.string.hook_id), hook_id);
-        cordova.getActivity().startService(intent);
-    }
-
-    void initialWrapper(CordovaInterface cordova) {
-        URI uri = null;
-        try {
-            uri = new URI(cordova.getActivity().getString(R.string.internalws) + hook_id);
-        } catch (Exception e) {
-            Log.e(TAG, "Panic error, cannot parser internal communicate ws url:" + e.toString());
-
-        }
-        wrapper = new Wrapper(uri, cordova, hook_id, service_id);
-        try {
-            wrapper.connectBlocking();
-        } catch (Exception e) {
-            Log.e(TAG, "Panic error, cannot connect internal communicate ws server:" + e.toString());
-        }
-        Log.e(TAG, "connected internal communicate ws server:");
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        try {
-            cordova.getActivity().stopService(new Intent(cordova.getActivity(), BackgroundService.class));
-            wrapper.close();
-            server.stop(300);
-        } catch (Exception e) {
-            Log.e(TAG, "MessageBus stop exception:" + e.toString());
-        }
+    }
+
+    @Override
+    public void onPause(boolean multitasking) {
+        super.onPause(multitasking);
+    }
+
+    @Override
+    public void onResume(boolean multitasking) {
+        super.onResume(multitasking);
     }
 
     @Override
     public boolean execute(String action, JSONArray args,
                            final CallbackContext callbackContext) {
-
-
-        return continueWithPermissions(action, args, callbackContext);
-    }
-
-    //Main hook point for Hook
-    private boolean continueWithPermissions(String action, JSONArray args,
-                                            final CallbackContext callbackContext) {
-        if (wrapper != null && !wrapper.isOpen()) {
-            Log.e(TAG, "Panic error, not connected to internal communicate ws server");
-
-            callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ILLEGAL_ACCESS_EXCEPTION));
-            return false;
-        }
-
         try {
             if (Config.logInternalMessage && !action.equals("getStats")) {
                 Log.e(TAG, "actioin:" + Action.valueOf(action));
             }
             switch (Action.valueOf(action)) {
+                case getUserMedia:
+                    return _service.getUserMedia(args, callbackContext);
                 //Keep Instance context for callback
                 case createInstance:
-                    return createInstance(args, callbackContext);
+                    return _service.createInstance(args, callbackContext);
                 //PeerConnection sub functions
-                case createOffer:
-                    return createOffer(args, callbackContext);
                 case addTrack:
-                    return addTrack(args, callbackContext);
-                case setLocalDescription:
-                    return setLocalDescription(args, callbackContext);
-                case setRemoteDescription:
-                    return setRemoteDescription(args, callbackContext);
-                case addIceCandidate:
-                    return addIceCandidate(args, callbackContext);
-                case close:
-                    return close(args);
-                case removeTrack:
-                    return removeTrack(args);
+                    return _service.addTrack(args, callbackContext);
                 case getTransceivers:
-                    return getTransceivers(args);
+                    return _service.getTransceivers(args);
                 case addTransceiver:
-                    return addTransceiver(args);
+                    return _service.addTransceiver(args);
+                case createOffer:
+                    return _service.createOffer(args, callbackContext);
+                case setLocalDescription:
+                    return _service.setLocalDescription(args, callbackContext);
+                case setRemoteDescription:
+                    return _service.setRemoteDescription(args, callbackContext);
+                case addIceCandidate:
+                    return _service.addIceCandidate(args, callbackContext);
+                case close:
+                    return _service.close(args);
+                case removeTrack:
+                    return _service.removeTrack(args);
                 case getStats:
-                    return getStats(args, callbackContext);
+                    return _service.getStats(args, callbackContext);
                 //MediaDevice functions
-                case getUserMedia:
-                    return getUserMedia(args, callbackContext);
                 default:
                     Log.e(TAG, "Not implement action of :" + action);
                     callbackContext.error("RTCPeerConnection not implement action:" + action);
@@ -214,144 +151,6 @@ public class Hook extends CordovaPlugin {
         }
     }
 
-    private boolean getUserMedia(JSONArray args, final CallbackContext callbackContext) throws JSONException {
-        String id = args.getString(0);
-
-        MediaStreamConstraints constraints = null;
-
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            HashMap result = mapper.readValue(args.getJSONObject(1).toString(), HashMap.class);
-            constraints = new MediaStreamConstraints(result);
-        } catch (Exception e) {
-            Log.e(TAG, "fault, cannot unmarshal MediaStreamConstraints:" + e.toString() + args.toString());
-        }
-        if (constraints == null) {
-            Log.e(TAG, "fault, getUserMedia no sdp data");
-            callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ILLEGAL_ACCESS_EXCEPTION));
-            return false;
-        }
-
-        wrapper.getUserMedia(id, callbackContext, constraints);
-
-        return true;
-    }
-
-    private boolean getStats(JSONArray args, final CallbackContext callbackContext) throws JSONException {
-        String id = args.getString(0);
-
-        wrapper.getStats(id, callbackContext);
-        return true;
-    }
-
-    private boolean addTrack(JSONArray args, final CallbackContext callbackContext) throws JSONException {
-        String id = args.getString(0);
-
-        wrapper.addTrack(id, callbackContext);
-        return true;
-    }
-
-    private boolean setLocalDescription(JSONArray args, CallbackContext callbackContext) throws JSONException {
-        String id = args.getString(0);
-        JSONObject sdp = new JSONObject();
-        sdp.put("type", args.getString(1));
-        sdp.put("description", args.getString(2));
-        wrapper.setLocalDescription(id, sdp.toString(), callbackContext);
-        return true;
-    }
-
-    private boolean addTransceiver(JSONArray args) {
-        return false;
-    }
-
-    private boolean getTransceivers(JSONArray args) {
-        return false;
-    }
-
-    private boolean removeTrack(JSONArray args) {
-        return false;
-    }
-
-    private boolean close(JSONArray args) {
-        return false;
-    }
-
-    boolean createInstance(JSONArray args, final CallbackContext callbackContext) throws JSONException {
-        String id = args.getString(0);
-//        Log.d(TAG, args.toString());
-
-        Log.e(TAG, "log for createInstance object:" + wrapper.toString());
-        RTCConfiguration cfg = null;
-        if (args.length() > 1) {
-            String json = args.get(1).toString();
-            if (json.length() != 0) {
-                cfg = RTCConfiguration.fromJson(json);
-            }
-        }
-        if (cfg == null) {
-            Log.e(TAG, "Invalid RTCConfiguration config, using default");
-            cfg = new RTCConfiguration();
-        }
-
-        wrapper.createInstance(id, callbackContext, cfg);
-
-//        Log.e(TAG, "log for wrapper object:" + wrapper.toString());
-
-        PluginResult result = new PluginResult(OK);
-        result.setKeepCallback(true);
-
-        callbackContext.sendPluginResult(result);
-        return true;
-    }
-
-    boolean setRemoteDescription(JSONArray args, final CallbackContext callbackContext) throws JSONException {
-        String id = args.getString(0);
-        JSONObject sdp = new JSONObject();
-        try {
-            sdp.put("type", args.getString(1));
-            sdp.put("description", args.getString(2));
-        } catch (Exception e) {
-            Log.e(TAG, "fault, cannot unmarshal SessionDescription:" + e.toString() + args.toString());
-        }
-        if (sdp == null) {
-            Log.e(TAG, "fault, setRemoteDescription no sdp data");
-            callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ILLEGAL_ACCESS_EXCEPTION));
-            return false;
-        }
-        wrapper.setRemoteDescription(id, callbackContext, sdp.toString());
-
-        PluginResult result = new PluginResult(NO_RESULT);
-        result.setKeepCallback(true);
-
-        callbackContext.sendPluginResult(result);
-
-        return true;
-    }
-
-    private boolean addIceCandidate(JSONArray args, final CallbackContext callbackContext) throws JSONException {
-        String id = args.getString(0);
-
-        wrapper.addIceCandidate(id, args.getJSONObject(1).toString(), callbackContext);
-
-        PluginResult result = new PluginResult(NO_RESULT);
-        result.setKeepCallback(true);
-
-        callbackContext.sendPluginResult(result);
-        return true;
-    }
-
-    boolean createOffer(JSONArray args, final CallbackContext callbackContext) throws JSONException {
-        String id = args.getString(0);
-
-        wrapper.createOffer(id, callbackContext);
-
-        PluginResult result = new PluginResult(NO_RESULT);
-        result.setKeepCallback(true);
-
-        callbackContext.sendPluginResult(result);
-
-        return true;
-    }
 
     protected void getNecessaryPermission() {
         Log.v(TAG, "getNecessaryPermission:");

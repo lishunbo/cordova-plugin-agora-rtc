@@ -18,6 +18,10 @@ public enum Action {
     onICEConnectionStateChange("onICEConnectionStateChange"),
     onConnectionStateChange("onConnectionStateChange"),
     onSignalingStateChange("onSignalingStateChange"),
+    onIceGatheringChange("onIceGatheringChange"),
+    onIceConnectionReceivingChange("onIceConnectionReceivingChange"),
+    onIceCandidatesRemoved("onIceCandidatesRemoved"),
+    onRenegotiationNeeded("onRenegotiationNeeded"),
 
     onAddTrack("onAddTrack"),
 

@@ -6,7 +6,7 @@ import org.webrtc.VideoFrame;
 import org.webrtc.VideoSink;
 
 public class ProxyVideoSink implements VideoSink {
-    private final static String TAG = BackgroundService.class.getCanonicalName();
+    private final static String TAG = ProxyVideoSink.class.getCanonicalName();
     private VideoSink target;
     @Override
     synchronized
