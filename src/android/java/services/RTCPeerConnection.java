@@ -71,14 +71,14 @@ public class RTCPeerConnection {
     public void createInstance(MessageHandler handler) {
         LinkedList<PeerConnection.IceServer> iceServers = new LinkedList<>();
         for (RTCIceServer iceServer : config.iceServers) {
-            if (iceServer.urls == null || iceServer.urls.length == 0){
+            if (iceServer.urls == null || iceServer.urls.length == 0) {
                 continue;
             }
             PeerConnection.IceServer.Builder builder = PeerConnection.IceServer.builder(Arrays.asList(iceServer.urls));
-            if (iceServer.username != null ){
+            if (iceServer.username != null) {
                 builder.setUsername(iceServer.username);
             }
-            if (iceServer.credential!= null && (iceServer.credentialType == null || iceServer.credentialType == RTCIceCredentialType.password)){
+            if (iceServer.credential != null && (iceServer.credentialType == null || iceServer.credentialType == RTCIceCredentialType.password)) {
                 builder.setPassword(((RTCIceServer.CredentialDetailStringImp) iceServer.credential).toString());
             }
 
@@ -331,6 +331,7 @@ public class RTCPeerConnection {
             Log.v(TAG, usage + " onAddTrack " + rtpReceiver.track().kind());
 //            client.onAddTrack(rtpReceiver.track().kind().toLowerCase());
             supervisor.onAddTrack(pc_id, rtpReceiver, mediaStreams, usage);
+            supervisor.onObserveEvent(pc_id, Action.onAddTrack, rtpReceiver.track().kind().toLowerCase(), usage);
         }
 
 

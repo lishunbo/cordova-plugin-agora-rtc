@@ -7,6 +7,8 @@ import org.webrtc.DefaultVideoEncoderFactory;
 import org.webrtc.EglBase;
 
 import org.webrtc.PeerConnectionFactory;
+import org.webrtc.SoftwareVideoDecoderFactory;
+import org.webrtc.SoftwareVideoEncoderFactory;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -56,6 +58,12 @@ public class PCFactory {
                     new DefaultVideoEncoderFactory(_factory.eglBase, true, true);
             DefaultVideoDecoderFactory defaultVideoDecoderFactory =
                     new DefaultVideoDecoderFactory(_factory.eglBase);
+
+            SoftwareVideoDecoderFactory dec = new SoftwareVideoDecoderFactory();
+            SoftwareVideoEncoderFactory enc = new SoftwareVideoEncoderFactory();
+            dec.getSupportedCodecs();
+            enc.getSupportedCodecs();
+            defaultVideoDecoderFactory.getSupportedCodecs();
             _factory.factory = PeerConnectionFactory.builder()
                     .setOptions(options)
                     .setVideoEncoderFactory(defaultVideoEncoderFactory)

@@ -15,11 +15,14 @@
     <js-module src="www/mediaDevice.js" name="mediaDevices">
         <clobbers target="navigator.mediaDevices" />
     </js-module>
-    <js-module src="www/webkitGetUserMedia.js" name="webkitGetUserMedia">
-        <clobbers target="navigator.webkitGetUserMedia" />
-    </js-module>
     <js-module src="www/MediaConstants.js" name="Media">
         <clobbers target="Media" />
+    </js-module>
+    <js-module src="www/NativePlayer.js" name="nativePlayer">
+        <clobbers target="nativePlayer" />
+    </js-module>
+    <js-module src="www/sdk-ng/AgoraRTC_N-production.js" name="sdk-ng">
+        <clobbers target="sdk-ng" />
     </js-module>
     <!-- <js-module src="www/MediaControl.js" name="anyway">
         <clobbers target="anyway" />

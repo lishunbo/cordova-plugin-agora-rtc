@@ -36,6 +36,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import static android.content.Context.RECEIVER_VISIBLE_TO_INSTANT_APPS;
 import static android.content.Context.WINDOW_SERVICE;
 import static org.apache.cordova.PluginResult.Status.OK;
 
@@ -43,8 +44,7 @@ public class WebRTCService {
     private final static String TAG = WebRTCService.class.getCanonicalName();
 
     Activity _mainActivity;
-    SurfaceViewRenderer view;
-    WindowManager mWindowManager;
+    VideoViewManager _videoViewManager;
 
     List<RTCPeerConnection> allPC = new LinkedList<>();
 
@@ -67,29 +67,11 @@ public class WebRTCService {
 
     public WebRTCService(Activity mainActivity) {
         _mainActivity = mainActivity;
+        _videoViewManager = new VideoViewManager(_mainActivity);
 
         instances = new HashMap<>();
 
         PCFactory.initializationOnce(_mainActivity.getApplicationContext());
-
-        view = new SurfaceViewRenderer(getApplicationContext());
-        view.setMirror(false);
-        view.init(PCFactory.eglBase(), new RendererCommon.RendererEvents() {
-            @Override
-            public void onFirstFrameRendered() {
-                Log.v(TAG, "onFirstFrameRendered");
-            }
-
-            @Override
-            public void onFrameResolutionChanged(int i, int i1, int i2) {
-                Log.v(TAG, "onFrameResolutionChanged");
-
-            }
-        });
-
-        view.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FILL);
-        view.setMirror(true);
-        view.setZOrderMediaOverlay(true);
     }
 
     public boolean getUserMedia(JSONArray args, final CallbackContext callbackContext) throws JSONException {
@@ -277,12 +259,11 @@ public class WebRTCService {
         return _mainActivity.getSystemService(name);
     }
 
-    public VideoTrack getLocalVideoTrackAndPlay(boolean isFront, int w, int h, int fps) {
+    VideoTrack getLocalVideoTrackAndPlay(boolean isFront, int w, int h, int fps) {
         VideoCapturer videoCapturer = createCameraCapturer(isFront);
         if (videoCapturer == null) {
             return null;
         }
-        Log.v(TAG, "=============== getLocalVideoTrackAndPlay 0");
         SurfaceTextureHelper surfaceTextureHelper = SurfaceTextureHelper.create("CaptureThread", PCFactory.eglBase());
         VideoSource videoSource = PCFactory.factory().createVideoSource(videoCapturer.isScreencast());
 
@@ -292,59 +273,18 @@ public class WebRTCService {
         // create VideoTrack
         VideoTrack videoTrack = PCFactory.factory().createVideoTrack("100", videoSource);
         // display in localView
-//        videoTrack.addSink(pcViewer.getRemoteViewer());
 
-        mWindowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
-        int LAYOUT_FLAG;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            LAYOUT_FLAG = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
-        } else {
-            LAYOUT_FLAG = WindowManager.LayoutParams.TYPE_PHONE;
-        }
+        VideoViewManager.VideoView view = _videoViewManager.new VideoView(false);
 
-        DisplayMetrics displayMetrics = new DisplayMetrics();
-        mWindowManager.getDefaultDisplay().getMetrics(displayMetrics);
-        int height = displayMetrics.heightPixels;
-        int width = displayMetrics.widthPixels;
+        view.Show(videoTrack, _videoViewManager.windowWidth / 2, _videoViewManager.windowHeight / 3, 0, 0);
 
-        final WindowManager.LayoutParams paramsF = new WindowManager.LayoutParams(
-                width,
-                height / 3,
-                LAYOUT_FLAG,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-                PixelFormat.TRANSLUCENT);
-
-        paramsF.gravity = Gravity.TOP | Gravity.LEFT;
-        paramsF.x = 0;
-        paramsF.y = 0;
-
-        Log.v(TAG, "=============== getLocalVideoTrackAndPlay 1" + height + "   " + width);
-        ProxyVideoSink sink = new ProxyVideoSink();
-        sink.setTarget(view);
-
-        videoTrack.addSink(sink);
-
-        _mainActivity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-
-//                ImageView image = new ImageView(that);
-//
-//                image.setImageResource(R.drawable.btn_startcall_normal);
-
-                Log.v(TAG, "=============== getLocalVideoTrackAndPlay 2");
-                try {
-                    mWindowManager.addView(view, paramsF);
-                } catch (Exception e) {
-                    Log.v(TAG, "=============== getLocalVideoTrackAndPlay 2.1 " + e.toString());
-                    Log.e(TAG, "maybe no permission to Draw over other apps");
-                }
-            }
-        });
-
-
-        Log.v(TAG, "=============== getLocalVideoTrackAndPlay 3");
         return videoTrack;
+    }
+
+    void setRemoteVideoTrack(VideoTrack videoTrack) {
+        VideoViewManager.VideoView view = _videoViewManager.new VideoView(false);
+
+        view.Show(videoTrack, _videoViewManager.windowWidth / 2, _videoViewManager.windowHeight / 3, 0, _videoViewManager.windowHeight / 3);
     }
 
     private VideoCapturer createCameraCapturer(boolean isFront) {
@@ -377,7 +317,9 @@ public class WebRTCService {
 
         @Override
         public void onAddStream(String id, MediaStream stream, String usage) {
-
+//            if
+            Log.e(TAG, "onAddStream ");
+            setRemoteVideoTrack(stream.videoTracks.get(0));
         }
 
         @Override

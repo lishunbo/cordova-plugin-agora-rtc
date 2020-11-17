@@ -1,8 +1,3 @@
-// const mediaDevice = require("./mediaDevice");
-
-
-//only for test
-
 class AudioControl {
     constructor(){
         console.log("construct interface in plugin AudioControl")
