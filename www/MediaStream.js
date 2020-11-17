@@ -2,6 +2,8 @@
 var { uuidv4 } = require('./util');
 
 
+console.log("mediaStream.js onloading");
+
 class MediaStream {
 
     constructor() {

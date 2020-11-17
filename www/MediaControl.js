@@ -1,6 +1,7 @@
 // const mediaDevice = require("./mediaDevice");
 
 
+console.log("control.js onloading");
 //only for test
 
 class AudioControl {

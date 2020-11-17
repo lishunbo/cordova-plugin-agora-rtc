@@ -1,28 +1,28 @@
-class AudioControl {
-    constructor(){
-        console.log("construct interface in plugin AudioControl")
-    }
-    play(){
-        console.log("play interface in plugin AudioControl")
-    }
-    stop(){
-        console.log("stop interface in plugin AudioControl")
-    }
-}
 
-class VideoControl {
-    constructor(){
-        console.log("construct interface in plugin VideoControl")
+console.log("player.js onloading");
+
+
+class VideoPlayer {
+    constructor(config) {
+        console.log("construct interface in plugin VideoControl", config)
     }
-    play(){
-        console.log("play interface in plugin VideoControl")
-    }
-    stop(){
-        console.log("stop interface in plugin VideoControl")
+    udpateConfig(config) {
+        console.log("udpateConfig interface in plugin VideoControl", config)
     }
 }
 
 cordova.addConstructor(function () {
-    media.AudioControl = AudioControl
-    meida.VideoControl = VideoControl
+    if (!window.plugins){
+        window.plugins = {}
+    }
+
+    console.log("nativeplayer.js addConstructor")
 });
+
+/**
+ * @module AgoraPlugins
+ */
+module.exports = {
+    VideoPlayer,
+}
+console.log("player.js onloaded");

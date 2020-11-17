@@ -1,4 +1,6 @@
 
+console.log("rtcconstants.js onloading");
+
 module.exports = {
     RTCIceCredentialType: {
         PASSOWRD: "password"

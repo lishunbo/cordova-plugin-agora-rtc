@@ -3,10 +3,10 @@
  */
 
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('native-video-player')) :
-	typeof define === 'function' && define.amd ? define(['native-video-player'], factory) :
-	(global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.AgoraRTC = factory(global.nativeVideoPlayer));
-}(this, (function (nativeVideoPlayer) { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('cordova-plugin-agora-rtc.AgoraPlugins')) :
+	typeof define === 'function' && define.amd ? define(['cordova-plugin-agora-rtc.AgoraPlugins'], factory) :
+	(global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.AgoraRTC = factory(global.cordovaPluginAgoraRtc_AgoraPlugins));
+}(this, (function (cordovaPluginAgoraRtc_AgoraPlugins) { 'use strict';
 
 	var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
@@ -8523,7 +8523,7 @@
 	 * Agora Web SDK 的编译信息。
 	 * @public
 	 */
-	var BUILD = "v4.1.1-55-g09508c0-dirty(11/17/2020, 5:01:20 PM)";
+	var BUILD = "v4.1.1-55-g09508c0-dirty(11/17/2020, 7:10:54 PM)";
 	var VERSION = transferVersion("4.1.1");
 	var IS_GLOBAL_VERSION = isGlobalVersion();
 	var DEFAULT_TURN_CONFIG = {
@@ -36840,7 +36840,7 @@
 	    this.slot = config.element;
 	    this.trackId = config.trackId;
 	    this.updateConfig(config);
-	    this.videoPlayer = new nativeVideoPlayer.VideoPlayer();
+	    this.videoPlayer = new cordovaPluginAgoraRtc_AgoraPlugins.VideoPlayer();
 	    this.videoPlayer.updateConfig({});
 	  }
 
