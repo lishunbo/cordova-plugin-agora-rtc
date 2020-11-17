@@ -274,17 +274,13 @@ public class WebRTCService {
         VideoTrack videoTrack = PCFactory.factory().createVideoTrack("100", videoSource);
         // display in localView
 
-        VideoViewManager.VideoView view = _videoViewManager.new VideoView(false);
-
-        view.Show(videoTrack, _videoViewManager.windowWidth / 2, _videoViewManager.windowHeight / 3, 0, 0);
+        _videoViewManager.show(videoTrack, _videoViewManager.windowWidth / 2, _videoViewManager.windowHeight / 3, 0, 0, true);
 
         return videoTrack;
     }
 
     void setRemoteVideoTrack(VideoTrack videoTrack) {
-        VideoViewManager.VideoView view = _videoViewManager.new VideoView(false);
-
-        view.Show(videoTrack, _videoViewManager.windowWidth / 2, _videoViewManager.windowHeight / 3, 0, _videoViewManager.windowHeight / 3);
+        _videoViewManager.show(videoTrack, _videoViewManager.windowWidth / 2, _videoViewManager.windowHeight / 3, 0, _videoViewManager.windowHeight / 3, false);
     }
 
     private VideoCapturer createCameraCapturer(boolean isFront) {

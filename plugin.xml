@@ -1,14 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
         xmlns:android="http://schemas.android.com/apk/res/android"
-        id="cordova-plugin-rtc" version="0.0.1">
-    <name>RTC</name>
+        id="cordova-plugin-agora-rtc" version="0.0.1">
+    <name>Agora-RTC</name>
     <description>sample from Cordova Device Plugin</description>
     <license>Apache 2.0</license>
     <keywords>cordova,webrtc,rtc</keywords>
-    <!-- <js-module src="www/rtcplugin.js" name="rtcPlugin">
-        <clobbers target="window.plugins.rtcPlugin" />
-    </js-module> -->
     <js-module src="www/MediaStream.js" name="Stream">
         <clobbers target="Stream" />
     </js-module>
@@ -24,9 +21,6 @@
     <js-module src="www/sdk-ng/AgoraRTC_N-production.js" name="sdk-ng">
         <clobbers target="sdk-ng" />
     </js-module>
-    <!-- <js-module src="www/MediaControl.js" name="anyway">
-        <clobbers target="anyway" />
-    </js-module> -->
     <js-module src="www/util.js" name="util">
         <clobbers target="util" />
     </js-module>

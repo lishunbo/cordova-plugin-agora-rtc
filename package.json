@@ -1,25 +1,27 @@
 {
-  "name": "cordova-plugin-rtc",
-  "version": "0.0.1",
+  "name": "cordova-plugin-agora-rtc",
+  "version": "1.0.0",
+  "description": "mock webrtc api 必备接口\r 实现远端一对一",
   "type": "module",
-  "description": "sample from Cordova Device Plugin",
   "cordova": {
-    "id": "cordova-plugin-rtc",
+    "id": "cordova-plugin-agora-rtc",
     "platforms": [
       "android"
     ]
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/lishunbo/cordova-plugin-rtc.git"
+    "url": "git+https://github.com/lishunbo/cordova-plugin-agora-rtc.git"
   },
   "keywords": [
     "cordova",
     "webrtc",
-    "rtc",
-    "ecosystem:cordova",
-    "cordova-android"
+    "agora"
   ],
-  "author": "shun",
-  "license": "Apache 2.0"
+  "author": "agora",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/lishunbo/cordova-plugin-agora-rtc/issues"
+  },
+  "homepage": "https://github.com/lishunbo/cordova-plugin-agora-rtc#readme"
 }

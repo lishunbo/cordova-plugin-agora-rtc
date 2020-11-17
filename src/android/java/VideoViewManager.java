@@ -2,11 +2,14 @@ package com.agora.cordova.plugin.webrtc;
 
 
 import android.app.Activity;
+import android.content.Context;
 import android.graphics.PixelFormat;
 import android.os.Build;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.MotionEvent;
+import android.view.View;
 import android.view.WindowManager;
 
 import com.agora.cordova.plugin.webrtc.services.PCFactory;
@@ -43,60 +46,96 @@ public class VideoViewManager {
         windowWidth = displayMetrics.widthPixels;
     }
 
-    public class VideoView {
-        SurfaceViewRenderer view;
-        boolean _mirror;
+    public void show(VideoTrack videoTrack, int w, int h, int x, int y, boolean mirror) {
+        final WindowManager.LayoutParams paramsF = new WindowManager.LayoutParams(
+                w,
+                h,
+                LAYOUT_FLAG,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+                PixelFormat.TRANSLUCENT);
 
-        public VideoView(boolean mirror) {
-            _mirror = mirror;
-        }
+        paramsF.gravity = Gravity.TOP | Gravity.LEFT;
+        paramsF.x = x;
+        paramsF.y = y;
 
-        public void Show(VideoTrack videoTrack, int w, int h, int x, int y) {
+        _mainActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    VideoView view = new VideoView(_mainActivity.getApplication(), paramsF);
+                    view.init(PCFactory.eglBase(), new RendererCommon.RendererEvents() {
+                        @Override
+                        public void onFirstFrameRendered() {
+                            Log.v(TAG, "onFirstFrameRendered");
+                        }
 
-            final WindowManager.LayoutParams paramsF = new WindowManager.LayoutParams(
-                    w,
-                    h,
-                    LAYOUT_FLAG,
-                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
-                    PixelFormat.TRANSLUCENT);
+                        @Override
+                        public void onFrameResolutionChanged(int i, int i1, int i2) {
+                            Log.v(TAG, "onFrameResolutionChanged");
 
-            paramsF.gravity = Gravity.TOP | Gravity.LEFT;
-            paramsF.x = x;
-            paramsF.y = y;
+                        }
+                    });
 
-            ProxyVideoSink sink = new ProxyVideoSink();
-            sink.setTarget(view);
+                    view.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FILL);
+                    view.setMirror(mirror);
+                    view.setZOrderMediaOverlay(true);
 
-            videoTrack.addSink(sink);
+                    ProxyVideoSink sink = new ProxyVideoSink();
+                    sink.setTarget(view);
 
-            _mainActivity.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        view = new SurfaceViewRenderer(_mainActivity.getApplicationContext());
-                        view.init(PCFactory.eglBase(), new RendererCommon.RendererEvents() {
-                            @Override
-                            public void onFirstFrameRendered() {
-                                Log.v(TAG, "onFirstFrameRendered");
-                            }
+                    videoTrack.addSink(sink);
 
-                            @Override
-                            public void onFrameResolutionChanged(int i, int i1, int i2) {
-                                Log.v(TAG, "onFrameResolutionChanged");
-
-                            }
-                        });
-
-                        view.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FILL);
-                        view.setMirror(_mirror);
-                        view.setZOrderMediaOverlay(true);
-
-                        _windowManager.addView(view, paramsF);
-                    } catch (Exception e) {
-                        Log.e(TAG, "maybe no permission to Draw over other apps " + e.toString());
-                    }
+                    _windowManager.addView(view, paramsF);
+                } catch (Exception e) {
+                    Log.e(TAG, "maybe no permission to Draw over other apps " + e.toString());
                 }
-            });
+            }
+        });
+    }
+
+    public class VideoView extends SurfaceViewRenderer implements View.OnTouchListener {
+        int startX;
+        int startY;
+
+        int originX;
+        int originY;
+        WindowManager.LayoutParams _params;
+
+        VideoView(Context context, WindowManager.LayoutParams param) {
+            super(context);
+            setOnTouchListener(this);
+
+            _params = param;
         }
+
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    startX = (int) event.getRawX();
+                    startY = (int) event.getRawY();
+
+                    originX = _params.x;
+                    originY = _params.y;
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                case MotionEvent.ACTION_UP:
+                    int currentX = (int) event.getRawX();
+                    int currentY = (int) event.getRawY();
+                    if (startX != currentX || startY != currentY) {
+
+                        _params.x = originX + currentX - startX;
+                        _params.y = originY + currentY - startY;
+
+                        _windowManager.updateViewLayout(v, _params);
+                    }
+
+                    break;
+                default:
+                    Log.v(TAG, "not implement motion event:" + event.getAction());
+            }
+            return false;
+        }
+
     }
 }
