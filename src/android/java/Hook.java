@@ -57,10 +57,12 @@ public class Hook extends CordovaPlugin {
     public boolean execute(String action, JSONArray args,
                            final CallbackContext callbackContext) {
         try {
-            if (Config.logInternalMessage && !action.equals("getStats")) {
+            if (Config.logInternalMessage && !action.equals("getStats")&&!action.equals("enumerateDevices")) {
                 Log.e(TAG, "actioin:" + Action.valueOf(action));
             }
             switch (Action.valueOf(action)) {
+                case enumerateDevices:
+                    return _service.enumerateDevices(args, callbackContext);
                 case getUserMedia:
                     return _service.getUserMedia(args, callbackContext);
                 //Keep Instance context for callback

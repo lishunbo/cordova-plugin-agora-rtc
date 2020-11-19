@@ -8523,7 +8523,7 @@
 	 * Agora Web SDK 的编译信息。
 	 * @public
 	 */
-	var BUILD = "v4.1.1-55-g09508c0-dirty(11/18/2020, 8:35:10 PM)";
+	var BUILD = "v4.1.1-55-g09508c0-dirty(11/19/2020, 11:34:26 AM)";
 	var VERSION = transferVersion("4.1.1");
 	var IS_GLOBAL_VERSION = isGlobalVersion();
 	var DEFAULT_TURN_CONFIG = {
@@ -31987,359 +31987,6 @@
 	  return StreamConnection;
 	}(EventEmitter$1);
 
-	/**
-	 * @internal
-	 */
-
-	var AgoraRTCPlayer =
-	/** @class */
-	function () {
-	  function AgoraRTCPlayer(config) {
-	    var _this = this;
-
-	    this.freezeTimeCounterList = [];
-	    /** 计算 500ms 卡顿时间用 */
-
-	    this.timeUpdatedCount = 0;
-	    this.freezeTime = 0;
-	    this.playbackTime = 0;
-	    this.lastTimeUpdatedTime = 0;
-	    this._videoElementStatus = VideoElementStatus.NONE;
-	    this.isGettingVideoDimensions = false;
-
-	    this.handleVideoEvents = function (e) {
-	      switch (e.type) {
-	        case "play":
-	        case "playing":
-	          {
-	            // 每次开始播放后都检查一次分辨率
-	            _this.startGetVideoDimensions();
-
-	            _this.videoElementStatus = VideoElementStatus.PLAYING;
-	            break;
-	          }
-
-	        case "loadeddata":
-	          {
-	            _this.onFirstVideoFrameDecoded && _this.onFirstVideoFrameDecoded();
-	            break;
-	          }
-
-	        case "canplay":
-	          {
-	            _this.videoElementStatus = VideoElementStatus.CANPLAY;
-	            break;
-	          }
-
-	        case "stalled":
-	          {
-	            _this.videoElementStatus = VideoElementStatus.STALLED;
-	            break;
-	          }
-
-	        case "suspend":
-	          {
-	            _this.videoElementStatus = VideoElementStatus.SUSPEND;
-	            break;
-	          }
-
-	        case "pause":
-	          {
-	            _this.videoElementStatus = VideoElementStatus.PAUSED;
-
-	            if (_this.videoElement) {
-	              logger.debug("[track-" + _this.trackId + "] video element paused, auto resume");
-
-	              _this.videoElement.play();
-	            }
-
-	            break;
-	          }
-
-	        case "waiting":
-	          {
-	            _this.videoElementStatus = VideoElementStatus.WAITING;
-	            break;
-	          }
-
-	        case "abort":
-	          {
-	            _this.videoElementStatus = VideoElementStatus.ABORT;
-	            break;
-	          }
-
-	        case "ended":
-	          {
-	            _this.videoElementStatus = VideoElementStatus.ENDED;
-	            break;
-	          }
-
-	        case "emptied":
-	          {
-	            _this.videoElementStatus = VideoElementStatus.EMPTIED;
-	            break;
-	          }
-
-	        case "timeupdate":
-	          {
-	            var now = now$2();
-
-	            _this.timeUpdatedCount += 1; // 丢弃前 10 帧
-
-	            if (_this.timeUpdatedCount < 10) {
-	              _this.lastTimeUpdatedTime = now;
-	              return;
-	            }
-
-	            var renderInterval = now - _this.lastTimeUpdatedTime;
-	            _this.lastTimeUpdatedTime = now; // 卡顿
-
-	            if (renderInterval > 500) {
-	              _this.freezeTime += renderInterval;
-	            }
-
-	            _this.playbackTime += renderInterval;
-
-	            while (_this.playbackTime >= 6000) {
-	              _this.playbackTime -= 6000;
-
-	              _this.freezeTimeCounterList.push(Math.min(6000, _this.freezeTime));
-
-	              _this.freezeTime = Math.max(0, _this.freezeTime - 6000);
-	            }
-
-	            break;
-	          }
-	      }
-	    };
-
-	    this.startGetVideoDimensions = function () {
-	      /**
-	       * Chrome 默认分辨率为 2*2，所以如果分辨率 > 4，我们就认为已经获取到了视频的分辨率
-	       */
-	      var checkDimensions = function () {
-	        _this.isGettingVideoDimensions = true;
-
-	        if (_this.videoElement && _this.videoElement.videoWidth * _this.videoElement.videoHeight > 4) {
-	          logger.debug("[" + _this.trackId + "] current video dimensions:", _this.videoElement.videoWidth, _this.videoElement.videoHeight);
-	          _this.isGettingVideoDimensions = false;
-	          return;
-	        }
-
-	        setTimeout$2(checkDimensions, 500);
-	      };
-
-	      !_this.isGettingVideoDimensions && checkDimensions();
-	    };
-
-	    this.slot = config.element;
-	    this.trackId = config.trackId;
-	    this.updateConfig(config);
-	  }
-
-	  defineProperty$4(AgoraRTCPlayer.prototype, "videoElementStatus", {
-	    get: function () {
-	      return this._videoElementStatus;
-	    },
-	    set: function (status) {
-	      if (status === this._videoElementStatus) return;
-	      logger.debug("[" + this.trackId + "] video-element-status change " + this._videoElementStatus + " => " + status);
-	      this._videoElementStatus = status;
-	    },
-	    enumerable: true,
-	    configurable: true
-	  });
-
-	  AgoraRTCPlayer.prototype.updateConfig = function (config) {
-	    this.config = config;
-	    this.trackId = config.trackId;
-	    var slot = config.element;
-
-	    if (slot !== this.slot) {
-	      this.destroy();
-	      this.slot = slot;
-	    }
-
-	    this.createElements();
-	  };
-
-	  AgoraRTCPlayer.prototype.updateVideoTrack = function (track) {
-	    if (this.videoTrack === track) return;
-	    this.videoTrack = track;
-	    this.createElements();
-	  };
-
-	  AgoraRTCPlayer.prototype.play = function () {
-	    var _this = this;
-
-	    if (this.videoElement) {
-	      /** 因为 video element 是常年 mute 的，所以不可能被 autoplay 拦住 */
-	      var promise = this.videoElement.play(); // ignore play exception
-
-	      if (promise && promise.catch) {
-	        promise.catch(function (e) {
-	          logger.warning("[" + _this.trackId + "] play warning: ", e);
-	        });
-	      }
-	    }
-	  };
-
-	  AgoraRTCPlayer.prototype.getCurrentFrame = function () {
-	    if (!this.videoElement) {
-	      return new ImageData(2, 2);
-	    }
-
-	    var canvas = document.createElement("canvas");
-	    canvas.width = this.videoElement.videoWidth;
-	    canvas.height = this.videoElement.videoHeight;
-	    var context = canvas.getContext("2d");
-
-	    if (!context) {
-	      logger.error("create canvas context failed!");
-	      return new ImageData(2, 2);
-	    }
-
-	    context.drawImage(this.videoElement, 0, 0, canvas.width, canvas.height);
-	    var data = context.getImageData(0, 0, canvas.width, canvas.height);
-	    canvas.remove();
-	    return data;
-	  };
-
-	  AgoraRTCPlayer.prototype.destroy = function () {
-	    if (this.videoElement) {
-	      this.videoElement.srcObject = null;
-	      this.videoElement = undefined;
-	    }
-
-	    if (this.container) {
-	      try {
-	        this.slot.removeChild(this.container);
-	      } catch (_) {}
-
-	      this.container = undefined;
-	    }
-
-	    this.freezeTimeCounterList = [];
-	  };
-
-	  AgoraRTCPlayer.prototype.createElements = function () {
-	    if (!this.container) {
-	      this.container = document.createElement("div");
-	    }
-
-	    this.container.id = "agora-video-player-" + this.trackId;
-	    this.container.style.width = "100%";
-	    this.container.style.height = "100%";
-	    this.container.style.position = "relative";
-	    this.container.style.overflow = "hidden";
-
-	    if (this.videoTrack) {
-	      this.container.style.backgroundColor = "black";
-	      this.createVideoElement();
-	      this.container.appendChild(this.videoElement);
-	    } else {
-	      this.removeVideoElement();
-	    }
-
-	    this.slot.appendChild(this.container);
-	  };
-
-	  AgoraRTCPlayer.prototype.createVideoElement = function () {
-	    var _this = this;
-
-	    if (!this.videoElement) {
-	      this.videoElementStatus = VideoElementStatus.INIT;
-	      this.videoElement = document.createElement("video");
-
-	      this.videoElement.onerror = function () {
-	        return _this.videoElementStatus = VideoElementStatus.ERROR;
-	      };
-
-	      this.container && this.container.appendChild(this.videoElement);
-
-	      forEach$3(VIDEO_EVENTS_LIST).call(VIDEO_EVENTS_LIST, function (event) {
-	        _this.videoElement && _this.videoElement.addEventListener(event, _this.handleVideoEvents);
-	      });
-
-	      this.videoElementCheckInterval = window.setInterval(function () {
-	        var video = document.getElementById("video_" + _this.trackId);
-
-	        if (!video && _this.videoElement) {
-	          _this.videoElementStatus = VideoElementStatus.DESTROYED;
-	        }
-	      }, 1000);
-	    }
-
-	    this.videoElement.id = "video_" + this.trackId;
-	    this.videoElement.className = "agora_video_player";
-	    this.videoElement.style.width = "100%";
-	    this.videoElement.style.height = "100%";
-	    this.videoElement.style.position = "absolute";
-	    /** 不设置 autoplay，使用主动调用的 play */
-
-	    this.videoElement.controls = false;
-	    this.videoElement.setAttribute("playsinline", "");
-	    this.videoElement.style.left = "0";
-	    this.videoElement.style.top = "0";
-
-	    if (this.config.mirror) {
-	      this.videoElement.style.transform = "rotateY(180deg)";
-	    }
-
-	    if (this.config.fit) {
-	      this.videoElement.style.objectFit = this.config.fit;
-	    } else {
-	      this.videoElement.style.objectFit = "cover";
-	    }
-
-	    this.videoElement.setAttribute("muted", "");
-	    this.videoElement.muted = true;
-
-	    if (this.videoElement.srcObject && this.videoElement.srcObject instanceof MediaStream) {
-	      var vTrack = this.videoElement.srcObject.getVideoTracks()[0];
-
-	      if (vTrack !== this.videoTrack) {
-	        this.videoElement.srcObject = this.videoTrack ? new MediaStream([this.videoTrack]) : null;
-	      }
-	    } else {
-	      this.videoElement.srcObject = this.videoTrack ? new MediaStream([this.videoTrack]) : null;
-	    }
-
-	    var playPromise = this.videoElement.play();
-
-	    if (playPromise !== undefined) {
-	      playPromise.catch(function (e) {
-	        logger.debug("[" + _this.trackId + "] playback interrupted", e.toString());
-	      });
-	    }
-	  };
-
-	  AgoraRTCPlayer.prototype.removeVideoElement = function () {
-	    var _this = this;
-
-	    if (!this.videoElement) return;
-
-	    forEach$3(VIDEO_EVENTS_LIST).call(VIDEO_EVENTS_LIST, function (event) {
-	      _this.videoElement && _this.videoElement.removeEventListener(event, _this.handleVideoEvents);
-	    });
-
-	    if (this.videoElementCheckInterval) {
-	      window.clearInterval(this.videoElementCheckInterval);
-	      this.videoElementCheckInterval = undefined;
-	    }
-
-	    try {
-	      this.container && this.container.removeChild(this.videoElement);
-	    } catch (_) {}
-
-	    this.videoElement = undefined;
-	    this.videoElementStatus = VideoElementStatus.NONE;
-	  };
-
-	  return AgoraRTCPlayer;
-	}();
-	var VIDEO_EVENTS_LIST = ["play", "playing", "loadeddata", "canplay", "pause", "stalled", "suspend", "waiting", "abort", "emptied", "ended", "timeupdate"];
-
 	var __awaiter$j = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
@@ -34395,6 +34042,98 @@
 	  return constraints;
 	}
 
+	/**
+	 * @internal
+	 */
+
+	var NativeVideolayer =
+	/** @class */
+	function () {
+	  function NativeVideolayer(config) {
+	    this.freezeTimeCounterList = [];
+	    this.trackId = config.trackId;
+	    this.updateConfig(config);
+	  }
+
+	  NativeVideolayer.prototype.updateConfig = function (config) {
+	    this.config = config;
+	    this.trackId = config.trackId;
+	    this.createVideoPlayer();
+	  };
+
+	  NativeVideolayer.prototype.updateVideoTrack = function (track) {
+	    logger.debug("updateVideoTrack", track);
+	    if (this.videoTrack === track) return;
+	    this.videoTrack = track;
+
+	    if (this.videoPlayer === null) {
+	      this.videoPlayer = new cordovaPluginAgoraRtc_NativeVideoPlayer.VideoPlayer();
+	    }
+
+	    if (this.videoPlayer && track) {
+	      this.videoPlayer.updateVideoTrack(track);
+	    }
+	  };
+
+	  NativeVideolayer.prototype.play = function () {
+	    var _this = this;
+
+	    if (this.videoPlayer !== undefined) {
+	      this.videoPlayer.play().then(function (status) {
+	        logger.debug("[" + _this.trackId + "] play status:", status);
+	      });
+	    }
+	  };
+
+	  NativeVideolayer.prototype.getCurrentFrame = function () {
+	    var _this = this;
+
+	    var image = new ImageData(2, 2);
+
+	    if (!this.videoPlayer) {
+	      return image;
+	    }
+
+	    this.videoPlayer.getCurrentFrame().then(function (data) {
+	      image = data;
+	    }).catch(function (ev) {
+	      logger.debug("[" + _this.trackId + "] getCurrentFrame:", ev);
+	    });
+	    return image;
+	  };
+
+	  NativeVideolayer.prototype.createVideoPlayer = function () {
+	    var _this = this;
+
+	    this.videoPlayer = new cordovaPluginAgoraRtc_NativeVideoPlayer.VideoPlayer(this.config);
+	    logger.debug("createVideoPlayer 1");
+	    this.videoPlayer.getWindowAttribute().then(function (wt) {
+	      logger.debug("createVideoPlayer 3");
+
+	      if (_this.videoPlayer) {
+	        _this.videoPlayer.setViewAttribute(wt.width / 2, wt.height / 3, 0, 0);
+	      }
+	    });
+	    logger.debug("createVideoPlayer 2");
+	    this.videoPlayer.onFirstVideoFrameDecoded = this.firVideoFrameDeoced;
+	  };
+
+	  NativeVideolayer.prototype.destroy = function () {
+	    if (this.videoPlayer) {
+	      this.videoPlayer.destroy();
+	      this.videoPlayer = undefined;
+	    }
+	  };
+
+	  NativeVideolayer.prototype.firVideoFrameDeoced = function () {
+	    if (this.onFirstVideoFrameDecoded) {
+	      this.onFirstVideoFrameDecoded();
+	    }
+	  };
+
+	  return NativeVideolayer;
+	}();
+
 	var __extends$j = undefined && undefined.__extends || function () {
 	  var extendStatics = function (d, b) {
 	    extendStatics = setPrototypeOf$2 || {
@@ -34633,7 +34372,9 @@
 	    });
 
 	    if (!this._player) {
-	      this._player = new AgoraRTCPlayer(playerConfig); // this._player.updateVideoTrack(this._mediaStreamTrack);
+	      this._player = new NativeVideolayer(playerConfig);
+
+	      this._player.updateVideoTrack(this._mediaStreamTrack);
 	    } else {
 	      this._player.updateConfig(playerConfig);
 	    }
@@ -36691,94 +36432,6 @@
 
 	  return PubStreamConnection;
 	}(StreamConnection);
-
-	/**
-	 * @internal
-	 */
-
-	var NativeVideolayer =
-	/** @class */
-	function () {
-	  function NativeVideolayer(config) {
-	    this.freezeTimeCounterList = [];
-	    this.trackId = config.trackId;
-	    this.updateConfig(config);
-	  }
-
-	  NativeVideolayer.prototype.updateConfig = function (config) {
-	    this.config = config;
-	    this.trackId = config.trackId;
-	    this.createVideoPlayer();
-	  };
-
-	  NativeVideolayer.prototype.updateVideoTrack = function (track) {
-	    logger.debug("updateVideoTrack", track);
-	    if (this.videoTrack === track) return;
-	    this.videoTrack = track;
-
-	    if (this.videoPlayer === null) {
-	      this.videoPlayer = new cordovaPluginAgoraRtc_NativeVideoPlayer.VideoPlayer();
-	    }
-
-	    if (this.videoPlayer && track) {
-	      this.videoPlayer.updateVideoTrack(track);
-	    }
-	  };
-
-	  NativeVideolayer.prototype.play = function () {
-	    var _this = this;
-
-	    if (this.videoPlayer !== undefined) {
-	      this.videoPlayer.play().then(function (status) {
-	        logger.debug("[" + _this.trackId + "] play status:", status);
-	      });
-	    }
-	  };
-
-	  NativeVideolayer.prototype.getCurrentFrame = function () {
-	    var _this = this;
-
-	    var image = new ImageData(2, 2);
-
-	    if (!this.videoPlayer) {
-	      return image;
-	    }
-
-	    this.videoPlayer.getCurrentFrame().then(function (data) {
-	      image = data;
-	    }).catch(function (ev) {
-	      logger.debug("[" + _this.trackId + "] getCurrentFrame:", ev);
-	    });
-	    return image;
-	  };
-
-	  NativeVideolayer.prototype.createVideoPlayer = function () {
-	    var _this = this;
-
-	    this.videoPlayer = new cordovaPluginAgoraRtc_NativeVideoPlayer.VideoPlayer(this.config);
-	    this.videoPlayer.getWindowAttribute().then(function (wt) {
-	      if (_this.videoPlayer) {
-	        _this.videoPlayer.setViewAttribute(wt.width / 2, wt.height / 3, 0, 0);
-	      }
-	    });
-	    this.videoPlayer.onFirstVideoFrameDecoded = this.firVideoFrameDeoced;
-	  };
-
-	  NativeVideolayer.prototype.destroy = function () {
-	    if (this.videoPlayer) {
-	      this.videoPlayer.destroy();
-	      this.videoPlayer = undefined;
-	    }
-	  };
-
-	  NativeVideolayer.prototype.firVideoFrameDeoced = function () {
-	    if (this.onFirstVideoFrameDecoded) {
-	      this.onFirstVideoFrameDecoded();
-	    }
-	  };
-
-	  return NativeVideolayer;
-	}();
 
 	var __extends$l = undefined && undefined.__extends || function () {
 	  var extendStatics = function (d, b) {

@@ -6,6 +6,7 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.WindowManager;
 
+import com.agora.cordova.plugin.view.model.PlayConfig;
 import com.agora.cordova.plugin.webrtc.services.PCFactory;
 
 import org.apache.cordova.CallbackContext;

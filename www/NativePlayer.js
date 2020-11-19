@@ -13,7 +13,7 @@ var EventType = {
     onFirstFrameDecoded: "onFirstFrameDecoded",
 }
 
-var VideoPlayerService = "VideoPlayer";
+var VideoPlayerService = "NativePlayerHook";
 
 class PlayEvent {
     constructor(resolve, reject, call, args) {
@@ -98,7 +98,7 @@ class VideoPlayer {
         cordova.exec(function (ev) {
         }, function (ev) {
             console.log("Failed VideoPlayer pause");
-        }, VideoPlayerService, 'aaa', [this.id, track.id, track.kind]);
+        }, VideoPlayerService, 'updateVideoTrack', [this.id, track.id, track.kind]);
     }
 
     getWindowAttribute() {

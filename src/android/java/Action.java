@@ -1,6 +1,9 @@
 package com.agora.cordova.plugin.webrtc;
 
 public enum Action {
+    enumerateDevices("enumerateDevices"),
+    getUserMedia("getUserMedia"),
+
     createInstance("createInstance"),
     createOffer("createOffer"),
     setLocalDescription("setLocalDescription"),
@@ -12,7 +15,6 @@ public enum Action {
     addTransceiver("addTransceiver"),
     addTrack("addTrack"),
     getStats("getStats"),
-    getUserMedia("getUserMedia"),
 
     onIceCandidate("onIceCandidate"),
     onICEConnectionStateChange("onICEConnectionStateChange"),

@@ -1,4 +1,4 @@
-package com.agora.cordova.plugin.view;
+package com.agora.cordova.plugin.view.enums;
 
 public enum Action {
     createInstance("createInstance"),
@@ -7,7 +7,7 @@ public enum Action {
     pause("pause"),
     destroy("destroy"),
     getCurrentFrame("getCurrentFrame"),
-    aaa("aaa"),
+    updateVideoTrack("updateVideoTrack"),
     getWindowAttribute("getWindowAttribute"),
     setViewAttribute("setViewAttribute"),
 

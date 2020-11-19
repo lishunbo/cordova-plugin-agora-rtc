@@ -8,7 +8,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 
-import com.agora.cordova.plugin.webrtc.services.PCFactory;
+import com.agora.cordova.plugin.view.model.PlayConfig;
+import com.agora.cordova.plugin.view.model.ProxyVideoSink;
 import com.agora.cordova.plugin.webrtc.services.RTCPeerConnection;
 
 import org.webrtc.MediaStreamTrack;

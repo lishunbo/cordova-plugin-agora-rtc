@@ -43,23 +43,30 @@ mediaDevice.getUserMedia = function (config) {
 }
 
 class MediaDeviceInfo {
-    constructor(kind) {
-        this.deviceId = "mock device id " + kind;
-        this.groupId = kind;
+    constructor(deviceId, groupId, kind, label) {
+        this.deviceId = deviceId;
+        this.groupId = groupId;
         this.kind = kind;
-        this.label = "mock device label " + kind;
+        this.label = label;
     }
 }
 
 // first class
 mediaDevice.enumerateDevices = function () {
     return new Promise((resolve, reject) => {
-        //"audioinput" | "audiooutput" | "videoinput";
-        var audioin = new MediaDeviceInfo(media.MediaDeviceKind.audioinput);
-        var audioout = new MediaDeviceInfo(media.MediaDeviceKind.audiooutput);
-        var video = new MediaDeviceInfo(media.MediaDeviceKind.videoinput);
+        cordova.exec(function (ev) {
+            var infos = JSON.parse(ev);
 
-        resolve([audioin, audioout, video]);
+            let avdevices = [];
+
+            infos.forEach(info => {
+                avdevices.push(new MediaDeviceInfo(info.deviceId, info.groupId, info.kind, info.label));
+            })
+            resolve(avdevices)
+
+        }, function (ev) {
+            console.log("Failed to enumerateDevices object");
+        }, 'Hook', 'enumerateDevices', []);
     });
 }
 

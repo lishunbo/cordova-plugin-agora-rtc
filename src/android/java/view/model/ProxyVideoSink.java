@@ -1,4 +1,4 @@
-package com.agora.cordova.plugin.view;
+package com.agora.cordova.plugin.view.model;
 
 import android.util.Log;
 

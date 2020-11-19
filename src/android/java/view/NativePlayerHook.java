@@ -1,24 +1,23 @@
 package com.agora.cordova.plugin.view;
 
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
 import android.util.Log;
 
+import com.agora.cordova.plugin.view.enums.Action;
 import com.agora.cordova.plugin.webrtc.Config;
 
 import org.apache.cordova.CallbackContext;
-import org.apache.cordova.CordovaArgs;
 import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CordovaWebView;
 import org.json.JSONArray;
 import org.json.JSONException;
 
-public class VideoPlayer extends CordovaPlugin {
-    static final String TAG = VideoPlayer.class.getCanonicalName();
+public class NativePlayerHook extends CordovaPlugin {
+    static final String TAG = NativePlayerHook.class.getCanonicalName();
 
     public static final int OVERLAY_PERMISSION_CODE = 1000;
     private VideoViewService service;
@@ -53,11 +52,12 @@ public class VideoPlayer extends CordovaPlugin {
                 Log.e(TAG, "action: " + Action.valueOf(action));
             }
             switch (Action.valueOf(action)) {
+                //VideoView
                 case createInstance:
                     return service.createInstance(args, callbackContext);
                 case updateConfig:
                     return service.updateConfig(args, callbackContext);
-                case aaa:
+                case updateVideoTrack:
                     return service.updateVideoTrack(args, callbackContext);
                 case play:
                     return service.play(args, callbackContext);
@@ -71,6 +71,7 @@ public class VideoPlayer extends CordovaPlugin {
                     return service.getWindowAttribute(args, callbackContext);
                 case setViewAttribute:
                     return service.setViewAttribute(args, callbackContext);
+                    //AudioControl
                 default:
                     Log.e(TAG, "Not implement action of :" + action);
                     callbackContext.error("RTCPeerConnection not implement action:" + action);

@@ -63,14 +63,16 @@ public class WebRTCService {
 
         instances = new HashMap<>();
 
-        MediaDevice.Initialize(_mainActivity.getApplicationContext());
+        MediaDevice.Initialize(_mainActivity, _mainActivity.getApplicationContext());
         PCFactory.initializationOnce(_mainActivity.getApplicationContext());
     }
 
+    public boolean enumerateDevices(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        callbackContext.success(MediaDevice.enumerateDevices());
+        return true;
+    }
+
     public boolean getUserMedia(JSONArray args, final CallbackContext callbackContext) throws JSONException {
-        String id = args.getString(0);
-
-
         MediaStreamConstraints constraints = null;
 
         try {
@@ -84,7 +86,6 @@ public class WebRTCService {
         String summary = MediaDevice.getUserMedia(constraints);
 
         callbackContext.success(summary);
-
         return true;
     }
 
