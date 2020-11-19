@@ -2,15 +2,11 @@ package com.agora.cordova.plugin.webrtc;
 
 import android.app.Activity;
 import android.content.Context;
-import android.graphics.PixelFormat;
-import android.os.Build;
-import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.Gravity;
-import android.view.WindowManager;
 
 import com.agora.cordova.plugin.webrtc.models.MediaStreamConstraints;
 import com.agora.cordova.plugin.webrtc.models.RTCConfiguration;
+import com.agora.cordova.plugin.webrtc.services.MediaDevice;
 import com.agora.cordova.plugin.webrtc.services.PCFactory;
 import com.agora.cordova.plugin.webrtc.services.RTCPeerConnection;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,13 +16,13 @@ import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.webrtc.AudioTrack;
 import org.webrtc.Camera1Enumerator;
 import org.webrtc.DataChannel;
 import org.webrtc.MediaStream;
-import org.webrtc.RendererCommon;
+import org.webrtc.MediaStreamTrack;
 import org.webrtc.RtpReceiver;
 import org.webrtc.SurfaceTextureHelper;
-import org.webrtc.SurfaceViewRenderer;
 import org.webrtc.VideoCapturer;
 import org.webrtc.VideoSource;
 import org.webrtc.VideoTrack;
@@ -36,15 +32,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import static android.content.Context.RECEIVER_VISIBLE_TO_INSTANT_APPS;
-import static android.content.Context.WINDOW_SERVICE;
 import static org.apache.cordova.PluginResult.Status.OK;
 
 public class WebRTCService {
     private final static String TAG = WebRTCService.class.getCanonicalName();
 
     Activity _mainActivity;
-    VideoViewManager _videoViewManager;
 
     List<RTCPeerConnection> allPC = new LinkedList<>();
 
@@ -67,15 +60,16 @@ public class WebRTCService {
 
     public WebRTCService(Activity mainActivity) {
         _mainActivity = mainActivity;
-        _videoViewManager = new VideoViewManager(_mainActivity);
 
         instances = new HashMap<>();
 
+        MediaDevice.Initialize(_mainActivity.getApplicationContext());
         PCFactory.initializationOnce(_mainActivity.getApplicationContext());
     }
 
     public boolean getUserMedia(JSONArray args, final CallbackContext callbackContext) throws JSONException {
         String id = args.getString(0);
+
 
         MediaStreamConstraints constraints = null;
 
@@ -86,13 +80,10 @@ public class WebRTCService {
         } catch (Exception e) {
             Log.e(TAG, "fault, cannot unmarshal MediaStreamConstraints:" + e.toString() + args.toString());
         }
-        if (constraints == null) {
-            Log.e(TAG, "fault, getUserMedia no sdp data");
-            callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ILLEGAL_ACCESS_EXCEPTION));
-            return false;
-        }
 
-        callbackContext.success();
+        String summary = MediaDevice.getUserMedia(constraints);
+
+        callbackContext.success(summary);
 
         return true;
     }
@@ -130,7 +121,7 @@ public class WebRTCService {
     public boolean addTrack(JSONArray args, final CallbackContext callbackContext) throws JSONException {
         String id = args.getString(0);
 
-        VideoTrack videoTrack = getLocalVideoTrackAndPlay(true, 300, 400, 20);
+        VideoTrack videoTrack = MediaDevice.createLocalVideoTrack(true, 300, 400, 20);
         if (videoTrack == null) {
             callbackContext.error("no target video track");
             return true;
@@ -138,9 +129,9 @@ public class WebRTCService {
 
         CallbackPCPeer peer = instances.get(id);
         assert peer != null;
-        peer._pc.addTrack(videoTrack);
+        String summary = peer._pc.addTrack(videoTrack);
 
-        callbackContext.success();
+        callbackContext.success(summary);
         return true;
     }
 
@@ -259,47 +250,6 @@ public class WebRTCService {
         return _mainActivity.getSystemService(name);
     }
 
-    VideoTrack getLocalVideoTrackAndPlay(boolean isFront, int w, int h, int fps) {
-        VideoCapturer videoCapturer = createCameraCapturer(isFront);
-        if (videoCapturer == null) {
-            return null;
-        }
-        SurfaceTextureHelper surfaceTextureHelper = SurfaceTextureHelper.create("CaptureThread", PCFactory.eglBase());
-        VideoSource videoSource = PCFactory.factory().createVideoSource(videoCapturer.isScreencast());
-
-        videoCapturer.initialize(surfaceTextureHelper, getApplicationContext(), videoSource.getCapturerObserver());
-        videoCapturer.startCapture(w, h, fps);
-
-        // create VideoTrack
-        VideoTrack videoTrack = PCFactory.factory().createVideoTrack("100", videoSource);
-        // display in localView
-
-        _videoViewManager.show(videoTrack, _videoViewManager.windowWidth / 2, _videoViewManager.windowHeight / 3, 0, 0, true);
-
-        return videoTrack;
-    }
-
-    void setRemoteVideoTrack(VideoTrack videoTrack) {
-        _videoViewManager.show(videoTrack, _videoViewManager.windowWidth / 2, _videoViewManager.windowHeight / 3, 0, _videoViewManager.windowHeight / 3, false);
-    }
-
-    private VideoCapturer createCameraCapturer(boolean isFront) {
-        Camera1Enumerator enumerator = new Camera1Enumerator(false);
-        final String[] deviceNames = enumerator.getDeviceNames();
-
-        // First, try to find front facing camera
-        for (String deviceName : deviceNames) {
-            Log.v(TAG, "camera names" + deviceName);
-            if (isFront ? enumerator.isFrontFacing(deviceName) : enumerator.isBackFacing(deviceName)) {
-                VideoCapturer videoCapturer = enumerator.createCapturer(deviceName, null);
-                if (videoCapturer != null) {
-                    return videoCapturer;
-                }
-            }
-        }
-
-        return null;
-    }
 
     class SupervisorImp implements RTCPeerConnection.Supervisor {
 
@@ -315,7 +265,6 @@ public class WebRTCService {
         public void onAddStream(String id, MediaStream stream, String usage) {
 //            if
             Log.e(TAG, "onAddStream ");
-            setRemoteVideoTrack(stream.videoTracks.get(0));
         }
 
         @Override

@@ -1,4 +1,4 @@
-package com.agora.cordova.plugin.webrtc;
+package com.agora.cordova.plugin.view;
 
 import android.util.Log;
 

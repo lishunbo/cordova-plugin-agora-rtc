@@ -12,8 +12,8 @@
     <js-module src="www/MediaConstants.js" name="Media">
         <clobbers target="Media" />
     </js-module>
-    <js-module src="www/NativePlayer.js" name="AgoraPlugins">
-        <clobbers target="AgoraPlugins" />
+    <js-module src="www/NativePlayer.js" name="NativeVideoPlayer">
+        <clobbers target="NativeVideoPlayer" />
     </js-module>
     <js-module src="www/MediaStream.js" name="Stream">
         <clobbers target="Stream" />
@@ -31,6 +31,12 @@
         <config-file target="config.xml" parent="/*">
             <feature name="Hook">
                 <param name="android-package" value="com.agora.cordova.plugin.webrtc.Hook"/>
+                <param name="onload" value="true" />
+            </feature>
+        </config-file>
+        <config-file target="config.xml" parent="/*">
+            <feature name="VideoPlayer">
+                <param name="android-package" value="com.agora.cordova.plugin.view.VideoPlayer"/>
                 <param name="onload" value="true" />
             </feature>
         </config-file>
@@ -61,10 +67,20 @@
                   android:resource="@xml/camera_provider_paths"/>
           </provider>
         </config-file> -->
+
+        <!-- VideoPlayer -->
+        <source-file src="src/android/java/view/enums/PlayConfigFit.java" target-dir="src/com/agora/cordova/plugin/view/enums"/>
+        <source-file src="src/android/java/view/Action.java" target-dir="src/com/agora/cordova/plugin/view"/>
+        <source-file src="src/android/java/view/PlayConfig.java" target-dir="src/com/agora/cordova/plugin/view"/>
+        <source-file src="src/android/java/view/ProxyVideoSink.java" target-dir="src/com/agora/cordova/plugin/view"/>
+        <source-file src="src/android/java/view/VideoPlayer.java" target-dir="src/com/agora/cordova/plugin/view"/>
+        <source-file src="src/android/java/view/VideoView.java" target-dir="src/com/agora/cordova/plugin/view"/>
+        <source-file src="src/android/java/view/VideoViewService.java" target-dir="src/com/agora/cordova/plugin/view"/>
+
+        <!-- Medias -->
         <source-file src="src/android/java/Action.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
         <source-file src="src/android/java/Config.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
         <source-file src="src/android/java/Hook.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
-        <source-file src="src/android/java/ProxyVideoSink.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
         <source-file src="src/android/java/WebRTCService.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
         <!-- utils -->
         <source-file src="src/android/java/utils/MessageBus.java" target-dir="src/com/agora/cordova/plugin/webrtc/utils"/>

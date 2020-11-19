@@ -59,11 +59,16 @@ class MediaStream {
 }
 
 class MediaStreamTrack {
-    constructor(track) {
+    constructor(track, id) {
         console.log("new MediaStreamTrack");
         this.contentHint = "";
         this.enabled = true;
-        this.id = uuidv4();
+        if (id !== undefined) {
+            console.log("create by id " + id);
+            this.id = id;
+        } else {
+            this.id = uuidv4();
+        }
         this.kind = track;
         this.label = track;
         this.muted = false;

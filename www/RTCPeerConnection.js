@@ -30,6 +30,8 @@ class RTCStatsReport {
     }
 }
 
+var MediaService = "Hook"
+
 class RTCPeerConnection {
     constructor(config) {
         this.id = uuidv4();
@@ -60,10 +62,10 @@ class RTCPeerConnection {
         },
             function (ev) {
                 console.log("Failed to create RTCPeerConnection object");
-            }, 'Hook', 'createInstance', [this.id, this.config]);
+            }, MediaService, 'createInstance', [this.id, this.config]);
 
     }
-    getConfiguration(){
+    getConfiguration() {
         return this.config;
     }
 
@@ -119,7 +121,8 @@ class RTCPeerConnection {
                 }
                 if (this.ontrack != null) {
                     // this.onicecandidate(new RTCPeerConnectionIceEvent("icecandidate", { candidate: JSON.parse(ev.payload)}));
-                    this.ontrack({ track: new Stream.MediaStreamTrack(ev.payload), streams: [this.stream] });
+                    var summary = JSON.parse(ev.payload);
+                    this.ontrack({ track: new Stream.MediaStreamTrack(summary.kind, summary.id), streams: [this.stream] });
                 } else {
                     console.log("not found RTCPeerConnection.onConnectionStateChange function");
                 }
@@ -141,7 +144,7 @@ class RTCPeerConnection {
             }, function (ev) {
                 console.log("Failed to create offer");
                 reject("failed to create offer");
-            }, 'Hook', 'createOffer', [this.id]);
+            }, MediaService, 'createOffer', [this.id]);
         })
     }
 
@@ -152,7 +155,7 @@ class RTCPeerConnection {
                 resolve(ev);
             }, function (ev) {
                 reject(ev);
-            }, 'Hook', 'setLocalDescription', [this.id, offer.type, offer.sdp]);
+            }, MediaService, 'setLocalDescription', [this.id, offer.type, offer.sdp]);
         })
     }
 
@@ -164,7 +167,7 @@ class RTCPeerConnection {
                 resolve(ev);
             }, function (ev) {
                 reject(ev);
-            }, 'Hook', 'setRemoteDescription', [this.id, answer.type, answer.sdp]);
+            }, MediaService, 'setRemoteDescription', [this.id, answer.type, answer.sdp]);
         })
     }
 
@@ -175,7 +178,7 @@ class RTCPeerConnection {
                 resolve(ev);
             }, function (ev) {
                 reject(ev);
-            }, 'Hook', 'addIceCandidate', [this.id, candidate]);
+            }, MediaService, 'addIceCandidate', [this.id, candidate]);
         })
     }
 
@@ -183,33 +186,33 @@ class RTCPeerConnection {
     addTrack(track) {
         cordova.exec(function (ev) {
         }, function (ev) {
-        }, 'Hook', 'addTrack', [this.id, track]);
+        }, MediaService, 'addTrack', [this.id, track]);
     }
 
     close() {
         cordova.exec(function (ev) {
         }, function (ev) {
-        }, 'Hook', 'close', [this.id]);
+        }, MediaService, 'close', [this.id]);
     }
 
     removeTrack() {
         cordova.exec(function (ev) {
         }, function (ev) {
-        }, 'Hook', 'removeTrack', [this.id]);
+        }, MediaService, 'removeTrack', [this.id]);
     }
 
     getTransceivers() {
 
         cordova.exec(function (ev) {
         }, function (ev) {
-        }, 'Hook', 'getTransceivers', [this.id]);
+        }, MediaService, 'getTransceivers', [this.id]);
     }
 
     addTransceiver() {
 
         cordova.exec(function (ev) {
         }, function (ev) {
-        }, 'Hook', 'addTransceiver', [this.id]);
+        }, MediaService, 'addTransceiver', [this.id]);
     }
 
     getStats(slector) {
@@ -219,7 +222,7 @@ class RTCPeerConnection {
                 resolve(new RTCStatsReport(ev));
             }, function (ev) {
                 reject(ev);
-            }, 'Hook', 'getStats', [this.id]);
+            }, MediaService, 'getStats', [this.id]);
         })
     }
 

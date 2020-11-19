@@ -14,6 +14,7 @@ import org.webrtc.DataChannel;
 import org.webrtc.IceCandidate;
 import org.webrtc.MediaConstraints;
 import org.webrtc.MediaStream;
+import org.webrtc.MediaStreamTrack;
 import org.webrtc.PeerConnection;
 import org.webrtc.RTCStats;
 import org.webrtc.RTCStatsCollectorCallback;
@@ -24,13 +25,19 @@ import org.webrtc.SessionDescription;
 import org.webrtc.VideoTrack;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
 public class RTCPeerConnection {
     static final String TAG = RTCPeerConnection.class.getCanonicalName();
+
+    static ReadWriteLock tracksLock = new ReentrantReadWriteLock();
+    static Map<String, MediaStreamTrack> allTracks = new HashMap<>();
 
     Supervisor supervisor;
     String pc_id;
@@ -101,12 +108,27 @@ public class RTCPeerConnection {
 //        timer.scheduleAtFixedRate(task, 1000L, 5000L);
     }
 
-    public void addTrack(VideoTrack videoTrack) {
+    public static String summaryMediaStreamTrack(MediaStreamTrack track) {
+        JSONObject obj = new JSONObject();
+        try {
+            obj.put("kind", track.kind().toLowerCase());
+            obj.put("id", track.id());
+        } catch (Exception e) {
+            Log.e(TAG, "onAddTrack exception: " + e.toString());
+        }
+        return obj.toString();
+    }
+
+    public String addTrack(VideoTrack videoTrack) {
 
         MediaStream mediaStream = PCFactory.factory().createLocalMediaStream("localMediaStream");
         mediaStream.addTrack(videoTrack);
 
+        cacheMediaStreamTrack(videoTrack);
+
         peerConnection.addStream(mediaStream);
+
+        return summaryMediaStreamTrack(videoTrack);
     }
 
     public void createOffer(MessageHandler handler) {
@@ -246,6 +268,23 @@ public class RTCPeerConnection {
 
     }
 
+    public static MediaStreamTrack getMediaStreamTrack(String id) {
+        tracksLock.readLock().lock();
+
+        MediaStreamTrack track = allTracks.get(id);
+
+        tracksLock.readLock().unlock();
+        return track;
+    }
+
+    public static void cacheMediaStreamTrack(MediaStreamTrack track) {
+        tracksLock.writeLock().lock();
+
+        allTracks.put(track.id(), track);
+
+        tracksLock.writeLock().unlock();
+    }
+
     public class RTCObserver implements SdpObserver, PeerConnection.Observer {
         private String usage;
 
@@ -331,7 +370,10 @@ public class RTCPeerConnection {
             Log.v(TAG, usage + " onAddTrack " + rtpReceiver.track().kind());
 //            client.onAddTrack(rtpReceiver.track().kind().toLowerCase());
             supervisor.onAddTrack(pc_id, rtpReceiver, mediaStreams, usage);
-            supervisor.onObserveEvent(pc_id, Action.onAddTrack, rtpReceiver.track().kind().toLowerCase(), usage);
+
+            cacheMediaStreamTrack(rtpReceiver.track());
+
+            supervisor.onObserveEvent(pc_id, Action.onAddTrack, summaryMediaStreamTrack(rtpReceiver.track()), usage);
         }
 
 

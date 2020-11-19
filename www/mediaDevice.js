@@ -23,24 +23,20 @@ mediaDevice.getUserMedia = function (config) {
         }
 
         cordova.exec(function (ev) {
+            var tracks = JSON.parse(ev);
             console.log("Got one stream object with id: " + ev);
             // pc.id = ev
             // console.log("check this.id done:" + pc.id)
             var stm = new stream.MediaStream();
-            console.log("after create  stream object");
-            console.log("add mock audio track to stream object");
-            var audiotrack = new stream.MediaStreamTrack();
-            audiotrack.kind = "audio"
-            audiotrack.label = "mock audio"
-            stm.addTrack(audiotrack);
-            console.log("add mock video track to stream object");
-            var videotrack = new stream.MediaStreamTrack();
-            videotrack.kind = "video"
-            videotrack.label = "mock video"
-            stm.addTrack(videotrack);
+
+            tracks.forEach(track => {
+                var newTrack = new stream.MediaStreamTrack(track.kind, track.id);
+                newTrack.label = "mock track"
+                stm.addTrack(newTrack)
+            });
             resolve(stm)
         }, function (ev) {
-            console.log("Failed to create RTCPeerConnection object");
+            console.log("Failed to getUserMedia object");
         }, 'Hook', 'getUserMedia', [this.id, args]);
 
     })

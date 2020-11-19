@@ -1,7 +1,5 @@
 package com.agora.cordova.plugin.webrtc;
 
-// The native Toast API
-
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -10,37 +8,12 @@ import android.os.Build;
 import android.provider.Settings;
 import android.util.Log;
 
-import com.agora.cordova.plugin.webrtc.models.MediaStreamConstraints;
-import com.agora.cordova.plugin.webrtc.models.RTCConfiguration;
-import com.agora.cordova.plugin.webrtc.models.SessionDescription;
-import com.agora.cordova.plugin.webrtc.services.PCFactory;
-import com.agora.cordova.plugin.webrtc.services.RTCPeerConnection;
-import com.agora.cordova.plugin.webrtc.utils.MessageBus;
-import com.agora.demo.four.R;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CordovaWebView;
-import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.net.InetSocketAddress;
-import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReentrantLock;
-
-import static org.apache.cordova.PluginResult.Status.NO_RESULT;
-import static org.apache.cordova.PluginResult.Status.OK;
-
-// Cordova-required packages
-
 
 public class Hook extends CordovaPlugin {
     static final String TAG = Hook.class.getCanonicalName();
@@ -55,7 +28,6 @@ public class Hook extends CordovaPlugin {
     public static final String ALERT_WINDOW = Manifest.permission.SYSTEM_ALERT_WINDOW;
 
     public static final int NECESSARY_PERM_CODE = 900;
-    public static final int OVERLAY_PERMISSION_CODE = 1000;
     private static final String PERMISSION_DENIED_ERROR = "Permission_Denied";
 
     WebRTCService _service;
@@ -73,36 +45,12 @@ public class Hook extends CordovaPlugin {
             getNecessaryPermission();
         }
 
-        if (Build.VERSION.SDK_INT >= 23 && (!Settings.canDrawOverlays(cordova.getActivity()))) {
-            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    Uri.parse("package:" + cordova.getActivity().getPackageName()));
-
-            cordova.startActivityForResult(new CordovaPlugin() {
-                @Override
-                public void onActivityResult(int requestCode, int resultCode, Intent intent) {
-                    super.onActivityResult(requestCode, resultCode, intent);
-
-                    Log.v(TAG, "onActivityResult " + requestCode + " " + resultCode);
-                }
-            }, intent, OVERLAY_PERMISSION_CODE);
-        }
-
         Log.v(TAG, "Hook initialized");
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-    }
-
-    @Override
-    public void onPause(boolean multitasking) {
-        super.onPause(multitasking);
-    }
-
-    @Override
-    public void onResume(boolean multitasking) {
-        super.onResume(multitasking);
     }
 
     @Override
