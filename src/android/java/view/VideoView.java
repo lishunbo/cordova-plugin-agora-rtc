@@ -16,6 +16,7 @@ import com.agora.cordova.plugin.webrtc.models.MediaStreamTrackWrapper;
 import com.agora.cordova.plugin.webrtc.services.PCFactory;
 
 import org.apache.cordova.CallbackContext;
+import org.webrtc.AudioSource;
 import org.webrtc.RendererCommon;
 import org.webrtc.SurfaceTextureHelper;
 import org.webrtc.SurfaceViewRenderer;
@@ -158,6 +159,10 @@ class VideoView extends SurfaceViewRenderer implements View.OnTouchListener {
         MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.popMediaStreamTrackById(config.trackId);
         if (wrapper == null || wrapper.getTrack() == null) {
             return;
+        }
+        if (wrapper.getTrack().kind().equals("audio")&&wrapper.getRelatedObject()!=null&&
+                wrapper.getRelatedObject().get(0)!=null &&wrapper.getRelatedObject().get(0) instanceof AudioSource) {
+            ((AudioSource)wrapper.getRelatedObject().get(0)).dispose();
         }
 
         if (wrapper.getTrack().kind().equals("video")) {

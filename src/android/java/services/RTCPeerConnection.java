@@ -11,6 +11,7 @@ import com.agora.cordova.plugin.webrtc.models.enums.RTCIceCredentialType;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.webrtc.AudioSource;
 import org.webrtc.AudioTrack;
 import org.webrtc.DataChannel;
 import org.webrtc.IceCandidate;
@@ -189,22 +190,34 @@ public class RTCPeerConnection {
         if (localStream != null) {
             for (VideoTrack videoTrack : localStream.videoTracks) {
                 MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.popMediaStreamTrackByTrack(videoTrack);
-                if (wrapper != null && wrapper.getRelatedObject() != null && (VideoCapturer) wrapper.getRelatedObject() != null) {
-                    VideoCapturer videoCapturer = (VideoCapturer) wrapper.getRelatedObject();
-                    try {
-                        videoCapturer.stopCapture();
-                    } catch (Exception e) {
-                        Log.e(TAG, "RTCPeerConnection.close.stopCapture exception: " + e.toString());
+                if (wrapper != null) {
+                    if (wrapper.getRelatedObject() != null && wrapper.getRelatedObject().get(0) != null && wrapper.getRelatedObject().get(0) instanceof VideoCapturer) {
+                        VideoCapturer videoCapturer = (VideoCapturer) wrapper.getRelatedObject();
+                        try {
+                            videoCapturer.stopCapture();
+                        } catch (Exception e) {
+                            Log.e(TAG, "RTCPeerConnection.close.stopCapture exception: " + e.toString());
+                        }
                     }
                 }
             }
             for (AudioTrack audioTrack : localStream.audioTracks) {
-                MediaStreamTrackWrapper.popMediaStreamTrackByTrack(audioTrack);
+                MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.popMediaStreamTrackByTrack(audioTrack);
+                if (wrapper != null) {
+                    if (wrapper.getRelatedObject() != null && wrapper.getRelatedObject().get(0) != null && wrapper.getRelatedObject().get(0) instanceof AudioSource) {
+                        ((AudioSource) wrapper.getRelatedObject().get(0)).dispose();
+                    }
+                    if (wrapper.getTrack() != null) {
+                        wrapper.getTrack().dispose();
+                    }
+                }
             }
             localStream = null;
         }
         if (peerConnection != null) {
-            peerConnection.close();
+//            peerConnection.close();
+//            peerConnection.dispose();
+//            peerConnection = null;
         }
     }
 

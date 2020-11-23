@@ -267,7 +267,9 @@ public class WebRTCService {
         @Override
         public void onObserveEvent(String id, Action action, String message, String usage) {
             CallbackPCPeer peer = instances.get(id);
-            assert (peer != null);
+            if (peer == null) {
+                return;
+            }
 
             Log.v(TAG, usage + " onObserveEvent " + action + " " + message);
 
