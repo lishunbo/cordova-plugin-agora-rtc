@@ -156,6 +156,16 @@ class VideoView extends SurfaceViewRenderer implements View.OnTouchListener {
     }
 
     public void destroy() {
+        super.release();
+
+        VideoView that = this;
+        mainActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                windowManager.removeViewImmediate(that);
+            }
+        });
+
         MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.popMediaStreamTrackById(config.trackId);
         if (wrapper == null || wrapper.getTrack() == null) {
             return;
@@ -196,16 +206,7 @@ class VideoView extends SurfaceViewRenderer implements View.OnTouchListener {
             }
         }
 
-        super.release();
-
-        VideoView that = this;
         wrapper.getTrack().dispose();
-        mainActivity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                windowManager.removeViewImmediate(that);
-            }
-        });
     }
 
     @Override
