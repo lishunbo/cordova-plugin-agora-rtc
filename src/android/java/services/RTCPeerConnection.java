@@ -212,12 +212,10 @@ public class RTCPeerConnection {
                     }
                 }
             }
+            peerConnection.removeStream(localStream);
+            peerConnection.removeStream(remoteStream);
             localStream = null;
-        }
-        if (peerConnection != null) {
-//            peerConnection.close();
-//            peerConnection.dispose();
-//            peerConnection = null;
+            remoteStream = null;
         }
     }
 
@@ -314,9 +312,9 @@ public class RTCPeerConnection {
         public void onConnectionChange(PeerConnection.PeerConnectionState newState) {
             Log.v(TAG, usage + " onConnectionChange " + newState.toString() + " pc connection size: " + peerConnection.getSenders().size() + " " + peerConnection.getReceivers().size());
 
-            if (newState == PeerConnection.PeerConnectionState.DISCONNECTED ||
+            if (//newState == PeerConnection.PeerConnectionState.DISCONNECTED ||
                     newState == PeerConnection.PeerConnectionState.CLOSED ||
-                    newState == PeerConnection.PeerConnectionState.FAILED) {
+                            newState == PeerConnection.PeerConnectionState.FAILED) {
 
                 MediaStreamTrackWrapper.removeMediaStreamTrackByPCId(pc_id);
 
@@ -394,7 +392,10 @@ public class RTCPeerConnection {
         public void onAddStream(MediaStream mediaStream) {
 
             Log.v(TAG, usage + " onAddStream " + mediaStream.videoTracks.size());
-
+            if (remoteStream != null) {
+                peerConnection.removeStream(remoteStream);
+            }
+            remoteStream = mediaStream;
         }
 
         @Override
