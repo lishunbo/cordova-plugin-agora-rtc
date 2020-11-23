@@ -13,8 +13,12 @@ import android.util.Log;
 
 import com.agora.cordova.plugin.webrtc.models.MediaDeviceInfo;
 import com.agora.cordova.plugin.webrtc.models.MediaStreamConstraints;
+import com.agora.cordova.plugin.webrtc.models.MediaStreamTrackWrapper;
 
+import org.webrtc.AudioSource;
+import org.webrtc.AudioTrack;
 import org.webrtc.Camera1Enumerator;
+import org.webrtc.MediaConstraints;
 import org.webrtc.SurfaceTextureHelper;
 import org.webrtc.VideoCapturer;
 import org.webrtc.VideoSource;
@@ -22,6 +26,7 @@ import org.webrtc.VideoTrack;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class MediaDevice {
     private final static String TAG = MediaDevice.class.getCanonicalName();
@@ -165,13 +170,32 @@ public class MediaDevice {
             return "";
         }
 
-        VideoTrack track = createLocalVideoTrack(true, 500, 400, 20);
-        RTCPeerConnection.cacheMediaStreamTrack(track);
+        StringBuilder builder = new StringBuilder();
+        builder.append("[");
 
-        return "[" + RTCPeerConnection.summaryMediaStreamTrack(track) + "]";
+        if (constraints.audio != null) {
+            MediaStreamTrackWrapper wrapper = createLocalAudioTrack();
+            builder.append(wrapper.toString());
+        }
+
+        if (constraints.video != null) {
+            MediaStreamTrackWrapper wrapper = createLocalVideoTrack(true, 500, 400, 20);
+            builder.append(wrapper.toString());
+        }
+        builder.append("]");
+
+
+        return builder.toString();
     }
 
-    public static VideoTrack createLocalVideoTrack(boolean isFront, int w, int h, int fps) {
+    public static MediaStreamTrackWrapper createLocalAudioTrack() {
+        AudioSource audioSource = PCFactory.factory().createAudioSource(new MediaConstraints());
+        AudioTrack audioTrack = PCFactory.factory().createAudioTrack(UUID.randomUUID().toString(), audioSource);
+
+        return MediaStreamTrackWrapper.cacheMediaStreamTrack("", audioTrack, audioSource);
+    }
+
+    public static MediaStreamTrackWrapper createLocalVideoTrack(boolean isFront, int w, int h, int fps) {
         VideoCapturer videoCapturer = createCameraCapturer(isFront);
         if (videoCapturer == null) {
             return null;
@@ -182,11 +206,9 @@ public class MediaDevice {
         videoCapturer.initialize(surfaceTextureHelper, _context, videoSource.getCapturerObserver());
         videoCapturer.startCapture(w, h, fps);
 
-        // create VideoTrack
-        VideoTrack videoTrack = PCFactory.factory().createVideoTrack("100", videoSource);
-        // display in localView
+        VideoTrack videoTrack = PCFactory.factory().createVideoTrack(UUID.randomUUID().toString(), videoSource);
 
-        return videoTrack;
+        return MediaStreamTrackWrapper.cacheMediaStreamTrack("", videoTrack, videoCapturer, surfaceTextureHelper, videoSource);
     }
 
     private static VideoCapturer createCameraCapturer(boolean isFront) {

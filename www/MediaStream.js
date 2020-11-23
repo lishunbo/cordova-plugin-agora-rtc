@@ -60,7 +60,6 @@ class MediaStream {
 
 class MediaStreamTrack {
     constructor(track, id) {
-        console.log("new MediaStreamTrack");
         this.contentHint = "";
         this.enabled = true;
         if (id !== undefined) {
@@ -78,6 +77,7 @@ class MediaStreamTrack {
         this.onunmute = null;
         this.readyState = "live";
 
+        console.log("new MediaStreamTrack " + this.kind + " " + this.id);
         this.eventhandle = new Map();
         // this.enabled = false;
         // this.id = "";
@@ -100,6 +100,10 @@ class MediaStreamTrack {
         // addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
         // removeEventListener<K extends keyof MediaStreamTrackEventMap>(type: K, listener: (this: MediaStreamTrack, ev: MediaStreamTrackEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
         // removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+    }
+
+    stop(){
+        console.log("MediaStreamTrack.stop not implement")
     }
 
     addEventListener(eventType, func) {

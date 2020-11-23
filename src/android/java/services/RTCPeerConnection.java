@@ -3,6 +3,7 @@ package com.agora.cordova.plugin.webrtc.services;
 import android.util.Log;
 
 import com.agora.cordova.plugin.webrtc.Action;
+import com.agora.cordova.plugin.webrtc.models.MediaStreamTrackWrapper;
 import com.agora.cordova.plugin.webrtc.models.RTCConfiguration;
 import com.agora.cordova.plugin.webrtc.models.RTCIceServer;
 import com.agora.cordova.plugin.webrtc.models.enums.RTCIceCredentialType;
@@ -10,6 +11,7 @@ import com.agora.cordova.plugin.webrtc.models.enums.RTCIceCredentialType;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.webrtc.AudioTrack;
 import org.webrtc.DataChannel;
 import org.webrtc.IceCandidate;
 import org.webrtc.MediaConstraints;
@@ -22,37 +24,28 @@ import org.webrtc.RTCStatsReport;
 import org.webrtc.RtpReceiver;
 import org.webrtc.SdpObserver;
 import org.webrtc.SessionDescription;
+import org.webrtc.VideoCapturer;
 import org.webrtc.VideoTrack;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
 public class RTCPeerConnection {
     static final String TAG = RTCPeerConnection.class.getCanonicalName();
-
-    static ReadWriteLock tracksLock = new ReentrantReadWriteLock();
-    static Map<String, MediaStreamTrack> allTracks = new HashMap<>();
 
     Supervisor supervisor;
     String pc_id;
 
     RTCConfiguration config;
     PeerConnection peerConnection;
+    MediaStream localStream;
+    MediaStream remoteStream;
 
     public interface Supervisor {
-        void onAddTrack(String id, RtpReceiver rtpReceiver, MediaStream[] mediaStreams, String usage);
-
-        void onAddStream(String id, MediaStream stream, String usage);
-
-        void onRemoveStream(String id, MediaStream mediaStream, String usage);
-
-        void onDataChannel(String id, DataChannel dataChannel, String usage);
+        void onDisconnect(RTCPeerConnection pc);
 
         void onObserveEvent(String id, Action action, String message, String usage);
     }
@@ -93,7 +86,7 @@ public class RTCPeerConnection {
         }
 
         //TODO
-        peerConnection = PCFactory.factory().createPeerConnection(iceServers, new RTCObserver("createPeerConnection:" + pc_id) {
+        peerConnection = PCFactory.factory().createPeerConnection(iceServers, new RTCObserver(this, "createPeerConnection:" + pc_id) {
 
         });
 
@@ -108,27 +101,17 @@ public class RTCPeerConnection {
 //        timer.scheduleAtFixedRate(task, 1000L, 5000L);
     }
 
-    public static String summaryMediaStreamTrack(MediaStreamTrack track) {
-        JSONObject obj = new JSONObject();
-        try {
-            obj.put("kind", track.kind().toLowerCase());
-            obj.put("id", track.id());
-        } catch (Exception e) {
-            Log.e(TAG, "onAddTrack exception: " + e.toString());
+    public void addTrack(String kind, MediaStreamTrack track) {
+        if (localStream == null) {
+            localStream = PCFactory.factory().createLocalMediaStream("AgoraLocalStream");
         }
-        return obj.toString();
-    }
+        if (kind == "video") {
+            localStream.addTrack((VideoTrack) track);
+        } else {
+            localStream.addTrack((AudioTrack) track);
+        }
 
-    public String addTrack(VideoTrack videoTrack) {
-
-        MediaStream mediaStream = PCFactory.factory().createLocalMediaStream("localMediaStream");
-        mediaStream.addTrack(videoTrack);
-
-        cacheMediaStreamTrack(videoTrack);
-
-        peerConnection.addStream(mediaStream);
-
-        return summaryMediaStreamTrack(videoTrack);
+        peerConnection.addStream(localStream);
     }
 
     public void createOffer(MessageHandler handler) {
@@ -136,7 +119,7 @@ public class RTCPeerConnection {
         mediaConstraints.mandatory.add(new MediaConstraints.KeyValuePair("OfferToReceiveAudio", "true"));
         mediaConstraints.mandatory.add(new MediaConstraints.KeyValuePair("OfferToReceiveVideo", "true"));
         mediaConstraints.optional.add(new MediaConstraints.KeyValuePair("DtlsSrtpKeyAgreement", "true"));
-        peerConnection.createOffer(new RTCObserver("createOffer:" + pc_id) {
+        peerConnection.createOffer(new RTCObserver(this, "createOffer:" + pc_id) {
             @Override
             public void onCreateSuccess(SessionDescription sessionDescription) {
                 String offer = "";
@@ -156,7 +139,7 @@ public class RTCPeerConnection {
     }
 
     public void setLocalDescription(MessageHandler handler, String type, String description) {
-        peerConnection.setLocalDescription(new RTCObserver("setLocalDescription" + pc_id) {
+        peerConnection.setLocalDescription(new RTCObserver(this, "setLocalDescription" + pc_id) {
             @Override
             public void onSetSuccess() {
                 super.onSetSuccess();
@@ -172,7 +155,7 @@ public class RTCPeerConnection {
     }
 
     public void setRemoteDescription(MessageHandler handler, String type, String description) {
-        peerConnection.setRemoteDescription(new RTCObserver("setRemoteDescription" + pc_id) {
+        peerConnection.setRemoteDescription(new RTCObserver(this, "setRemoteDescription" + pc_id) {
             @Override
             public void onSetSuccess() {
                 super.onSetSuccess();
@@ -199,6 +182,29 @@ public class RTCPeerConnection {
         } catch (Exception e) {
             Log.e(TAG, "setLocalDescription exception:" + e.toString());
             handler.error(e.toString());
+        }
+    }
+
+    void close() {
+        if (localStream != null) {
+            for (VideoTrack videoTrack : localStream.videoTracks) {
+                MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.popMediaStreamTrackByTrack(videoTrack);
+                if (wrapper != null && wrapper.getRelatedObject() != null && (VideoCapturer) wrapper.getRelatedObject() != null) {
+                    VideoCapturer videoCapturer = (VideoCapturer) wrapper.getRelatedObject();
+                    try {
+                        videoCapturer.stopCapture();
+                    } catch (Exception e) {
+                        Log.e(TAG, "RTCPeerConnection.close.stopCapture exception: " + e.toString());
+                    }
+                }
+            }
+            for (AudioTrack audioTrack : localStream.audioTracks) {
+                MediaStreamTrackWrapper.popMediaStreamTrackByTrack(audioTrack);
+            }
+            localStream = null;
+        }
+        if (peerConnection != null) {
+            peerConnection.close();
         }
     }
 
@@ -268,28 +274,14 @@ public class RTCPeerConnection {
 
     }
 
-    public static MediaStreamTrack getMediaStreamTrack(String id) {
-        tracksLock.readLock().lock();
-
-        MediaStreamTrack track = allTracks.get(id);
-
-        tracksLock.readLock().unlock();
-        return track;
-    }
-
-    public static void cacheMediaStreamTrack(MediaStreamTrack track) {
-        tracksLock.writeLock().lock();
-
-        allTracks.put(track.id(), track);
-
-        tracksLock.writeLock().unlock();
-    }
 
     public class RTCObserver implements SdpObserver, PeerConnection.Observer {
         private String usage;
+        RTCPeerConnection pc;
 
-        public RTCObserver(String u) {
+        public RTCObserver(RTCPeerConnection pc, String u) {
             usage = u;
+            this.pc = pc;
         }
 
         @Override
@@ -307,7 +299,17 @@ public class RTCPeerConnection {
 
         @Override
         public void onConnectionChange(PeerConnection.PeerConnectionState newState) {
-            Log.v(TAG, usage + " onConnectionChange " + newState.toString());
+            Log.v(TAG, usage + " onConnectionChange " + newState.toString() + " pc connection size: " + peerConnection.getSenders().size() + " " + peerConnection.getReceivers().size());
+
+            if (newState == PeerConnection.PeerConnectionState.DISCONNECTED ||
+                    newState == PeerConnection.PeerConnectionState.CLOSED ||
+                    newState == PeerConnection.PeerConnectionState.FAILED) {
+
+                MediaStreamTrackWrapper.removeMediaStreamTrackByPCId(pc_id);
+
+                supervisor.onDisconnect(pc);
+                close();
+            }
 
             supervisor.onObserveEvent(pc_id, Action.onConnectionStateChange, newState.toString().toLowerCase(), usage);
         }
@@ -369,34 +371,29 @@ public class RTCPeerConnection {
         public void onAddTrack(RtpReceiver rtpReceiver, MediaStream[] mediaStreams) {
             Log.v(TAG, usage + " onAddTrack " + rtpReceiver.track().kind());
 //            client.onAddTrack(rtpReceiver.track().kind().toLowerCase());
-            supervisor.onAddTrack(pc_id, rtpReceiver, mediaStreams, usage);
 
-            cacheMediaStreamTrack(rtpReceiver.track());
+            MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.cacheMediaStreamTrack(pc_id, rtpReceiver.track());
 
-            supervisor.onObserveEvent(pc_id, Action.onAddTrack, summaryMediaStreamTrack(rtpReceiver.track()), usage);
+            supervisor.onObserveEvent(pc_id, Action.onAddTrack, wrapper.toString(), usage);
         }
-
 
         @Override
         public void onAddStream(MediaStream mediaStream) {
 
             Log.v(TAG, usage + " onAddStream " + mediaStream.videoTracks.size());
 
-            supervisor.onAddStream(pc_id, mediaStream, usage);
         }
 
         @Override
         public void onRemoveStream(MediaStream mediaStream) {
 
             Log.v(TAG, usage + " onRemoveStream ");
-            supervisor.onRemoveStream(pc_id, mediaStream, usage);
         }
 
         @Override
         public void onDataChannel(DataChannel dataChannel) {
 
             Log.v(TAG, usage + " onDataChannel ");
-            supervisor.onDataChannel(pc_id, dataChannel, usage);
         }
 
         @Override

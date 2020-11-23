@@ -1,12 +1,12 @@
 /**
- * AgoraWebSDK_N-v4.1.1-55-g09508c0-dirty Copyright AgoraInc.
+ * AgoraWebSDK_N-v4.1.1-56-g69ce1bc-dirty Copyright AgoraInc.
  */
 
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('cordova-plugin-agora-rtc.NativeVideoPlayer')) :
-	typeof define === 'function' && define.amd ? define(['cordova-plugin-agora-rtc.NativeVideoPlayer'], factory) :
-	(global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.AgoraRTC = factory(global.cordovaPluginAgoraRtc_NativeVideoPlayer));
-}(this, (function (cordovaPluginAgoraRtc_NativeVideoPlayer) { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('cordova-plugin-agora-rtc.NativePlayer')) :
+	typeof define === 'function' && define.amd ? define(['cordova-plugin-agora-rtc.NativePlayer'], factory) :
+	(global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.AgoraRTC = factory(global.cordovaPluginAgoraRtc_NativePlayer));
+}(this, (function (cordovaPluginAgoraRtc_NativePlayer) { 'use strict';
 
 	var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
@@ -8523,7 +8523,7 @@
 	 * Agora Web SDK 的编译信息。
 	 * @public
 	 */
-	var BUILD = "v4.1.1-55-g09508c0-dirty(11/19/2020, 11:34:26 AM)";
+	var BUILD = "v4.1.1-56-g69ce1bc-dirty(11/23/2020, 11:12:20 AM)";
 	var VERSION = transferVersion("4.1.1");
 	var IS_GLOBAL_VERSION = isGlobalVersion();
 	var DEFAULT_TURN_CONFIG = {
@@ -25501,419 +25501,6 @@
 	  return LocalTrack;
 	}(Track);
 
-	var __extends$6 = undefined && undefined.__extends || function () {
-	  var extendStatics = function (d, b) {
-	    extendStatics = setPrototypeOf$2 || {
-	      __proto__: []
-	    } instanceof Array && function (d, b) {
-	      d.__proto__ = b;
-	    } || function (d, b) {
-	      for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    };
-
-	    return extendStatics(d, b);
-	  };
-
-	  return function (d, b) {
-	    extendStatics(d, b);
-
-	    function __() {
-	      this.constructor = d;
-	    }
-
-	    d.prototype = b === null ? create$4(b) : (__.prototype = b.prototype, new __());
-	  };
-	}();
-
-	var AudioSource =
-	/** @class */
-	function (_super) {
-	  __extends$6(AudioSource, _super);
-
-	  function AudioSource() {
-	    var _this = _super.call(this) || this; // 表示这个音频源当前是否连接到了 WebAudio Output
-
-
-	    _this.isPlayed = false;
-	    _this.audioLevelBase = 0;
-	    _this.audioOutputLevel = 0;
-	    /** 历史实时音量的缓存，用于计算平均音量, 为 null 表示没有开始音量缓存 */
-
-	    _this.audioOutputLevelCache = null;
-	    _this.audioOutputLevelCacheMaxLength = getParameter("AUDIO_SOURCE_AVG_VOLUME_DURATION") / getParameter("AUDIO_SOURCE_VOLUME_UPDATE_INTERVAL") || 15;
-	    _this.isDestroyed = false;
-	    _this._noAudioInputCount = 0;
-	    _this.context = getAudioContext();
-	    _this.playNode = _this.context.destination;
-	    _this.outputNode = _this.context.createGain();
-	    polyfillAudioNode(_this.outputNode);
-	    _this.analyserNode = _this.context.createAnalyser();
-	    return _this;
-	  }
-
-	  defineProperty$4(AudioSource.prototype, "isNoAudioInput", {
-	    /**
-	     * 表示当前输入音频是否有问题
-	     * 目前只会在 Safari 下判断这个情况
-	     *
-	     * 连续 3 帧出现数据为 0 的情况
-	     */
-	    get: function () {
-	      return this.noAudioInputCount >= 3;
-	    },
-	    enumerable: true,
-	    configurable: true
-	  });
-
-	  defineProperty$4(AudioSource.prototype, "noAudioInputCount", {
-	    get: function () {
-	      return this._noAudioInputCount;
-	    },
-	    set: function (count) {
-	      if (this._noAudioInputCount < 3 && count >= 3) {
-	        this.onNoAudioInput && this.onNoAudioInput();
-	      } else if (this._noAudioInputCount >= 3 && this._noAudioInputCount % 10 === 0) {
-	        this.onNoAudioInput && this.onNoAudioInput();
-	      }
-
-	      this._noAudioInputCount = count;
-	    },
-	    enumerable: true,
-	    configurable: true
-	  });
-
-	  AudioSource.prototype.startGetAudioBuffer = function (bufferSize) {
-	    var _this = this;
-
-	    if (this.audioBufferNode) return;
-	    this.audioBufferNode = this.context.createScriptProcessor(bufferSize);
-	    this.outputNode.connect(this.audioBufferNode);
-	    this.audioBufferNode.connect(this.context.destination);
-
-	    this.audioBufferNode.onaudioprocess = function (e) {
-	      _this.emit(AudioSourceEvents.ON_AUDIO_BUFFER, silenceScriptProcessHandler(e));
-	    };
-	  };
-
-	  AudioSource.prototype.stopGetAudioBuffer = function () {
-	    if (!this.audioBufferNode) return;
-	    this.audioBufferNode.onaudioprocess = null;
-	    this.outputNode.disconnect(this.audioBufferNode);
-	    this.audioBufferNode = undefined;
-	  };
-
-	  AudioSource.prototype.createOutputTrack = function () {
-	    var compat = getCompatibility();
-
-	    if (!compat.webAudioMediaStreamDest) {
-	      throw new AgoraRTCError(AgoraRTCErrorCode.NOT_SUPPORTED, "your browser is not support audio processor");
-	    }
-
-	    if (this.destNode && this.outputTrack) return this.outputTrack;
-	    this.destNode = this.context.createMediaStreamDestination();
-	    this.outputNode.connect(this.destNode);
-	    this.outputTrack = this.destNode.stream.getAudioTracks()[0];
-	    return this.outputTrack;
-	  };
-
-	  AudioSource.prototype.play = function (dest) {
-	    /**
-	     * 说明此时 autoplay 还没有解锁
-	     */
-	    if (this.context.state !== "running") {
-	      nextTick(function () {
-	        audioContextStateChangeEmitter.emit("autoplay-failed");
-	      });
-	    }
-
-	    this.isPlayed = true;
-	    this.playNode = dest || this.context.destination;
-	    this.outputNode.connect(this.playNode);
-	  };
-
-	  AudioSource.prototype.stop = function () {
-	    if (this.isPlayed) {
-	      try {
-	        this.outputNode.disconnect(this.playNode);
-	      } catch (e) {}
-	    }
-
-	    this.isPlayed = false;
-	  };
-	  /**
-	   * 获取音源的实时音量（通过 AnalyserNode 计算得出的
-	   * 范围是 [0, 1], 1 表示理论最大音量
-	   */
-
-
-	  AudioSource.prototype.getAudioLevel = function () {
-	    return this.audioOutputLevel;
-	  };
-	  /**
-	   * 获取音源在 `AUDIO_SOURCE_AVG_VOLUME_DURATION(3s)`内的平均音量。
-	   * 首次调用会返回当前实时音量
-	   * 范围是 [0, 1], 1 表示理论最大音量
-	   */
-
-
-	  AudioSource.prototype.getAudioAvgLevel = function () {
-	    var _context;
-
-	    if (this.audioOutputLevelCache === null) {
-	      this.audioOutputLevelCache = [this.audioOutputLevel];
-	    }
-
-	    var levelSum = reduce$2(_context = this.audioOutputLevelCache).call(_context, function (a, b) {
-	      return a + b;
-	    });
-
-	    return levelSum / this.audioOutputLevelCache.length;
-	  };
-	  /**
-	   * 获取音源的设置音量（通过 GainNode 得出的
-	   *  范围是 [0. Infinity], 1 表示原始音量
-	   */
-
-
-	  AudioSource.prototype.getAudioVolume = function () {
-	    return this.outputNode.gain.value;
-	  };
-
-	  AudioSource.prototype.setVolume = function (level) {
-	    this.outputNode.gain.setValueAtTime(level, this.context.currentTime);
-	  };
-
-	  AudioSource.prototype.setMute = function (isMuted) {
-	    if (isMuted) {
-	      this.disconnect();
-	      this.audioLevelBase = 0;
-	      this.audioOutputLevel = 0;
-	    } else {
-	      this.connect();
-	    }
-	  };
-
-	  AudioSource.prototype.destroy = function () {
-	    this.disconnect();
-	    this.stop();
-	    this.isDestroyed = true;
-	    this.onNoAudioInput = undefined;
-	  };
-
-	  AudioSource.prototype.disconnect = function () {
-	    this.sourceNode && this.sourceNode.disconnect();
-	    this.outputNode && this.outputNode.disconnect();
-	    window.clearInterval(this.updateAudioOutputLevelInterval);
-	  };
-
-	  AudioSource.prototype.connect = function () {
-	    var _context2;
-
-	    this.sourceNode && this.sourceNode.connect(this.outputNode);
-	    this.outputNode.connect(this.analyserNode);
-	    this.updateAudioOutputLevelInterval = window.setInterval(bind$3(_context2 = this.updateAudioOutputLevel).call(_context2, this), getParameter("AUDIO_SOURCE_VOLUME_UPDATE_INTERVAL") || 400);
-	  };
-
-	  AudioSource.prototype.updateAudioOutputLevel = function () {
-	    if (this.context && this.context.state !== "running") {
-	      this.context.resume();
-	    }
-
-	    if (!this.analyserNode) return;
-	    var timeDomainData;
-
-	    if (this.analyserNode.getFloatTimeDomainData) {
-	      timeDomainData = new Float32Array(this.analyserNode.frequencyBinCount);
-	      this.analyserNode.getFloatTimeDomainData(timeDomainData);
-	    } else {
-	      var _context3;
-
-	      timeDomainData = new Uint8Array(this.analyserNode.frequencyBinCount);
-	      this.analyserNode.getByteTimeDomainData(timeDomainData);
-	      var isNoInput_1 = true;
-	      timeDomainData = new Float32Array(map$5(_context3 = from_1$2(timeDomainData)).call(_context3, function (d) {
-	        if (d !== 128) isNoInput_1 = false;
-	        return (d - 128) * 0.0078125;
-	      }));
-
-	      if (isNoInput_1) {
-	        this.noAudioInputCount += 1;
-	      } else {
-	        this.noAudioInputCount = 0;
-	      }
-	    }
-
-	    for (var i = 0; i < timeDomainData.length; i += 1) {
-	      if (Math.abs(timeDomainData[i]) > this.audioLevelBase) {
-	        this.audioLevelBase = Math.abs(timeDomainData[i]);
-
-	        if (this.audioLevelBase > 1) {
-	          this.audioLevelBase = 1;
-	        }
-	      }
-	    }
-
-	    this.audioOutputLevel = this.audioLevelBase;
-	    this.audioLevelBase = this.audioLevelBase / 4;
-
-	    if (this.audioOutputLevelCache !== null) {
-	      this.audioOutputLevelCache.push(this.audioOutputLevel);
-
-	      if (this.audioOutputLevelCache.length > this.audioOutputLevelCacheMaxLength) {
-	        this.audioOutputLevelCache.shift();
-	      }
-	    }
-	  };
-
-	  return AudioSource;
-	}(EventEmitter$1);
-
-	var __extends$7 = undefined && undefined.__extends || function () {
-	  var extendStatics = function (d, b) {
-	    extendStatics = setPrototypeOf$2 || {
-	      __proto__: []
-	    } instanceof Array && function (d, b) {
-	      d.__proto__ = b;
-	    } || function (d, b) {
-	      for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    };
-
-	    return extendStatics(d, b);
-	  };
-
-	  return function (d, b) {
-	    extendStatics(d, b);
-
-	    function __() {
-	      this.constructor = d;
-	    }
-
-	    d.prototype = b === null ? create$4(b) : (__.prototype = b.prototype, new __());
-	  };
-	}();
-
-	var AudioTrackSource =
-	/** @class */
-	function (_super) {
-	  __extends$7(AudioTrackSource, _super);
-
-	  function AudioTrackSource(track, isRemoteTrack) {
-	    var _this = _super.call(this) || this;
-
-	    _this.isCurrentTrackCloned = false;
-	    _this.isRemoteTrack = false;
-	    /**
-	     * 在 ios 12 上，如果 context 在 suspend 的状态下创建了 MediaStreamSource
-	     * 当 context running 后 MediaStreamSource 是无法继续使用的
-	     * 需要重新构建 WebAudio 节点
-	     */
-
-	    _this.rebuildWebAudio = function () {
-	      if (!_this.isNoAudioInput || _this.isDestroyed) {
-	        document.body.removeEventListener("click", _this.rebuildWebAudio, true);
-	        logger.debug("rebuild web audio success, current volume", _this.getAudioLevel());
-	        return;
-	      }
-
-	      _this.context.resume().then(function () {
-	        return logger.info("resume success");
-	      });
-
-	      logger.debug("rebuild web audio because of ios 12 bugs");
-
-	      _this.disconnect(); // 最关键的一句，原因未知，玄学
-
-
-	      var oldTrack = _this.track;
-	      _this.track = _this.track.clone();
-
-	      if (_this.isCurrentTrackCloned) {
-	        oldTrack.stop();
-	      } else {
-	        _this.isCurrentTrackCloned = true;
-	      }
-
-	      var ms = new MediaStream([_this.track]);
-	      _this.sourceNode = _this.context.createMediaStreamSource(ms);
-	      polyfillAudioNode(_this.sourceNode);
-	      _this.analyserNode = _this.context.createAnalyser();
-	      var gainValue = _this.outputNode.gain.value;
-	      _this.outputNode = _this.context.createGain();
-
-	      _this.outputNode.gain.setValueAtTime(gainValue, _this.context.currentTime);
-
-	      polyfillAudioNode(_this.outputNode);
-
-	      _this.connect();
-
-	      _this.audioElement.srcObject = ms;
-
-	      if (_this.isPlayed) {
-	        _this.play(_this.playNode);
-	      }
-	    };
-
-	    if (track.kind !== "audio") {
-	      throw new AgoraRTCError(AgoraRTCErrorCode.UNEXPECTED_ERROR);
-	    }
-
-	    _this.track = track;
-	    var ms = new MediaStream([_this.track]);
-	    _this.isRemoteTrack = !!isRemoteTrack;
-	    _this.sourceNode = _this.context.createMediaStreamSource(ms);
-	    polyfillAudioNode(_this.sourceNode);
-
-	    _this.connect(); // 只有这样才能用 WebAudio 播出来声音
-
-
-	    _this.audioElement = document.createElement("audio");
-	    _this.audioElement.srcObject = ms;
-	    var browserInfo = getBrowserInfo();
-
-	    if (isRemoteTrack && browserInfo.os === BrowserOS.IOS) {
-	      audioContextStateChangeEmitter.on("state-change", _this.rebuildWebAudio);
-
-	      _this.onNoAudioInput = function () {
-	        document.body.addEventListener("click", _this.rebuildWebAudio, true);
-
-	        _this.rebuildWebAudio();
-
-	        document.body.click();
-	      };
-	    }
-
-	    return _this;
-	  }
-
-	  defineProperty$4(AudioTrackSource.prototype, "isFreeze", {
-	    get: function () {
-	      return false;
-	    },
-	    enumerable: true,
-	    configurable: true
-	  });
-
-	  AudioTrackSource.prototype.updateTrack = function (track) {
-	    this.sourceNode.disconnect();
-	    this.track = track;
-	    this.isCurrentTrackCloned = false;
-	    var ms = new MediaStream([track]);
-	    this.sourceNode = this.context.createMediaStreamSource(ms);
-	    polyfillAudioNode(this.sourceNode);
-	    this.sourceNode.connect(this.outputNode);
-	    this.audioElement.srcObject = ms;
-	  };
-
-	  AudioTrackSource.prototype.destroy = function () {
-	    this.audioElement.remove();
-	    audioContextStateChangeEmitter.off("state-change", this.rebuildWebAudio);
-
-	    _super.prototype.destroy.call(this);
-	  };
-
-	  return AudioTrackSource;
-	}(AudioSource);
-
 	var __awaiter$a = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
@@ -26226,7 +25813,119 @@
 
 	var audioElementPlayCenter = new AudioElementPlayCenter();
 
-	var __extends$8 = undefined && undefined.__extends || function () {
+	var __extends$6 = undefined && undefined.__extends || function () {
+	  var extendStatics = function (d, b) {
+	    extendStatics = setPrototypeOf$2 || {
+	      __proto__: []
+	    } instanceof Array && function (d, b) {
+	      d.__proto__ = b;
+	    } || function (d, b) {
+	      for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+	    };
+
+	    return extendStatics(d, b);
+	  };
+
+	  return function (d, b) {
+	    extendStatics(d, b);
+
+	    function __() {
+	      this.constructor = d;
+	    }
+
+	    d.prototype = b === null ? create$4(b) : (__.prototype = b.prototype, new __());
+	  };
+	}();
+
+	var NativeAudioTrack =
+	/** @class */
+	function (_super) {
+	  __extends$6(NativeAudioTrack, _super);
+
+	  function NativeAudioTrack(track, isRemoteTrack) {
+	    var _this = _super.call(this) || this;
+
+	    _this.trackMediaType = "audio";
+	    _this.isPlaying = false;
+	    _this.isCurrentTrackCloned = false;
+	    _this.isRemoteTrack = false;
+
+	    if (track.kind !== "audio") {
+	      throw new AgoraRTCError(AgoraRTCErrorCode.UNEXPECTED_ERROR);
+	    }
+
+	    _this.track = track;
+	    var ms = new MediaStream([_this.track]);
+	    _this.isRemoteTrack = !!isRemoteTrack;
+	    return _this;
+	  }
+
+	  defineProperty$4(NativeAudioTrack.prototype, "outputTrack", {
+	    get: function () {
+	      return this.track;
+	    },
+	    enumerable: true,
+	    configurable: true
+	  });
+
+	  defineProperty$4(NativeAudioTrack.prototype, "isFreeze", {
+	    get: function () {
+	      return false;
+	    },
+	    enumerable: true,
+	    configurable: true
+	  });
+
+	  defineProperty$4(NativeAudioTrack.prototype, "isPlayed", {
+	    get: function () {
+	      return true;
+	    },
+	    enumerable: true,
+	    configurable: true
+	  });
+
+	  NativeAudioTrack.prototype.setVolume = function (volume) {
+	    // throw new Error("Method not implemented.");
+	    return;
+	  };
+
+	  NativeAudioTrack.prototype.createOutputTrack = function () {
+	    // throw new Error("Method not implemented.");
+	    return new MediaStreamTrack();
+	  };
+
+	  NativeAudioTrack.prototype.getAudioLevel = function () {
+	    // throw new Error("Method not implemented.");
+	    return 0;
+	  };
+
+	  NativeAudioTrack.prototype.getAudioAvgLevel = function () {
+	    // throw new Error("Method not implemented.");
+	    return 0;
+	  }; // .ON_AUDIO_BUFFER
+
+
+	  NativeAudioTrack.prototype.removeAllListeners = function (eventtype) {};
+
+	  NativeAudioTrack.prototype.stopGetAudioBuffer = function () {};
+
+	  NativeAudioTrack.prototype.startGetAudioBuffer = function (frameSize) {};
+
+	  NativeAudioTrack.prototype.updateTrack = function (track) {
+	    this.track = track;
+	    this.isCurrentTrackCloned = false;
+	  };
+
+	  NativeAudioTrack.prototype.play = function () {};
+
+	  NativeAudioTrack.prototype.stop = function () {};
+
+	  NativeAudioTrack.prototype.destroy = function () {};
+
+	  return NativeAudioTrack;
+	}(EventEmitter$1);
+
+	var __extends$7 = undefined && undefined.__extends || function () {
 	  var extendStatics = function (d, b) {
 	    extendStatics = setPrototypeOf$2 || {
 	      __proto__: []
@@ -26408,7 +26107,7 @@
 	var LocalAudioTrack =
 	/** @class */
 	function (_super) {
-	  __extends$8(LocalAudioTrack, _super);
+	  __extends$7(LocalAudioTrack, _super);
 
 	  function LocalAudioTrack(track, encoderConfig, trackId) {
 	    var _this = _super.call(this, track, trackId) || this;
@@ -26417,7 +26116,7 @@
 	    _this._enabled = true;
 	    _this._useAudioElement = false;
 	    _this._encoderConfig = encoderConfig;
-	    _this._source = new AudioTrackSource(track);
+	    _this._source = new NativeAudioTrack(track);
 	    var compatibility = getCompatibility();
 
 	    if (!compatibility.webAudioWithAEC) {
@@ -26733,7 +26432,7 @@
 	var MicrophoneAudioTrack =
 	/** @class */
 	function (_super) {
-	  __extends$8(MicrophoneAudioTrack, _super);
+	  __extends$7(MicrophoneAudioTrack, _super);
 
 	  function MicrophoneAudioTrack(track, config, constraints, trackId) {
 	    var _this = _super.call(this, track, config.encoderConfig ? getAudioEncoderConfiguration(config.encoderConfig) : {}, trackId) || this;
@@ -26978,7 +26677,7 @@
 	var BufferSourceAudioTrack =
 	/** @class */
 	function (_super) {
-	  __extends$8(BufferSourceAudioTrack, _super);
+	  __extends$7(BufferSourceAudioTrack, _super);
 
 	  function BufferSourceAudioTrack(source, bufferSource, encodingConfig, trackId) {
 	    var _this = _super.call(this, bufferSource.createOutputTrack(), encodingConfig, trackId) || this;
@@ -27085,7 +26784,7 @@
 	var MixingAudioTrack =
 	/** @class */
 	function (_super) {
-	  __extends$8(MixingAudioTrack, _super);
+	  __extends$7(MixingAudioTrack, _super);
 
 	  function MixingAudioTrack() {
 	    var _this = this;
@@ -27119,9 +26818,7 @@
 	      return;
 	    }
 
-	    logger.debug("add " + track.getTrackId() + " to mixing track");
-
-	    track._source.outputNode.connect(this.destNode);
+	    logger.debug("add " + track.getTrackId() + " to mixing track"); // track._source.outputNode.connect(this.destNode);
 
 	    this.trackList.push(track);
 	    this.updateEncoderConfig();
@@ -27134,10 +26831,6 @@
 
 	    if (index === -1) return;
 	    logger.debug("remove " + track.getTrackId() + " from mixing track");
-
-	    try {
-	      track._source.outputNode.disconnect(this.destNode);
-	    } catch (e) {}
 
 	    removeItemFromList(this.trackList, track);
 	    this.updateEncoderConfig();
@@ -27213,7 +26906,7 @@
 	  return uint8ArrayToBase64(new Uint8Array(arr.buffer));
 	};
 
-	var __extends$9 = undefined && undefined.__extends || function () {
+	var __extends$8 = undefined && undefined.__extends || function () {
 	  var extendStatics = function (d, b) {
 	    extendStatics = setPrototypeOf$2 || {
 	      __proto__: []
@@ -27400,7 +27093,7 @@
 	var AgoraRTCGateway =
 	/** @class */
 	function (_super) {
-	  __extends$9(AgoraRTCGateway, _super);
+	  __extends$8(AgoraRTCGateway, _super);
 
 	  function AgoraRTCGateway(spec) {
 	    var _this = _super.call(this) || this;
@@ -30042,7 +29735,7 @@
 	    return extendStatics(d, b);
 	};
 
-	function __extends$a(d, b) {
+	function __extends$9(d, b) {
 	    extendStatics(d, b);
 	    function __() { this.constructor = d; }
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
@@ -30303,7 +29996,7 @@
 
 	var FREEZE_TIME_LIMIT = 500;
 	var AgoraSpecStatsFilter = /** @class */ (function (_super) {
-	    __extends$a(AgoraSpecStatsFilter, _super);
+	    __extends$9(AgoraSpecStatsFilter, _super);
 	    function AgoraSpecStatsFilter() {
 	        var _this = _super !== null && _super.apply(this, arguments) || this;
 	        _this._stats = DEFAULT_PC_STATS;
@@ -30821,7 +30514,7 @@
 	    // return new AgoraEmptyStatsFilter(pc, { updateInterval, lossRateInterval });
 	}
 
-	var __extends$b = undefined && undefined.__extends || function () {
+	var __extends$a = undefined && undefined.__extends || function () {
 	  var extendStatics = function (d, b) {
 	    extendStatics = setPrototypeOf$2 || {
 	      __proto__: []
@@ -31225,7 +30918,7 @@
 	var PubRTCPeerConnection =
 	/** @class */
 	function (_super) {
-	  __extends$b(PubRTCPeerConnection, _super);
+	  __extends$a(PubRTCPeerConnection, _super);
 
 	  function PubRTCPeerConnection(spec) {
 	    return _super.call(this, spec) || this;
@@ -31516,7 +31209,7 @@
 	var SubRTCPeerConnection =
 	/** @class */
 	function (_super) {
-	  __extends$b(SubRTCPeerConnection, _super);
+	  __extends$a(SubRTCPeerConnection, _super);
 
 	  function SubRTCPeerConnection(spec) {
 	    var _this = _super.call(this, spec) || this;
@@ -31570,7 +31263,7 @@
 	}(AgoraRTCPeerConnection);
 	var pcIDCount = 1;
 
-	var __extends$c = undefined && undefined.__extends || function () {
+	var __extends$b = undefined && undefined.__extends || function () {
 	  var extendStatics = function (d, b) {
 	    extendStatics = setPrototypeOf$2 || {
 	      __proto__: []
@@ -31743,7 +31436,7 @@
 	var StreamConnection =
 	/** @class */
 	function (_super) {
-	  __extends$c(StreamConnection, _super);
+	  __extends$b(StreamConnection, _super);
 
 	  function StreamConnection(joinInfo, uid) {
 	    var _this = _super.call(this) || this;
@@ -32511,7 +32204,7 @@
 	  return program;
 	}
 
-	var __extends$d = undefined && undefined.__extends || function () {
+	var __extends$c = undefined && undefined.__extends || function () {
 	  var extendStatics = function (d, b) {
 	    extendStatics = setPrototypeOf$2 || {
 	      __proto__: []
@@ -32557,7 +32250,7 @@
 	var CommonProgramWithParameters =
 	/** @class */
 	function (_super) {
-	  __extends$d(CommonProgramWithParameters, _super);
+	  __extends$c(CommonProgramWithParameters, _super);
 
 	  function CommonProgramWithParameters(gl, kernel, width, height) {
 	    var _this = _super.call(this, gl, kernel) || this;
@@ -32592,7 +32285,7 @@
 	  return CommonProgramWithParameters;
 	}(CommonProgram);
 
-	var __extends$e = undefined && undefined.__extends || function () {
+	var __extends$d = undefined && undefined.__extends || function () {
 	  var extendStatics = function (d, b) {
 	    extendStatics = setPrototypeOf$2 || {
 	      __proto__: []
@@ -32620,7 +32313,7 @@
 	var GuildProgram =
 	/** @class */
 	function (_super) {
-	  __extends$e(GuildProgram, _super);
+	  __extends$d(GuildProgram, _super);
 
 	  function GuildProgram(gl, width, height) {
 	    return _super.call(this, gl, kernel$1, width, height) || this;
@@ -32629,7 +32322,7 @@
 	  return GuildProgram;
 	}(CommonProgramWithParameters);
 
-	var __extends$f = undefined && undefined.__extends || function () {
+	var __extends$e = undefined && undefined.__extends || function () {
 	  var extendStatics = function (d, b) {
 	    extendStatics = setPrototypeOf$2 || {
 	      __proto__: []
@@ -32657,7 +32350,7 @@
 	var MeanProgram =
 	/** @class */
 	function (_super) {
-	  __extends$f(MeanProgram, _super);
+	  __extends$e(MeanProgram, _super);
 
 	  function MeanProgram(gl, width, height) {
 	    return _super.call(this, gl, kernel$2, width, height) || this;
@@ -32666,7 +32359,7 @@
 	  return MeanProgram;
 	}(CommonProgramWithParameters);
 
-	var __extends$g = undefined && undefined.__extends || function () {
+	var __extends$f = undefined && undefined.__extends || function () {
 	  var extendStatics = function (d, b) {
 	    extendStatics = setPrototypeOf$2 || {
 	      __proto__: []
@@ -32694,7 +32387,7 @@
 	var Mean2Program =
 	/** @class */
 	function (_super) {
-	  __extends$g(Mean2Program, _super);
+	  __extends$f(Mean2Program, _super);
 
 	  function Mean2Program(gl, width, height) {
 	    return _super.call(this, gl, kernel$3, width, height) || this;
@@ -32703,7 +32396,7 @@
 	  return Mean2Program;
 	}(CommonProgramWithParameters);
 
-	var __extends$h = undefined && undefined.__extends || function () {
+	var __extends$g = undefined && undefined.__extends || function () {
 	  var extendStatics = function (d, b) {
 	    extendStatics = setPrototypeOf$2 || {
 	      __proto__: []
@@ -32734,7 +32427,7 @@
 	var SkinToneProgram =
 	/** @class */
 	function (_super) {
-	  __extends$h(SkinToneProgram, _super);
+	  __extends$g(SkinToneProgram, _super);
 
 	  function SkinToneProgram(gl, inputTexture, width, height) {
 	    var _this = _super.call(this, gl, kernel$4, width, height) || this;
@@ -33382,7 +33075,7 @@
 	  return BeautyEffectOverloadDetector;
 	}();
 
-	var __extends$i = undefined && undefined.__extends || function () {
+	var __extends$h = undefined && undefined.__extends || function () {
 	  var extendStatics = function (d, b) {
 	    extendStatics = setPrototypeOf$2 || {
 	      __proto__: []
@@ -33553,7 +33246,7 @@
 	var BeautyVideoProcessor =
 	/** @class */
 	function (_super) {
-	  __extends$i(BeautyVideoProcessor, _super);
+	  __extends$h(BeautyVideoProcessor, _super);
 
 	  function BeautyVideoProcessor() {
 	    var _this = _super.call(this) || this;
@@ -34046,28 +33739,28 @@
 	 * @internal
 	 */
 
-	var NativeVideolayer =
+	var NativeVideoplayer =
 	/** @class */
 	function () {
-	  function NativeVideolayer(config) {
+	  function NativeVideoplayer(config) {
 	    this.freezeTimeCounterList = [];
 	    this.trackId = config.trackId;
 	    this.updateConfig(config);
 	  }
 
-	  NativeVideolayer.prototype.updateConfig = function (config) {
+	  NativeVideoplayer.prototype.updateConfig = function (config) {
 	    this.config = config;
 	    this.trackId = config.trackId;
 	    this.createVideoPlayer();
 	  };
 
-	  NativeVideolayer.prototype.updateVideoTrack = function (track) {
+	  NativeVideoplayer.prototype.updateVideoTrack = function (track) {
 	    logger.debug("updateVideoTrack", track);
 	    if (this.videoTrack === track) return;
 	    this.videoTrack = track;
 
 	    if (this.videoPlayer === null) {
-	      this.videoPlayer = new cordovaPluginAgoraRtc_NativeVideoPlayer.VideoPlayer();
+	      this.videoPlayer = new cordovaPluginAgoraRtc_NativePlayer.VideoPlayer();
 	    }
 
 	    if (this.videoPlayer && track) {
@@ -34075,7 +33768,7 @@
 	    }
 	  };
 
-	  NativeVideolayer.prototype.play = function () {
+	  NativeVideoplayer.prototype.play = function () {
 	    var _this = this;
 
 	    if (this.videoPlayer !== undefined) {
@@ -34085,7 +33778,7 @@
 	    }
 	  };
 
-	  NativeVideolayer.prototype.getCurrentFrame = function () {
+	  NativeVideoplayer.prototype.getCurrentFrame = function () {
 	    var _this = this;
 
 	    var image = new ImageData(2, 2);
@@ -34102,10 +33795,10 @@
 	    return image;
 	  };
 
-	  NativeVideolayer.prototype.createVideoPlayer = function () {
+	  NativeVideoplayer.prototype.createVideoPlayer = function () {
 	    var _this = this;
 
-	    this.videoPlayer = new cordovaPluginAgoraRtc_NativeVideoPlayer.VideoPlayer(this.config);
+	    this.videoPlayer = new cordovaPluginAgoraRtc_NativePlayer.VideoPlayer(this.config);
 	    logger.debug("createVideoPlayer 1");
 	    this.videoPlayer.getWindowAttribute().then(function (wt) {
 	      logger.debug("createVideoPlayer 3");
@@ -34118,23 +33811,23 @@
 	    this.videoPlayer.onFirstVideoFrameDecoded = this.firVideoFrameDeoced;
 	  };
 
-	  NativeVideolayer.prototype.destroy = function () {
+	  NativeVideoplayer.prototype.destroy = function () {
 	    if (this.videoPlayer) {
 	      this.videoPlayer.destroy();
 	      this.videoPlayer = undefined;
 	    }
 	  };
 
-	  NativeVideolayer.prototype.firVideoFrameDeoced = function () {
+	  NativeVideoplayer.prototype.firVideoFrameDeoced = function () {
 	    if (this.onFirstVideoFrameDecoded) {
 	      this.onFirstVideoFrameDecoded();
 	    }
 	  };
 
-	  return NativeVideolayer;
+	  return NativeVideoplayer;
 	}();
 
-	var __extends$j = undefined && undefined.__extends || function () {
+	var __extends$i = undefined && undefined.__extends || function () {
 	  var extendStatics = function (d, b) {
 	    extendStatics = setPrototypeOf$2 || {
 	      __proto__: []
@@ -34316,7 +34009,7 @@
 	var LocalVideoTrack =
 	/** @class */
 	function (_super) {
-	  __extends$j(LocalVideoTrack, _super);
+	  __extends$i(LocalVideoTrack, _super);
 
 	  function LocalVideoTrack(track, encoderConfig, optimizationMode, trackId) {
 	    var _this = _super.call(this, track, trackId) || this;
@@ -34372,7 +34065,7 @@
 	    });
 
 	    if (!this._player) {
-	      this._player = new NativeVideolayer(playerConfig);
+	      this._player = new NativeVideoplayer(playerConfig);
 
 	      this._player.updateVideoTrack(this._mediaStreamTrack);
 	    } else {
@@ -34612,7 +34305,7 @@
 	var CameraVideoTrack =
 	/** @class */
 	function (_super) {
-	  __extends$j(CameraVideoTrack, _super);
+	  __extends$i(CameraVideoTrack, _super);
 
 	  function CameraVideoTrack(track, config, constraints, optimizationMode, trackId) {
 	    var _this = _super.call(this, track, config.encoderConfig ? getVideoEncoderConfiguration(config.encoderConfig) : {}, optimizationMode, trackId) || this;
@@ -35210,7 +34903,7 @@
 	  return track;
 	}
 
-	var __extends$k = undefined && undefined.__extends || function () {
+	var __extends$j = undefined && undefined.__extends || function () {
 	  var extendStatics = function (d, b) {
 	    extendStatics = setPrototypeOf$2 || {
 	      __proto__: []
@@ -35396,7 +35089,7 @@
 	var PubStreamConnection =
 	/** @class */
 	function (_super) {
-	  __extends$k(PubStreamConnection, _super);
+	  __extends$j(PubStreamConnection, _super);
 
 	  function PubStreamConnection(statsCollector, joinInfo, codec, isLowStream) {
 	    var _this = _super.call(this, joinInfo, joinInfo.stringUid || joinInfo.uid) || this;
@@ -36433,7 +36126,7 @@
 	  return PubStreamConnection;
 	}(StreamConnection);
 
-	var __extends$l = undefined && undefined.__extends || function () {
+	var __extends$k = undefined && undefined.__extends || function () {
 	  var extendStatics = function (d, b) {
 	    extendStatics = setPrototypeOf$2 || {
 	      __proto__: []
@@ -36615,7 +36308,7 @@
 	var RemoteTrack =
 	/** @class */
 	function (_super) {
-	  __extends$l(RemoteTrack, _super);
+	  __extends$k(RemoteTrack, _super);
 
 	  function RemoteTrack(track, userId, uintId) {
 	    var _this = _super.call(this, track) || this;
@@ -36649,7 +36342,7 @@
 	var RemoteVideoTrack =
 	/** @class */
 	function (_super) {
-	  __extends$l(RemoteVideoTrack, _super);
+	  __extends$k(RemoteVideoTrack, _super);
 
 	  function RemoteVideoTrack(track, userId, uintId) {
 	    var _this = _super.call(this, track, userId, uintId) || this;
@@ -36715,7 +36408,7 @@
 
 	    if (!this._player) {
 	      // this._player = new AgoraRTCPlayer(playerConfig);
-	      this._player = new NativeVideolayer(playerConfig);
+	      this._player = new NativeVideoplayer(playerConfig);
 
 	      this._player.updateVideoTrack(this._mediaStreamTrack);
 
@@ -36764,34 +36457,21 @@
 	  return RemoteVideoTrack;
 	}(RemoteTrack);
 
-	var MockAudioTrackSource =
-	/** @class */
-	function () {
-	  function MockAudioTrackSource() {
-	    this.isPlayed = true;
-	  }
-
-	  MockAudioTrackSource.prototype.getAudioAvgLevel = function () {
-	    return 0;
-	  };
-
-	  return MockAudioTrackSource;
-	}();
-
 	var RemoteAudioTrack =
 	/** @class */
 	function (_super) {
-	  __extends$l(RemoteAudioTrack, _super);
+	  __extends$k(RemoteAudioTrack, _super);
 
 	  function RemoteAudioTrack(track, userId, uintId) {
 	    var _this = _super.call(this, track, userId, uintId) || this;
 
 	    _this.trackMediaType = "audio";
-	    _this._source = new MockAudioTrackSource();
-	    _this._useAudioElement = false; // this._source = new AudioTrackSource(track, true);
-	    // this._source.once(AudioSourceEvents.RECEIVE_TRACK_BUFFER, () => {
-	    //   this.emit(RemoteTrackEvents.FIRST_FRAME_DECODED);
-	    // });
+	    _this._useAudioElement = false;
+	    _this._source = new NativeAudioTrack(track, true);
+
+	    _this._source.once(AudioSourceEvents.RECEIVE_TRACK_BUFFER, function () {
+	      _this.emit(RemoteTrackEvents.FIRST_FRAME_DECODED);
+	    });
 
 	    var compatibility = getCompatibility();
 
@@ -36811,15 +36491,25 @@
 	  });
 
 	  RemoteAudioTrack.prototype.setAudioFrameCallback = function (callback, frameSize) {
+	    if (frameSize === void 0) {
+	      frameSize = 4096;
+	    }
 
 	    if (!callback) {
-	      // this._source.removeAllListeners(AudioSourceEvents.ON_AUDIO_BUFFER);
-	      // this._source.stopGetAudioBuffer();
-	      return;
-	    } // this._source.startGetAudioBuffer(frameSize);
-	    // this._source.removeAllListeners(AudioSourceEvents.ON_AUDIO_BUFFER);
-	    // this._source.on(AudioSourceEvents.ON_AUDIO_BUFFER, (buffer: AudioBuffer) => callback(buffer));
+	      this._source.removeAllListeners(AudioSourceEvents.ON_AUDIO_BUFFER);
 
+	      this._source.stopGetAudioBuffer();
+
+	      return;
+	    }
+
+	    this._source.startGetAudioBuffer(frameSize);
+
+	    this._source.removeAllListeners(AudioSourceEvents.ON_AUDIO_BUFFER);
+
+	    this._source.on(AudioSourceEvents.ON_AUDIO_BUFFER, function (buffer) {
+	      return callback(buffer);
+	    });
 	  };
 
 	  RemoteAudioTrack.prototype.setVolume = function (volume) {
@@ -36831,6 +36521,8 @@
 
 	    if (this._useAudioElement) {
 	      audioElementPlayCenter.setVolume(this.getTrackId(), volume);
+	    } else {
+	      this._source.setVolume(volume / 100);
 	    }
 
 	    executor.onSuccess();
@@ -36884,8 +36576,7 @@
 	  };
 
 	  RemoteAudioTrack.prototype.getVolumeLevel = function () {
-	    // return this._source.getAudioLevel();
-	    return 0;
+	    return this._source.getAudioLevel();
 	  };
 
 	  RemoteAudioTrack.prototype.getStats = function () {
@@ -36907,6 +36598,8 @@
 	    if (this._useAudioElement) {
 	      logger.debug("[track-" + this.getTrackId() + "] use audio element to play");
 	      audioElementPlayCenter.play(this._mediaStreamTrack, this.getTrackId());
+	    } else {
+	      this._source.play();
 	    }
 
 	    executor.onSuccess();
@@ -36922,23 +36615,27 @@
 
 	    if (this._useAudioElement) {
 	      audioElementPlayCenter.stop(this.getTrackId());
+	    } else {
+	      this._source.stop();
 	    }
 
 	    executor.onSuccess();
 	  };
 
 	  RemoteAudioTrack.prototype._destroy = function () {
-	    _super.prototype._destroy.call(this); // this._source.destroy();
+	    _super.prototype._destroy.call(this);
 
+	    this._source.destroy();
 	  };
 
 	  RemoteAudioTrack.prototype._isFreeze = function () {
-	    // return this._source.isFreeze;
-	    return false;
+	    return this._source.isFreeze;
 	  };
 
 	  RemoteAudioTrack.prototype._updatePlayerSource = function () {
-	    logger.debug("[track-" + this.getTrackId() + "] update player source track"); // this._source.updateTrack(this._mediaStreamTrack);
+	    logger.debug("[track-" + this.getTrackId() + "] update player source track");
+
+	    this._source.updateTrack(this._mediaStreamTrack);
 
 	    if (this._useAudioElement) {
 	      audioElementPlayCenter.updateTrack(this.getTrackId(), this._mediaStreamTrack);
@@ -36948,7 +36645,7 @@
 	  return RemoteAudioTrack;
 	}(RemoteTrack);
 
-	var __extends$m = undefined && undefined.__extends || function () {
+	var __extends$l = undefined && undefined.__extends || function () {
 	  var extendStatics = function (d, b) {
 	    extendStatics = setPrototypeOf$2 || {
 	      __proto__: []
@@ -37120,7 +36817,7 @@
 	var SubStreamConnection =
 	/** @class */
 	function (_super) {
-	  __extends$m(SubStreamConnection, _super);
+	  __extends$l(SubStreamConnection, _super);
 
 	  function SubStreamConnection(user, statsCollector, joinInfo, subOptions) {
 	    var _this = _super.call(this, joinInfo, user.uid) || this;
@@ -37242,6 +36939,8 @@
 	                  remoteMediaStream = new MediaStream();
 	                  onStreamPromise = new promise$3(function (resolve) {
 	                    _this.pc.onTrack = function (track, stream) {
+	                      logger.debug("[" + _this.connectionId + "] onTrack " + track.kind + " " + track.id + " subscribeOption: " + _this.subscribeOptions);
+
 	                      if (track.kind === "audio" && !_this.subscribeOptions.audio || track.kind === "video" && !_this.subscribeOptions.video) {
 	                        // 收到了预期之外的流，暂时保存在这里
 	                        _this.unusedTracks.push(track);
@@ -37690,7 +37389,7 @@
 	  return SubStreamConnection;
 	}(StreamConnection);
 
-	var __extends$n = undefined && undefined.__extends || function () {
+	var __extends$m = undefined && undefined.__extends || function () {
 	  var extendStatics = function (d, b) {
 	    extendStatics = setPrototypeOf$2 || {
 	      __proto__: []
@@ -37872,7 +37571,7 @@
 	var AgoraLiveStreamingUapSignal =
 	/** @class */
 	function (_super) {
-	  __extends$n(AgoraLiveStreamingUapSignal, _super);
+	  __extends$m(AgoraLiveStreamingUapSignal, _super);
 
 	  function AgoraLiveStreamingUapSignal(token, spec, retryConfig, serviceMode) {
 	    var _this = _super.call(this) || this;
@@ -38263,7 +37962,7 @@
 	  return AgoraLiveStreamingUapSignal;
 	}(EventEmitter$1);
 
-	var __extends$o = undefined && undefined.__extends || function () {
+	var __extends$n = undefined && undefined.__extends || function () {
 	  var extendStatics = function (d, b) {
 	    extendStatics = setPrototypeOf$2 || {
 	      __proto__: []
@@ -38445,7 +38144,7 @@
 	var AgoraRTCLiveStreamingClient =
 	/** @class */
 	function (_super) {
-	  __extends$o(AgoraRTCLiveStreamingClient, _super);
+	  __extends$n(AgoraRTCLiveStreamingClient, _super);
 
 	  function AgoraRTCLiveStreamingClient(spec, wsRetryConfig, httpRetryConfig) {
 	    if (wsRetryConfig === void 0) {
@@ -39231,7 +38930,7 @@
 	  }
 	}
 
-	var __extends$p = undefined && undefined.__extends || function () {
+	var __extends$o = undefined && undefined.__extends || function () {
 	  var extendStatics = function (d, b) {
 	    extendStatics = setPrototypeOf$2 || {
 	      __proto__: []
@@ -39399,7 +39098,7 @@
 	var AgoraChannelMediaRelaySignal =
 	/** @class */
 	function (_super) {
-	  __extends$p(AgoraChannelMediaRelaySignal, _super);
+	  __extends$o(AgoraChannelMediaRelaySignal, _super);
 
 	  function AgoraChannelMediaRelaySignal(joinInfo, clientId, retryConfig) {
 	    var _this = _super.call(this) || this;
@@ -39640,7 +39339,7 @@
 	  return AgoraChannelMediaRelaySignal;
 	}(EventEmitter$1);
 
-	var __extends$q = undefined && undefined.__extends || function () {
+	var __extends$p = undefined && undefined.__extends || function () {
 	  var extendStatics = function (d, b) {
 	    extendStatics = setPrototypeOf$2 || {
 	      __proto__: []
@@ -39808,7 +39507,7 @@
 	var AgoraChannelMediaRelayClient =
 	/** @class */
 	function (_super) {
-	  __extends$q(AgoraChannelMediaRelayClient, _super);
+	  __extends$p(AgoraChannelMediaRelayClient, _super);
 
 	  function AgoraChannelMediaRelayClient(joinInfo, clientId, wsRetryConfig, httpRetryConfig) {
 	    var _this = _super.call(this) || this;
@@ -40428,7 +40127,7 @@
 	  return AgoraRTCRemoteUser;
 	}();
 
-	var __extends$r = undefined && undefined.__extends || function () {
+	var __extends$q = undefined && undefined.__extends || function () {
 	  var extendStatics = function (d, b) {
 	    extendStatics = setPrototypeOf$2 || {
 	      __proto__: []
@@ -40610,7 +40309,7 @@
 	var AgoraRTCClient =
 	/** @class */
 	function (_super) {
-	  __extends$r(AgoraRTCClient, _super);
+	  __extends$q(AgoraRTCClient, _super);
 
 	  function AgoraRTCClient(config) {
 	    var _this = _super.call(this) || this;
@@ -44010,6 +43709,273 @@
 	  executor.onSuccess(result);
 	  return result;
 	}
+
+	var __extends$r = undefined && undefined.__extends || function () {
+	  var extendStatics = function (d, b) {
+	    extendStatics = setPrototypeOf$2 || {
+	      __proto__: []
+	    } instanceof Array && function (d, b) {
+	      d.__proto__ = b;
+	    } || function (d, b) {
+	      for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+	    };
+
+	    return extendStatics(d, b);
+	  };
+
+	  return function (d, b) {
+	    extendStatics(d, b);
+
+	    function __() {
+	      this.constructor = d;
+	    }
+
+	    d.prototype = b === null ? create$4(b) : (__.prototype = b.prototype, new __());
+	  };
+	}();
+
+	var AudioSource =
+	/** @class */
+	function (_super) {
+	  __extends$r(AudioSource, _super);
+
+	  function AudioSource() {
+	    var _this = _super.call(this) || this; // 表示这个音频源当前是否连接到了 WebAudio Output
+
+
+	    _this.isPlayed = false;
+	    _this.audioLevelBase = 0;
+	    _this.audioOutputLevel = 0;
+	    /** 历史实时音量的缓存，用于计算平均音量, 为 null 表示没有开始音量缓存 */
+
+	    _this.audioOutputLevelCache = null;
+	    _this.audioOutputLevelCacheMaxLength = getParameter("AUDIO_SOURCE_AVG_VOLUME_DURATION") / getParameter("AUDIO_SOURCE_VOLUME_UPDATE_INTERVAL") || 15;
+	    _this.isDestroyed = false;
+	    _this._noAudioInputCount = 0;
+	    _this.context = getAudioContext();
+	    _this.playNode = _this.context.destination;
+	    _this.outputNode = _this.context.createGain();
+	    polyfillAudioNode(_this.outputNode);
+	    _this.analyserNode = _this.context.createAnalyser();
+	    return _this;
+	  }
+
+	  defineProperty$4(AudioSource.prototype, "isNoAudioInput", {
+	    /**
+	     * 表示当前输入音频是否有问题
+	     * 目前只会在 Safari 下判断这个情况
+	     *
+	     * 连续 3 帧出现数据为 0 的情况
+	     */
+	    get: function () {
+	      return this.noAudioInputCount >= 3;
+	    },
+	    enumerable: true,
+	    configurable: true
+	  });
+
+	  defineProperty$4(AudioSource.prototype, "noAudioInputCount", {
+	    get: function () {
+	      return this._noAudioInputCount;
+	    },
+	    set: function (count) {
+	      if (this._noAudioInputCount < 3 && count >= 3) {
+	        this.onNoAudioInput && this.onNoAudioInput();
+	      } else if (this._noAudioInputCount >= 3 && this._noAudioInputCount % 10 === 0) {
+	        this.onNoAudioInput && this.onNoAudioInput();
+	      }
+
+	      this._noAudioInputCount = count;
+	    },
+	    enumerable: true,
+	    configurable: true
+	  });
+
+	  AudioSource.prototype.startGetAudioBuffer = function (bufferSize) {
+	    var _this = this;
+
+	    if (this.audioBufferNode) return;
+	    this.audioBufferNode = this.context.createScriptProcessor(bufferSize);
+	    this.outputNode.connect(this.audioBufferNode);
+	    this.audioBufferNode.connect(this.context.destination);
+
+	    this.audioBufferNode.onaudioprocess = function (e) {
+	      _this.emit(AudioSourceEvents.ON_AUDIO_BUFFER, silenceScriptProcessHandler(e));
+	    };
+	  };
+
+	  AudioSource.prototype.stopGetAudioBuffer = function () {
+	    if (!this.audioBufferNode) return;
+	    this.audioBufferNode.onaudioprocess = null;
+	    this.outputNode.disconnect(this.audioBufferNode);
+	    this.audioBufferNode = undefined;
+	  };
+
+	  AudioSource.prototype.createOutputTrack = function () {
+	    var compat = getCompatibility();
+
+	    if (!compat.webAudioMediaStreamDest) {
+	      throw new AgoraRTCError(AgoraRTCErrorCode.NOT_SUPPORTED, "your browser is not support audio processor");
+	    }
+
+	    if (this.destNode && this.outputTrack) return this.outputTrack;
+	    this.destNode = this.context.createMediaStreamDestination();
+	    this.outputNode.connect(this.destNode);
+	    this.outputTrack = this.destNode.stream.getAudioTracks()[0];
+	    return this.outputTrack;
+	  };
+
+	  AudioSource.prototype.play = function (dest) {
+	    /**
+	     * 说明此时 autoplay 还没有解锁
+	     */
+	    if (this.context.state !== "running") {
+	      nextTick(function () {
+	        audioContextStateChangeEmitter.emit("autoplay-failed");
+	      });
+	    }
+
+	    this.isPlayed = true;
+	    this.playNode = dest || this.context.destination;
+	    this.outputNode.connect(this.playNode);
+	  };
+
+	  AudioSource.prototype.stop = function () {
+	    if (this.isPlayed) {
+	      try {
+	        this.outputNode.disconnect(this.playNode);
+	      } catch (e) {}
+	    }
+
+	    this.isPlayed = false;
+	  };
+	  /**
+	   * 获取音源的实时音量（通过 AnalyserNode 计算得出的
+	   * 范围是 [0, 1], 1 表示理论最大音量
+	   */
+
+
+	  AudioSource.prototype.getAudioLevel = function () {
+	    return this.audioOutputLevel;
+	  };
+	  /**
+	   * 获取音源在 `AUDIO_SOURCE_AVG_VOLUME_DURATION(3s)`内的平均音量。
+	   * 首次调用会返回当前实时音量
+	   * 范围是 [0, 1], 1 表示理论最大音量
+	   */
+
+
+	  AudioSource.prototype.getAudioAvgLevel = function () {
+	    var _context;
+
+	    if (this.audioOutputLevelCache === null) {
+	      this.audioOutputLevelCache = [this.audioOutputLevel];
+	    }
+
+	    var levelSum = reduce$2(_context = this.audioOutputLevelCache).call(_context, function (a, b) {
+	      return a + b;
+	    });
+
+	    return levelSum / this.audioOutputLevelCache.length;
+	  };
+	  /**
+	   * 获取音源的设置音量（通过 GainNode 得出的
+	   *  范围是 [0. Infinity], 1 表示原始音量
+	   */
+
+
+	  AudioSource.prototype.getAudioVolume = function () {
+	    return this.outputNode.gain.value;
+	  };
+
+	  AudioSource.prototype.setVolume = function (level) {
+	    this.outputNode.gain.setValueAtTime(level, this.context.currentTime);
+	  };
+
+	  AudioSource.prototype.setMute = function (isMuted) {
+	    if (isMuted) {
+	      this.disconnect();
+	      this.audioLevelBase = 0;
+	      this.audioOutputLevel = 0;
+	    } else {
+	      this.connect();
+	    }
+	  };
+
+	  AudioSource.prototype.destroy = function () {
+	    this.disconnect();
+	    this.stop();
+	    this.isDestroyed = true;
+	    this.onNoAudioInput = undefined;
+	  };
+
+	  AudioSource.prototype.disconnect = function () {
+	    this.sourceNode && this.sourceNode.disconnect();
+	    this.outputNode && this.outputNode.disconnect();
+	    window.clearInterval(this.updateAudioOutputLevelInterval);
+	  };
+
+	  AudioSource.prototype.connect = function () {
+	    var _context2;
+
+	    this.sourceNode && this.sourceNode.connect(this.outputNode);
+	    this.outputNode.connect(this.analyserNode);
+	    this.updateAudioOutputLevelInterval = window.setInterval(bind$3(_context2 = this.updateAudioOutputLevel).call(_context2, this), getParameter("AUDIO_SOURCE_VOLUME_UPDATE_INTERVAL") || 400);
+	  };
+
+	  AudioSource.prototype.updateAudioOutputLevel = function () {
+	    if (this.context && this.context.state !== "running") {
+	      this.context.resume();
+	    }
+
+	    if (!this.analyserNode) return;
+	    var timeDomainData;
+
+	    if (this.analyserNode.getFloatTimeDomainData) {
+	      timeDomainData = new Float32Array(this.analyserNode.frequencyBinCount);
+	      this.analyserNode.getFloatTimeDomainData(timeDomainData);
+	    } else {
+	      var _context3;
+
+	      timeDomainData = new Uint8Array(this.analyserNode.frequencyBinCount);
+	      this.analyserNode.getByteTimeDomainData(timeDomainData);
+	      var isNoInput_1 = true;
+	      timeDomainData = new Float32Array(map$5(_context3 = from_1$2(timeDomainData)).call(_context3, function (d) {
+	        if (d !== 128) isNoInput_1 = false;
+	        return (d - 128) * 0.0078125;
+	      }));
+
+	      if (isNoInput_1) {
+	        this.noAudioInputCount += 1;
+	      } else {
+	        this.noAudioInputCount = 0;
+	      }
+	    }
+
+	    for (var i = 0; i < timeDomainData.length; i += 1) {
+	      if (Math.abs(timeDomainData[i]) > this.audioLevelBase) {
+	        this.audioLevelBase = Math.abs(timeDomainData[i]);
+
+	        if (this.audioLevelBase > 1) {
+	          this.audioLevelBase = 1;
+	        }
+	      }
+	    }
+
+	    this.audioOutputLevel = this.audioLevelBase;
+	    this.audioLevelBase = this.audioLevelBase / 4;
+
+	    if (this.audioOutputLevelCache !== null) {
+	      this.audioOutputLevelCache.push(this.audioOutputLevel);
+
+	      if (this.audioOutputLevelCache.length > this.audioOutputLevelCacheMaxLength) {
+	        this.audioOutputLevelCache.shift();
+	      }
+	    }
+	  };
+
+	  return AudioSource;
+	}(EventEmitter$1);
 
 	var __extends$s = undefined && undefined.__extends || function () {
 	  var extendStatics = function (d, b) {

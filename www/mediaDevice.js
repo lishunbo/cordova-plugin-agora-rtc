@@ -13,12 +13,16 @@ mediaDevice.getUserMedia = function (config) {
         var args = {}
         if (config.video !== undefined) {
             if (typeof config.video === 'boolean') {
-                args.video = config.video.toString();
+                args.video = {};
+            } else if (typeof config.video === 'object' && config.video !== null) {
+                args.video = config.video;
             }
         }
         if (config.audio !== undefined) {
             if (typeof config.audio === 'boolean') {
-                args.audio = config.video.toString();
+                args.audio = {};
+            } else if (typeof config.audio === 'object' && config.audio !== null) {
+                args.audio = config.audio;
             }
         }
 
@@ -37,7 +41,7 @@ mediaDevice.getUserMedia = function (config) {
             resolve(stm)
         }, function (ev) {
             console.log("Failed to getUserMedia object");
-        }, 'Hook', 'getUserMedia', [this.id, args]);
+        }, 'Hook', 'getUserMedia', [args]);
 
     })
 }

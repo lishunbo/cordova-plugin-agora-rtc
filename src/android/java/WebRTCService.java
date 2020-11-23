@@ -5,6 +5,7 @@ import android.content.Context;
 import android.util.Log;
 
 import com.agora.cordova.plugin.webrtc.models.MediaStreamConstraints;
+import com.agora.cordova.plugin.webrtc.models.MediaStreamTrackWrapper;
 import com.agora.cordova.plugin.webrtc.models.RTCConfiguration;
 import com.agora.cordova.plugin.webrtc.services.MediaDevice;
 import com.agora.cordova.plugin.webrtc.services.PCFactory;
@@ -73,15 +74,10 @@ public class WebRTCService {
     }
 
     public boolean getUserMedia(JSONArray args, final CallbackContext callbackContext) throws JSONException {
-        MediaStreamConstraints constraints = null;
+        MediaStreamConstraints constraints = MediaStreamConstraints.fromJson(args.getJSONObject(0).toString());
 
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            HashMap result = mapper.readValue(args.getJSONObject(1).toString(), HashMap.class);
-            constraints = new MediaStreamConstraints(result);
-        } catch (Exception e) {
-            Log.e(TAG, "fault, cannot unmarshal MediaStreamConstraints:" + e.toString() + args.toString());
-        }
+        assert constraints != null;
+        Log.v(TAG, "getUserMedia: " + constraints.toString());
 
         String summary = MediaDevice.getUserMedia(constraints);
 
@@ -121,18 +117,22 @@ public class WebRTCService {
 
     public boolean addTrack(JSONArray args, final CallbackContext callbackContext) throws JSONException {
         String id = args.getString(0);
+        String tid = args.getString(1);
+        String kind = args.getString(2);
 
-        VideoTrack videoTrack = MediaDevice.createLocalVideoTrack(true, 300, 400, 20);
-        if (videoTrack == null) {
-            callbackContext.error("no target video track");
-            return true;
+        MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.getMediaStreamTrackById(tid);
+        if (wrapper == null) {
+            String err = "Cannot found cached MediaStreamTrack by id:" + tid;
+            Log.e(TAG, err);
+            callbackContext.error(err);
+            return false;
         }
 
         CallbackPCPeer peer = instances.get(id);
         assert peer != null;
-        String summary = peer._pc.addTrack(videoTrack);
+        peer._pc.addTrack(kind, wrapper.getTrack());
 
-        callbackContext.success(summary);
+        callbackContext.success(wrapper.toString());
         return true;
     }
 
@@ -253,29 +253,15 @@ public class WebRTCService {
 
 
     class SupervisorImp implements RTCPeerConnection.Supervisor {
-
         @Override
-        public void onAddTrack(String id, RtpReceiver rtpReceiver, MediaStream[] mediaStreams, String usage) {
-            CallbackPCPeer peer = instances.get(id);
-            assert peer != null;
-//            peer._context.su
+        public void onDisconnect(RTCPeerConnection pc) {
+            CallbackPCPeer peer = instances.get(pc.getPc_id());
+            if (peer != null) {
+                peer._context.success("dispose");
+                instances.remove(pc.getPc_id());
+            }
 
-        }
-
-        @Override
-        public void onAddStream(String id, MediaStream stream, String usage) {
-//            if
-            Log.e(TAG, "onAddStream ");
-        }
-
-        @Override
-        public void onRemoveStream(String id, MediaStream mediaStream, String usage) {
-
-        }
-
-        @Override
-        public void onDataChannel(String id, DataChannel dataChannel, String usage) {
-
+            allPC.remove(pc);
         }
 
         @Override

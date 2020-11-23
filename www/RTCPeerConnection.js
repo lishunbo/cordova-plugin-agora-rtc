@@ -37,7 +37,8 @@ class RTCPeerConnection {
         this.id = uuidv4();
         this.config = config;
 
-        this.stream = null;
+        this.localStream = null;
+        this.remoteStream = null;
 
         this._connectionState = "";
         this.iceConnectionState = "";
@@ -117,12 +118,15 @@ class RTCPeerConnection {
                 break;
             case EventType.onAddTrack:
                 console.log("got event " + EventType.onAddTrack);
-                if (this.stream != null) {
+                if (!this.remoteStream) {
+                    this.remoteStream = new Stream.MediaStream();
                 }
                 if (this.ontrack != null) {
                     // this.onicecandidate(new RTCPeerConnectionIceEvent("icecandidate", { candidate: JSON.parse(ev.payload)}));
                     var summary = JSON.parse(ev.payload);
-                    this.ontrack({ track: new Stream.MediaStreamTrack(summary.kind, summary.id), streams: [this.stream] });
+                    var track = new Stream.MediaStreamTrack(summary.kind, summary.id);
+                    this.remoteStream.addTrack(track)
+                    this.ontrack({ track: track, streams: [this.stream] });
                 } else {
                     console.log("not found RTCPeerConnection.onConnectionStateChange function");
                 }
@@ -184,9 +188,13 @@ class RTCPeerConnection {
 
     //first class
     addTrack(track) {
+        if (!this.localStream) {
+            this.localStream = new Stream.MediaStream();
+        }
+        this.localStream.addTrack(track);
         cordova.exec(function (ev) {
         }, function (ev) {
-        }, MediaService, 'addTrack', [this.id, track]);
+        }, MediaService, 'addTrack', [this.id, track.id, track.kind]);
     }
 
     close() {

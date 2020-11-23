@@ -2,6 +2,7 @@
 console.log("player.js onloading");
 
 var { uuidv4 } = require('./util');
+var Stream = require('./Stream');
 
 let VideoPlayStatus = {
     NONE: "none",
@@ -11,9 +12,10 @@ let VideoPlayStatus = {
 
 var EventType = {
     onFirstFrameDecoded: "onFirstFrameDecoded",
+    dispose: "dispose",
 }
 
-var VideoPlayerService = "NativePlayerHook";
+var PlayerService = "NativePlayerHook";
 
 class PlayEvent {
     constructor(resolve, reject, call, args) {
@@ -34,7 +36,7 @@ class VideoPlayer {
         this.onFirstVideoFrameDecoded = null;
         this.isViewCreated = false;
         this.playEvent = null;
-
+        this.videoTrack = null;
 
         this.config = config === null ? { trackId: "", mirror: false, fit: "fill" } : config;
 
@@ -43,7 +45,7 @@ class VideoPlayer {
             self.cordovaEventHandler(ev);
         }, function (ev) {
             console.log("Failed create VideoPlayer object");
-        }, VideoPlayerService, 'createInstance', [this.id, this.config]);
+        }, PlayerService, 'createInstance', [this.id, this.config]);
     }
 
     udpateConfig(config) {
@@ -53,7 +55,7 @@ class VideoPlayer {
         cordova.exec(function (ev) {
         }, function (ev) {
             console.log("Failed VideoPlayer udpateConfig");
-        }, VideoPlayerService, 'udpateConfig', [this.id, this.config.trackId, this.config.mirror, this.config.fit]);
+        }, PlayerService, 'udpateConfig', [this.id, this.config.trackId, this.config.mirror, this.config.fit]);
     }
 
 
@@ -65,7 +67,7 @@ class VideoPlayer {
                 }, function (ev) {
                     reject(ev)
                     console.log("Failed VideoPlayer play");
-                }, VideoPlayerService, 'play', [id]);
+                }, PlayerService, 'play', [id]);
             }
             if (!this.isViewCreated) {
                 this.playEvent = new PlayEvent(resolve, reject, playFunc, this.id)
@@ -77,14 +79,21 @@ class VideoPlayer {
     }
     pause() {
         cordova.exec(function (ev) {
-            resolve(ev)
+            // resolve(ev)
         }, function (ev) {
-            reject(ev)
+            // reject(ev)
             console.log("Failed VideoPlayer pause");
-        }, VideoPlayerService, 'pause', [this.id]);
+        }, PlayerService, 'pause', [this.id]);
     }
     destroy() {
-
+        console.log("destory interface in plugin VideoControl")
+        cordova.exec(function (ev) {
+            console.log("destory interface in plugin VideoControl")
+            // resolve(JSON.parse(ev))
+        }, function (ev) {
+            // reject(ev)
+            console.log("Failed VideoPlayer destory");
+        }, PlayerService, 'destroy', [this.id]);
     }
 
     getCurrentFrame() {
@@ -94,11 +103,15 @@ class VideoPlayer {
     }
 
     updateVideoTrack(track) {
-        console.log("updateVideoTrack interface in plugin VideoControl", track)
+        if (this.videoTrack) {
+            this.videoTrack.stop();
+        }
+        this.videoTrack = track;
+
         cordova.exec(function (ev) {
         }, function (ev) {
-            console.log("Failed VideoPlayer pause");
-        }, VideoPlayerService, 'updateVideoTrack', [this.id, track.id, track.kind]);
+            console.log("Failed VideoPlayer updateVideoTrack");
+        }, PlayerService, 'updateVideoTrack', [this.id, track.id, track.kind]);
     }
 
     getWindowAttribute() {
@@ -109,8 +122,8 @@ class VideoPlayer {
                 resolve(JSON.parse(ev))
             }, function (ev) {
                 reject(ev)
-                console.log("Failed VideoPlayer pause");
-            }, VideoPlayerService, 'getWindowAttribute', [this.id]);
+                console.log("Failed VideoPlayer getWindowAttribute");
+            }, PlayerService, 'getWindowAttribute', [this.id]);
 
         });
     }
@@ -124,8 +137,8 @@ class VideoPlayer {
                 that.playEvent = null;
             }
         }, function (ev) {
-            console.log("Failed VideoPlayer pause");
-        }, VideoPlayerService, 'setViewAttribute', [this.id, width, height, x, y]);
+            console.log("Failed VideoPlayer setViewAttribute");
+        }, PlayerService, 'setViewAttribute', [this.id, width, height, x, y]);
     }
 
     cordovaEventHandler(ev) {
@@ -139,6 +152,8 @@ class VideoPlayer {
                     console.log("not found VideoPlayer.onFirstFrameDecoded function");
                 }
                 break;
+            case EventType.dispose:
+                this.videoTrack = null;
             default:
                 console.log("not implement VideoPlayer eventhandler function " + ev.event);
         }

@@ -12,8 +12,8 @@
     <js-module src="www/MediaConstants.js" name="Media">
         <clobbers target="Media" />
     </js-module>
-    <js-module src="www/NativePlayer.js" name="NativeVideoPlayer">
-        <clobbers target="NativeVideoPlayer" />
+    <js-module src="www/NativePlayer.js" name="NativePlayer">
+        <clobbers target="NativePlayer" />
     </js-module>
     <js-module src="www/MediaStream.js" name="Stream">
         <clobbers target="Stream" />
