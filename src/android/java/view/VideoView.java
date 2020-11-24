@@ -170,16 +170,16 @@ class VideoView extends SurfaceViewRenderer implements View.OnTouchListener {
         if (wrapper == null || wrapper.getTrack() == null) {
             return;
         }
-        if (wrapper.getTrack().kind().equals("audio")&&wrapper.getRelatedObject()!=null&&
-                wrapper.getRelatedObject().get(0)!=null &&wrapper.getRelatedObject().get(0) instanceof AudioSource) {
-            ((AudioSource)wrapper.getRelatedObject().get(0)).dispose();
+        if (wrapper.getTrack().kind().equals("audio") && wrapper.getRelatedObject().size() != 0 &&
+                wrapper.getRelatedObject().get(0) != null && wrapper.getRelatedObject().get(0) instanceof AudioSource) {
+            ((AudioSource) wrapper.getRelatedObject().get(0)).dispose();
         }
 
         if (wrapper.getTrack().kind().equals("video")) {
             VideoTrack videoTrack = (VideoTrack) wrapper.getTrack();
             videoTrack.removeSink(sink);
 
-            if (wrapper.getRelatedObject() != null) {
+            if (wrapper.getRelatedObject().size() != 0) {
                 if (wrapper.getRelatedObject().get(0) != null && wrapper.getRelatedObject().get(0) instanceof VideoCapturer) {
                     try {
                         ((VideoCapturer) wrapper.getRelatedObject().get(0)).stopCapture();
@@ -207,6 +207,29 @@ class VideoView extends SurfaceViewRenderer implements View.OnTouchListener {
         }
 
         wrapper.getTrack().dispose();
+    }
+
+    public boolean onActivityPause() {
+
+        VideoView that = this;
+        mainActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                windowManager.removeViewImmediate(that);
+            }
+        });
+        return true;
+    }
+
+    public boolean onActivityResume() {
+        VideoView that = this;
+        mainActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                windowManager.addView(that, params);
+            }
+        });
+        return true;
     }
 
     @Override

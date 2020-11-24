@@ -133,7 +133,7 @@
         <resource-file src="src/android/res/drawable-xxhdpi/icon_agora_large.png" target="res/drawable-xxhdpi/icon_agora_large.png" />
         <resource-file src="src/android/res/drawable-xxhdpi/icon_agora_largest.png" target="res/drawable-xxhdpi/icon_agora_largest.png" />
         <resource-file src="src/android/res/drawable-xxhdpi/icon_launcher.png" target="res/drawable-xxhdpi/icon_launcher.png" />
-        <resource-file src="libs/libwebrtc-x86.aar" target="libs/libwebrtc-x86.aar" />
+        <resource-file src="libs/libwebrtc.aar" target="libs/libwebrtc.aar" />
         <!-- framework -->
         <framework src="./src/android/build.gradle" custom="true" type="gradleReference" />
     </platform>

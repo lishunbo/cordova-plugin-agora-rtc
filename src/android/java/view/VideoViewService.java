@@ -177,4 +177,20 @@ public class VideoViewService {
         return true;
     }
 
+    public boolean onActivityPause() {
+        for (Map.Entry<String, CallbackVVPeer> peer :
+                this.instances.entrySet()) {
+            peer.getValue().vv.onActivityPause();
+        }
+
+        return true;
+    }
+
+    public boolean onActivityResume() {
+        for (Map.Entry<String, CallbackVVPeer> peer :
+                this.instances.entrySet()) {
+            peer.getValue().vv.onActivityResume();
+        }
+        return true;
+    }
 }

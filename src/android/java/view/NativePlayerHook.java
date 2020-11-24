@@ -89,11 +89,13 @@ public class NativePlayerHook extends CordovaPlugin {
     @Override
     public void onPause(boolean multitasking) {
         super.onPause(multitasking);
+        service.onActivityPause();
     }
 
     @Override
     public void onResume(boolean multitasking) {
         super.onResume(multitasking);
+        service.onActivityResume();
     }
 
 }
