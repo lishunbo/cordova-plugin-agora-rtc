@@ -2,10 +2,14 @@ package com.agora.cordova.plugin.webrtc.models;
 
 import android.util.Log;
 
-import com.agora.cordova.plugin.webrtc.services.RTCPeerConnection;
-
 import org.json.JSONObject;
+import org.webrtc.AudioSource;
 import org.webrtc.MediaStreamTrack;
+import org.webrtc.SurfaceTextureHelper;
+import org.webrtc.VideoCapturer;
+import org.webrtc.VideoSink;
+import org.webrtc.VideoSource;
+import org.webrtc.VideoTrack;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,8 +23,10 @@ import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.agora.cordova.plugin.view.VideoView;
+
 public class MediaStreamTrackWrapper {
-    static final String TAG = RTCPeerConnection.class.getCanonicalName();
+    static final String TAG = MediaStreamTrackWrapper.class.getCanonicalName();
 
     static ReadWriteLock tracksLock = new ReentrantReadWriteLock();
     static Map<String, MediaStreamTrackWrapper> allTracks = new HashMap<>();
@@ -29,6 +35,7 @@ public class MediaStreamTrackWrapper {
     String pcid;
     MediaStreamTrack track;
     ArrayList<Object> relatedObject;
+    VideoView vv;
 
     MediaStreamTrackWrapper(String pcid, MediaStreamTrack track, Object... relatedObject) {
         this.track = track;
@@ -46,6 +53,10 @@ public class MediaStreamTrackWrapper {
         return track;
     }
 
+    public void addVideoView(VideoView vv) {
+        this.vv = vv;
+    }
+
     public List<Object> getRelatedObject() {
         return relatedObject;
     }
@@ -59,6 +70,50 @@ public class MediaStreamTrackWrapper {
 //            Log.e(TAG, "MediaStreamTrackWrapper toString exception: " + e.toString());
         }
         return obj.toString();
+    }
+
+    public void close() {
+        if (getTrack().kind().equals("audio") && getRelatedObject().size() != 0 &&
+                getRelatedObject().get(0) != null && getRelatedObject().get(0) instanceof AudioSource) {
+            ((AudioSource) getRelatedObject().get(0)).dispose();
+        }
+
+        if (getTrack().kind().equals("video")) {
+            if (vv != null) {
+                VideoTrack videoTrack = (VideoTrack) getTrack();
+                videoTrack.removeSink(vv.getSink());
+                vv.dispose();
+                vv = null;
+            }
+            if (getRelatedObject().size() != 0) {
+                if (getRelatedObject().get(0) != null && getRelatedObject().get(0) instanceof VideoCapturer) {
+                    try {
+                        ((VideoCapturer) getRelatedObject().get(0)).stopCapture();
+                    } catch (Exception e) {
+                        Log.e(TAG, "VideoViewService.destroy.VideoCapturer.stopCapture exception: " + e.toString());
+                    }
+                }
+                if (getRelatedObject().get(1) != null && getRelatedObject().get(1) instanceof SurfaceTextureHelper) {
+                    try {
+                        ((SurfaceTextureHelper) getRelatedObject().get(1)).stopListening();
+                        ((SurfaceTextureHelper) getRelatedObject().get(1)).dispose();
+                    } catch (Exception e) {
+                        Log.e(TAG, "VideoViewService.destroy.SurfaceTextureHelper.dispose exception: " + e.toString());
+                    }
+                }
+                if (getRelatedObject().get(2) != null && getRelatedObject().get(2) instanceof VideoSource) {
+                    try {
+                        ((VideoSource) getRelatedObject().get(2)).dispose();
+                    } catch (Exception e) {
+                        Log.e(TAG, "VideoViewService.destroy.VideoSource.dispose exception: " + e.toString());
+                    }
+                }
+            }
+        }
+
+        getRelatedObject().clear();
+        getTrack().dispose();
+
     }
 
     // static method
@@ -137,14 +192,6 @@ public class MediaStreamTrackWrapper {
         tracksLock.readLock().unlock();
         return wrapper;
     }
-
-//    public static MediaStreamTrackWrapper cacheMediaStreamTrack(String pcid, MediaStreamTrack track) {
-//        MediaStreamTrackWrapper wrapper = getMediaStreamTrackByTrack(track);
-//        if (wrapper == null) {
-//            wrapper = cacheMediaStreamTrackWrapper(pcid, track);
-//        }
-//        return wrapper;
-//    }
 
     public static MediaStreamTrackWrapper cacheMediaStreamTrack(String pcid, MediaStreamTrack track, Object... relatedObject) {
         MediaStreamTrackWrapper wrapper = getMediaStreamTrackByTrack(track);

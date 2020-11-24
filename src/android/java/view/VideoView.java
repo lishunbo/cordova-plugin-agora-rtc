@@ -16,17 +16,13 @@ import com.agora.cordova.plugin.webrtc.models.MediaStreamTrackWrapper;
 import com.agora.cordova.plugin.webrtc.services.PCFactory;
 
 import org.apache.cordova.CallbackContext;
-import org.webrtc.AudioSource;
 import org.webrtc.RendererCommon;
-import org.webrtc.SurfaceTextureHelper;
 import org.webrtc.SurfaceViewRenderer;
-import org.webrtc.VideoCapturer;
-import org.webrtc.VideoSource;
 import org.webrtc.VideoTrack;
 
 import static android.content.Context.WINDOW_SERVICE;
 
-class VideoView extends SurfaceViewRenderer implements View.OnTouchListener {
+public class VideoView extends SurfaceViewRenderer implements View.OnTouchListener {
     private final static String TAG = VideoView.class.getCanonicalName();
 
     static WindowManager windowManager;
@@ -69,6 +65,10 @@ class VideoView extends SurfaceViewRenderer implements View.OnTouchListener {
         setOnTouchListener(this);
     }
 
+    public ProxyVideoSink getSink() {
+        return sink;
+    }
+
     public void updateConfig(PlayConfig config) {
         this.config = config;
     }
@@ -100,6 +100,7 @@ class VideoView extends SurfaceViewRenderer implements View.OnTouchListener {
                     Log.e(TAG, "cannot show VideoTrack because not found valid VideoTrack " + config.trackId);
                     return;
                 }
+                wrapper.addVideoView(that);
 
                 RendererCommon.ScalingType type = RendererCommon.ScalingType.SCALE_ASPECT_FILL;
                 switch (config.fit) {
@@ -156,6 +157,17 @@ class VideoView extends SurfaceViewRenderer implements View.OnTouchListener {
     }
 
     public void destroy() {
+        MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.popMediaStreamTrackById(config.trackId);
+        if (wrapper != null) {
+            wrapper.close();
+        }
+        dispose();
+    }
+
+    public void dispose() {
+        if (config == null) {
+            return;
+        }
         super.release();
 
         VideoView that = this;
@@ -166,50 +178,12 @@ class VideoView extends SurfaceViewRenderer implements View.OnTouchListener {
             }
         });
 
-        MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.popMediaStreamTrackById(config.trackId);
-        if (wrapper == null || wrapper.getTrack() == null) {
-            return;
-        }
-        if (wrapper.getTrack().kind().equals("audio") && wrapper.getRelatedObject().size() != 0 &&
-                wrapper.getRelatedObject().get(0) != null && wrapper.getRelatedObject().get(0) instanceof AudioSource) {
-            ((AudioSource) wrapper.getRelatedObject().get(0)).dispose();
-        }
-
-        if (wrapper.getTrack().kind().equals("video")) {
-            VideoTrack videoTrack = (VideoTrack) wrapper.getTrack();
-            videoTrack.removeSink(sink);
-
-            if (wrapper.getRelatedObject().size() != 0) {
-                if (wrapper.getRelatedObject().get(0) != null && wrapper.getRelatedObject().get(0) instanceof VideoCapturer) {
-                    try {
-                        ((VideoCapturer) wrapper.getRelatedObject().get(0)).stopCapture();
-                    } catch (Exception e) {
-                        Log.e(TAG, "VideoViewService.destroy.VideoCapturer.stopCapture exception: " + e.toString());
-                    }
-                }
-                if (wrapper.getRelatedObject().get(1) != null && wrapper.getRelatedObject().get(1) instanceof SurfaceTextureHelper) {
-                    try {
-                        ((SurfaceTextureHelper) wrapper.getRelatedObject().get(1)).stopListening();
-                        ((SurfaceTextureHelper) wrapper.getRelatedObject().get(1)).dispose();
-                    } catch (Exception e) {
-                        Log.e(TAG, "VideoViewService.destroy.SurfaceTextureHelper.dispose exception: " + e.toString());
-                    }
-                }
-                if (wrapper.getRelatedObject().get(2) != null && wrapper.getRelatedObject().get(2) instanceof VideoSource) {
-                    try {
-                        ((VideoSource) wrapper.getRelatedObject().get(2)).dispose();
-                    } catch (Exception e) {
-                        Log.e(TAG, "VideoViewService.destroy.VideoSource.dispose exception: " + e.toString());
-                    }
-                }
-                wrapper.getRelatedObject().clear();
-            }
-        }
-
-        wrapper.getTrack().dispose();
+        config = null;
+        params = null;
+        sink = null;
     }
 
-    public boolean onActivityPause() {
+    public void onActivityPause() {
 
         VideoView that = this;
         mainActivity.runOnUiThread(new Runnable() {
@@ -218,10 +192,9 @@ class VideoView extends SurfaceViewRenderer implements View.OnTouchListener {
                 windowManager.removeViewImmediate(that);
             }
         });
-        return true;
     }
 
-    public boolean onActivityResume() {
+    public void onActivityResume() {
         VideoView that = this;
         mainActivity.runOnUiThread(new Runnable() {
             @Override
@@ -229,7 +202,6 @@ class VideoView extends SurfaceViewRenderer implements View.OnTouchListener {
                 windowManager.addView(that, params);
             }
         });
-        return true;
     }
 
     @Override

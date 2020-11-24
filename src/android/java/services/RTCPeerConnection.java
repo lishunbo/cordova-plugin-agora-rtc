@@ -12,7 +12,6 @@ import com.agora.cordova.plugin.webrtc.models.enums.RTCIceCredentialType;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.webrtc.AudioSource;
 import org.webrtc.AudioTrack;
 import org.webrtc.DataChannel;
 import org.webrtc.IceCandidate;
@@ -26,7 +25,6 @@ import org.webrtc.RTCStatsReport;
 import org.webrtc.RtpReceiver;
 import org.webrtc.SdpObserver;
 import org.webrtc.SessionDescription;
-import org.webrtc.VideoCapturer;
 import org.webrtc.VideoTrack;
 
 import java.util.Arrays;
@@ -200,25 +198,25 @@ public class RTCPeerConnection {
             for (VideoTrack videoTrack : localStream.videoTracks) {
                 MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.popMediaStreamTrackByTrack(videoTrack);
                 if (wrapper != null) {
-                    if (wrapper.getRelatedObject() != null && wrapper.getRelatedObject().get(0) != null && wrapper.getRelatedObject().get(0) instanceof VideoCapturer) {
-                        VideoCapturer videoCapturer = (VideoCapturer) wrapper.getRelatedObject();
-                        try {
-                            videoCapturer.stopCapture();
-                        } catch (Exception e) {
-                            Log.e(TAG, "RTCPeerConnection.close.stopCapture exception: " + e.toString());
-                        }
-                    }
+                    wrapper.close();
                 }
             }
             for (AudioTrack audioTrack : localStream.audioTracks) {
                 MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.popMediaStreamTrackByTrack(audioTrack);
                 if (wrapper != null) {
-                    if (wrapper.getRelatedObject() != null && wrapper.getRelatedObject().get(0) != null && wrapper.getRelatedObject().get(0) instanceof AudioSource) {
-                        ((AudioSource) wrapper.getRelatedObject().get(0)).dispose();
-                    }
-                    if (wrapper.getTrack() != null) {
-                        wrapper.getTrack().dispose();
-                    }
+                    wrapper.close();
+                }
+            }
+            for (VideoTrack videoTrack : remoteStream.videoTracks) {
+                MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.popMediaStreamTrackByTrack(videoTrack);
+                if (wrapper != null) {
+                    wrapper.close();
+                }
+            }
+            for (AudioTrack audioTrack : remoteStream.audioTracks) {
+                MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.popMediaStreamTrackByTrack(audioTrack);
+                if (wrapper != null) {
+                    wrapper.close();
                 }
             }
             peerConnection.removeStream(localStream);
@@ -390,7 +388,6 @@ public class RTCPeerConnection {
         @Override
         public void onAddTrack(RtpReceiver rtpReceiver, MediaStream[] mediaStreams) {
             Log.v(TAG, usage + " onAddTrack " + rtpReceiver.track().kind());
-//            client.onAddTrack(rtpReceiver.track().kind().toLowerCase());
 
             MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.cacheMediaStreamTrack(pc_id, rtpReceiver.track());
 

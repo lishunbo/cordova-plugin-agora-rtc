@@ -285,7 +285,9 @@ public class WebRTCService {
             }
             PluginResult result = new PluginResult(OK, obj);
             result.setKeepCallback(true);
+//            if (peer._context != null) {
             peer._context.sendPluginResult(result);
+//            }
         }
     }
 
