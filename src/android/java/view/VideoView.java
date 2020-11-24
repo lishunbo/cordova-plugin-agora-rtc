@@ -31,7 +31,7 @@ public class VideoView extends SurfaceViewRenderer implements View.OnTouchListen
     public static int windowWidth;
     public static int windowHeight;
 
-    public final String id;
+    public String id;
     PlayConfig config;
     WindowManager.LayoutParams params;
     ProxyVideoSink sink;
@@ -165,7 +165,7 @@ public class VideoView extends SurfaceViewRenderer implements View.OnTouchListen
     }
 
     public void dispose() {
-        if (config == null) {
+        if (id == null) {
             return;
         }
         super.release();
@@ -178,6 +178,7 @@ public class VideoView extends SurfaceViewRenderer implements View.OnTouchListen
             }
         });
 
+        id = null;
         config = null;
         params = null;
         sink = null;

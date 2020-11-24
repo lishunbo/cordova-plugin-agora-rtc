@@ -113,7 +113,11 @@ public class MediaStreamTrackWrapper {
 
         getRelatedObject().clear();
         getTrack().dispose();
-
+        id=null;
+        pcid=null;
+        track=null;
+        relatedObject=null;
+        vv=null;
     }
 
     // static method
@@ -213,4 +217,16 @@ public class MediaStreamTrackWrapper {
         return wrapper;
     }
 
+    public static void reset() {
+        tracksLock.writeLock().lock();
+
+        for (Map.Entry<String, MediaStreamTrackWrapper> ct :
+                allTracks.entrySet()) {
+            ct.getValue().close();
+        }
+
+        allTracks.clear();
+
+        tracksLock.writeLock().unlock();
+    }
 }

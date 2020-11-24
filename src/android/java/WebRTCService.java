@@ -11,23 +11,12 @@ import com.agora.cordova.plugin.webrtc.models.RTCOfferOptions;
 import com.agora.cordova.plugin.webrtc.services.MediaDevice;
 import com.agora.cordova.plugin.webrtc.services.PCFactory;
 import com.agora.cordova.plugin.webrtc.services.RTCPeerConnection;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.webrtc.AudioTrack;
-import org.webrtc.Camera1Enumerator;
-import org.webrtc.DataChannel;
-import org.webrtc.MediaStream;
-import org.webrtc.MediaStreamTrack;
-import org.webrtc.RtpReceiver;
-import org.webrtc.SurfaceTextureHelper;
-import org.webrtc.VideoCapturer;
-import org.webrtc.VideoSource;
-import org.webrtc.VideoTrack;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -39,34 +28,33 @@ import static org.apache.cordova.PluginResult.Status.OK;
 public class WebRTCService {
     private final static String TAG = WebRTCService.class.getCanonicalName();
 
-    Activity _mainActivity;
+    Activity mainActivity;
 
+    Map<String, CallbackPCPeer> instances;
     List<RTCPeerConnection> allPC = new LinkedList<>();
 
     static class CallbackPCPeer {
-        CallbackContext _context;
-        RTCPeerConnection _pc;
+        CallbackContext context;
+        RTCPeerConnection pc;
 
         CallbackPCPeer setCallbackContext(CallbackContext context) {
-            _context = context;
+            this.context = context;
             return this;
         }
 
         CallbackPCPeer setPeerConnection(RTCPeerConnection pc) {
-            _pc = pc;
+            this.pc = pc;
             return this;
         }
     }
 
-    Map<String, CallbackPCPeer> instances;
-
     public WebRTCService(Activity mainActivity) {
-        _mainActivity = mainActivity;
+        this.mainActivity = mainActivity;
 
         instances = new HashMap<>();
 
-        MediaDevice.Initialize(_mainActivity, _mainActivity.getApplicationContext());
-        PCFactory.initializationOnce(_mainActivity.getApplicationContext());
+        MediaDevice.Initialize(this.mainActivity, this.mainActivity.getApplicationContext());
+        PCFactory.initializationOnce(this.mainActivity.getApplicationContext());
     }
 
     public boolean enumerateDevices(JSONArray args, final CallbackContext callbackContext) throws JSONException {
@@ -131,7 +119,7 @@ public class WebRTCService {
 
         CallbackPCPeer peer = instances.get(id);
         assert peer != null;
-        peer._pc.addTrack(kind, wrapper.getTrack());
+        peer.pc.addTrack(kind, wrapper.getTrack());
 
         callbackContext.success(wrapper.toString());
         return true;
@@ -151,7 +139,7 @@ public class WebRTCService {
 
         CallbackPCPeer peer = instances.get(id);
         assert peer != null;
-        peer._pc.createOffer(new MessageHandler() {
+        peer.pc.createOffer(new MessageHandler() {
             @Override
             public void success(String msg) {
                 callbackContext.success(msg);
@@ -170,7 +158,7 @@ public class WebRTCService {
         String id = args.getString(0);
         CallbackPCPeer peer = instances.get(id);
         assert peer != null;
-        peer._pc.setLocalDescription(new MessageHandler() {
+        peer.pc.setLocalDescription(new MessageHandler() {
             @Override
             public void success() {
                 callbackContext.success();
@@ -189,7 +177,7 @@ public class WebRTCService {
         String id = args.getString(0);
         CallbackPCPeer peer = instances.get(id);
         assert peer != null;
-        peer._pc.setRemoteDescription(new MessageHandler() {
+        peer.pc.setRemoteDescription(new MessageHandler() {
             @Override
             public void success() {
                 callbackContext.success();
@@ -208,7 +196,7 @@ public class WebRTCService {
 
         CallbackPCPeer peer = instances.get(id);
         assert peer != null;
-        peer._pc.addIceCandidate(new MessageHandler() {
+        peer.pc.addIceCandidate(new MessageHandler() {
             @Override
             public void success() {
                 callbackContext.success();
@@ -227,7 +215,7 @@ public class WebRTCService {
 
         CallbackPCPeer peer = instances.get(id);
         assert peer != null;
-        peer._pc.getStats(new MessageHandler() {
+        peer.pc.getStats(new MessageHandler() {
             @Override
             public void success(String msg) {
                 callbackContext.success(msg);
@@ -246,20 +234,31 @@ public class WebRTCService {
     }
 
     private Context getApplicationContext() {
-        return _mainActivity.getApplicationContext();
+        return mainActivity.getApplicationContext();
     }
 
     private Object getSystemService(String name) {
-        return _mainActivity.getSystemService(name);
+        return mainActivity.getSystemService(name);
     }
 
+    public void reset() {
+        this.instances.clear();
+
+        for (RTCPeerConnection pc :
+                this.allPC) {
+            pc.dispose();
+        }
+
+        this.allPC.clear();
+        MediaDevice.reset();
+    }
 
     class SupervisorImp implements RTCPeerConnection.Supervisor {
         @Override
         public void onDisconnect(RTCPeerConnection pc) {
             CallbackPCPeer peer = instances.get(pc.getPc_id());
             if (peer != null) {
-                peer._context.success("dispose");
+                peer.context.success("dispose");
                 instances.remove(pc.getPc_id());
             }
 
@@ -285,9 +284,7 @@ public class WebRTCService {
             }
             PluginResult result = new PluginResult(OK, obj);
             result.setKeepCallback(true);
-//            if (peer._context != null) {
-            peer._context.sendPluginResult(result);
-//            }
+            peer.context.sendPluginResult(result);
         }
     }
 

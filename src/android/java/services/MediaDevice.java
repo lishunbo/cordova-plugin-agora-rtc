@@ -228,4 +228,8 @@ public class MediaDevice {
 
         return null;
     }
+
+    public static void reset() {
+        MediaStreamTrackWrapper.reset();
+    }
 }

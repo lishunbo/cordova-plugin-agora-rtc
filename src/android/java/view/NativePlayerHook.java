@@ -97,4 +97,10 @@ public class NativePlayerHook extends CordovaPlugin {
         service.onActivityResume();
     }
 
+    @Override
+    public void onReset() {
+        super.onReset();
+        Log.e(TAG, "reset pages");
+        service.reset();
+    }
 }

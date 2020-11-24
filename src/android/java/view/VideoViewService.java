@@ -193,4 +193,12 @@ public class VideoViewService {
         }
         return true;
     }
+
+    public void reset() {
+        for (Map.Entry<String, CallbackVVPeer> peer :
+                this.instances.entrySet()) {
+            peer.getValue().vv.dispose();
+        }
+        this.instances.clear();
+    }
 }

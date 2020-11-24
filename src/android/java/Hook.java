@@ -57,7 +57,7 @@ public class Hook extends CordovaPlugin {
     public boolean execute(String action, JSONArray args,
                            final CallbackContext callbackContext) {
         try {
-            if (Config.logInternalMessage && !action.equals("getStats")&&!action.equals("enumerateDevices")) {
+            if (Config.logInternalMessage && !action.equals("getStats") && !action.equals("enumerateDevices")) {
                 Log.e(TAG, "actioin:" + Action.valueOf(action));
             }
             switch (Action.valueOf(action)) {
@@ -127,4 +127,10 @@ public class Hook extends CordovaPlugin {
         }
     }
 
+    @Override
+    public void onReset() {
+        super.onReset();
+        Log.e(TAG, "reset pages");
+        _service.reset();
+    }
 }

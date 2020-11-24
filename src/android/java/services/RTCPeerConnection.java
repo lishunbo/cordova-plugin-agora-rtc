@@ -43,6 +43,7 @@ public class RTCPeerConnection {
     PeerConnection peerConnection;
     MediaStream localStream;
     MediaStream remoteStream;
+    PeerConnection.PeerConnectionState state;
 
     public interface Supervisor {
         void onDisconnect(RTCPeerConnection pc);
@@ -193,7 +194,7 @@ public class RTCPeerConnection {
         }
     }
 
-    void close() {
+    void closeStream() {
         if (localStream != null) {
             for (VideoTrack videoTrack : localStream.videoTracks) {
                 MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.popMediaStreamTrackByTrack(videoTrack);
@@ -207,6 +208,10 @@ public class RTCPeerConnection {
                     wrapper.close();
                 }
             }
+            peerConnection.removeStream(localStream);
+            localStream = null;
+        }
+        if (remoteStream != null) {
             for (VideoTrack videoTrack : remoteStream.videoTracks) {
                 MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.popMediaStreamTrackByTrack(videoTrack);
                 if (wrapper != null) {
@@ -219,15 +224,24 @@ public class RTCPeerConnection {
                     wrapper.close();
                 }
             }
-            peerConnection.removeStream(localStream);
             peerConnection.removeStream(remoteStream);
-            localStream = null;
             remoteStream = null;
         }
     }
 
     public void getStats(MessageHandler handler) {
         peerConnection.getStats(new StatsReport(handler));
+    }
+
+    public void dispose() {
+        supervisor = null;
+        pc_id = null;
+        closeStream();
+        if (state == PeerConnection.PeerConnectionState.CONNECTED) {
+            peerConnection.close();
+        }
+        config = null;
+        peerConnection = null;
     }
 
     public class StatsReport implements RTCStatsCollectorCallback {
@@ -287,9 +301,7 @@ public class RTCPeerConnection {
             } else {
                 builder.append(value);
             }
-
         }
-
     }
 
 
@@ -305,37 +317,44 @@ public class RTCPeerConnection {
         @Override
         public void onSignalingChange(PeerConnection.SignalingState signalingState) {
             Log.v(TAG, usage + " onSignalingChange " + signalingState.toString());
-            supervisor.onObserveEvent(pc_id, Action.onSignalingStateChange, signalingState.toString().toLowerCase(), usage);
+            if (supervisor!=null){
+                supervisor.onObserveEvent(pc_id, Action.onSignalingStateChange, signalingState.toString().toLowerCase(), usage);
+            }
         }
 
         @Override
         public void onIceConnectionChange(PeerConnection.IceConnectionState iceConnectionState) {
             Log.v(TAG, usage + " onIceConnectionChange " + iceConnectionState.toString());
 
-            supervisor.onObserveEvent(pc_id, Action.onICEConnectionStateChange, iceConnectionState.toString().toLowerCase(), usage);
+            if (supervisor!=null){
+                supervisor.onObserveEvent(pc_id, Action.onICEConnectionStateChange, iceConnectionState.toString().toLowerCase(), usage);
+            }
         }
 
         @Override
         public void onConnectionChange(PeerConnection.PeerConnectionState newState) {
             Log.v(TAG, usage + " onConnectionChange " + newState.toString() + " pc connection size: " + peerConnection.getSenders().size() + " " + peerConnection.getReceivers().size());
-
-            if (//newState == PeerConnection.PeerConnectionState.DISCONNECTED ||
-                    newState == PeerConnection.PeerConnectionState.CLOSED ||
-                            newState == PeerConnection.PeerConnectionState.FAILED) {
+            state = newState;
+            if (newState == PeerConnection.PeerConnectionState.DISCONNECTED) {//||
+                //    newState == PeerConnection.PeerConnectionState.CLOSED ||
+                //           newState == PeerConnection.PeerConnectionState.FAILED) {
 
                 MediaStreamTrackWrapper.removeMediaStreamTrackByPCId(pc_id);
 
                 supervisor.onDisconnect(pc);
-                close();
+                dispose();
             }
-
-            supervisor.onObserveEvent(pc_id, Action.onConnectionStateChange, newState.toString().toLowerCase(), usage);
+            if (supervisor != null) {
+                supervisor.onObserveEvent(pc_id, Action.onConnectionStateChange, newState.toString().toLowerCase(), usage);
+            }
         }
 
         @Override
         public void onIceConnectionReceivingChange(boolean b) {
             Log.v(TAG, usage + " onIceConnectionReceivingChange " + String.valueOf(b));
-            supervisor.onObserveEvent(pc_id, Action.onIceConnectionReceivingChange, String.valueOf(b), usage);
+            if (supervisor!=null){
+                supervisor.onObserveEvent(pc_id, Action.onIceConnectionReceivingChange, String.valueOf(b), usage);
+            }
         }
 
         @Override
@@ -346,7 +365,9 @@ public class RTCPeerConnection {
                 //send empty candidate if complete
                 supervisor.onObserveEvent(pc_id, Action.onIceCandidate, "", usage);
             }
-            supervisor.onObserveEvent(pc_id, Action.onIceGatheringChange, iceGatheringState.toString().toLowerCase(), usage);
+            if (supervisor!=null){
+                supervisor.onObserveEvent(pc_id, Action.onIceGatheringChange, iceGatheringState.toString().toLowerCase(), usage);
+            }
         }
 
         @Override
@@ -420,7 +441,9 @@ public class RTCPeerConnection {
         public void onRenegotiationNeeded() {
 
             Log.v(TAG, usage + " onRenegotiationNeeded ");
-            supervisor.onObserveEvent(pc_id, Action.onRenegotiationNeeded, "", usage);
+            if (supervisor != null) {
+                supervisor.onObserveEvent(pc_id, Action.onRenegotiationNeeded, "", usage);
+            }
         }
 
         @Override
