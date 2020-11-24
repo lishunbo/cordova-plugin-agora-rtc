@@ -83,7 +83,6 @@ public class NativePlayerHook extends CordovaPlugin {
             callbackContext.error(e.toString());
             return false;
         }
-
     }
 
     @Override

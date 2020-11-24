@@ -7,6 +7,7 @@ import android.util.Log;
 import com.agora.cordova.plugin.webrtc.models.MediaStreamConstraints;
 import com.agora.cordova.plugin.webrtc.models.MediaStreamTrackWrapper;
 import com.agora.cordova.plugin.webrtc.models.RTCConfiguration;
+import com.agora.cordova.plugin.webrtc.models.RTCOfferOptions;
 import com.agora.cordova.plugin.webrtc.services.MediaDevice;
 import com.agora.cordova.plugin.webrtc.services.PCFactory;
 import com.agora.cordova.plugin.webrtc.services.RTCPeerConnection;
@@ -146,6 +147,7 @@ public class WebRTCService {
 
     boolean createOffer(JSONArray args, final CallbackContext callbackContext) throws JSONException {
         String id = args.getString(0);
+        RTCOfferOptions options = RTCOfferOptions.fromJson(args.getString(1));
 
         CallbackPCPeer peer = instances.get(id);
         assert peer != null;
@@ -159,7 +161,7 @@ public class WebRTCService {
             public void error(String msg) {
                 callbackContext.error(msg);
             }
-        });
+        }, options);
 
         return true;
     }

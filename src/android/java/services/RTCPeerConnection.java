@@ -6,6 +6,7 @@ import com.agora.cordova.plugin.webrtc.Action;
 import com.agora.cordova.plugin.webrtc.models.MediaStreamTrackWrapper;
 import com.agora.cordova.plugin.webrtc.models.RTCConfiguration;
 import com.agora.cordova.plugin.webrtc.models.RTCIceServer;
+import com.agora.cordova.plugin.webrtc.models.RTCOfferOptions;
 import com.agora.cordova.plugin.webrtc.models.enums.RTCIceCredentialType;
 
 import org.json.JSONArray;
@@ -106,7 +107,7 @@ public class RTCPeerConnection {
         if (localStream == null) {
             localStream = PCFactory.factory().createLocalMediaStream("AgoraLocalStream");
         }
-        if (kind == "video") {
+        if (kind.equals("video")) {
             localStream.addTrack((VideoTrack) track);
         } else {
             localStream.addTrack((AudioTrack) track);
@@ -115,11 +116,19 @@ public class RTCPeerConnection {
         peerConnection.addStream(localStream);
     }
 
-    public void createOffer(MessageHandler handler) {
+    public void createOffer(MessageHandler handler, RTCOfferOptions options) {
         MediaConstraints mediaConstraints = new MediaConstraints();
-        mediaConstraints.mandatory.add(new MediaConstraints.KeyValuePair("OfferToReceiveAudio", "true"));
-        mediaConstraints.mandatory.add(new MediaConstraints.KeyValuePair("OfferToReceiveVideo", "true"));
-        mediaConstraints.optional.add(new MediaConstraints.KeyValuePair("DtlsSrtpKeyAgreement", "true"));
+        if (options != null) {
+            if (options.iceRestart) {
+                mediaConstraints.mandatory.add(new MediaConstraints.KeyValuePair("IceRestart", "true"));
+            }
+            mediaConstraints.mandatory.add(new MediaConstraints.KeyValuePair("OfferToReceiveAudio", String.valueOf(options.offerToReceiveAudio)));
+            mediaConstraints.mandatory.add(new MediaConstraints.KeyValuePair("OfferToReceiveVideo", String.valueOf(options.offerToReceiveVideo)));
+            if (options.voiceActivityDetection) {
+                mediaConstraints.mandatory.add(new MediaConstraints.KeyValuePair("VoiceActivityDetection", "true"));
+            }
+        }
+//        mediaConstraints.optional.add(new MediaConstraints.KeyValuePair("DtlsSrtpKeyAgreement", "true"));
         peerConnection.createOffer(new RTCObserver(this, "createOffer:" + pc_id) {
             @Override
             public void onCreateSuccess(SessionDescription sessionDescription) {
@@ -156,7 +165,7 @@ public class RTCPeerConnection {
     }
 
     public void setRemoteDescription(MessageHandler handler, String type, String description) {
-        peerConnection.setRemoteDescription(new RTCObserver(this, "setRemoteDescription" + pc_id) {
+        peerConnection.setRemoteDescription(new RTCObserver(this, "setRemoteDescription" + pc_id + "desc: " + description) {
             @Override
             public void onSetSuccess() {
                 super.onSetSuccess();

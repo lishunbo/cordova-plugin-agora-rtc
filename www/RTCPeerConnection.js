@@ -139,7 +139,7 @@ class RTCPeerConnection {
     //first class
     createOffer(config) {
         return new Promise((resolve, reject) => {
-            console.log("createOffer function");
+            console.log("createOffer function  ", config);
             cordova.exec(function (ev) {
                 console.log("Got one offer: " + ev);
                 // pc.id = ev
@@ -148,7 +148,7 @@ class RTCPeerConnection {
             }, function (ev) {
                 console.log("Failed to create offer");
                 reject("failed to create offer");
-            }, MediaService, 'createOffer', [this.id]);
+            }, MediaService, 'createOffer', [this.id, config]);
         })
     }
 

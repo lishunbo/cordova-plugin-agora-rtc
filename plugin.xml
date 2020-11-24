@@ -95,10 +95,14 @@
         <source-file src="src/android/java/models/MediaStream.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
         <source-file src="src/android/java/models/MediaStreamConstraints.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
         <source-file src="src/android/java/models/MediaStreamTrack.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
+        <source-file src="src/android/java/models/MediaStreamTrackWrapper.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
+        <source-file src="src/android/java/models/MediaTrackConstraints.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
+        <source-file src="src/android/java/models/MediaTrackConstraintSet.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
         <source-file src="src/android/java/models/RTCCertificate.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
         <source-file src="src/android/java/models/RTCConfiguration.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
         <source-file src="src/android/java/models/RTCIceServer.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
         <source-file src="src/android/java/models/RTCOAuthCredential.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
+        <source-file src="src/android/java/models/RTCOfferOptions.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
         <source-file src="src/android/java/models/SessionDescription.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
         <!-- enums -->
         <source-file src="src/android/java/models/enums/RTCBundlePolicy.java" target-dir="src/com/agora/cordova/plugin/webrtc/models/enums"/>
