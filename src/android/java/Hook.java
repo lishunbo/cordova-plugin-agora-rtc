@@ -1,11 +1,7 @@
 package com.agora.cordova.plugin.webrtc;
 
 import android.Manifest;
-import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.net.Uri;
-import android.os.Build;
-import android.provider.Settings;
 import android.util.Log;
 
 import org.apache.cordova.CallbackContext;
@@ -30,7 +26,7 @@ public class Hook extends CordovaPlugin {
     public static final int NECESSARY_PERM_CODE = 900;
     private static final String PERMISSION_DENIED_ERROR = "Permission_Denied";
 
-    WebRTCService _service;
+    WebRTCService service;
 
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
@@ -38,7 +34,7 @@ public class Hook extends CordovaPlugin {
 
         Log.v(TAG, "Hook initializing");
 
-        _service = new WebRTCService(cordova.getActivity());
+        service = new WebRTCService(cordova.getActivity());
 
         if (!(cordova.hasPermission(CAMERA) && cordova.hasPermission(INTERNET)
                 && cordova.hasPermission(RECORD_AUDIO) && cordova.hasPermission(WAKE_LOCK) && cordova.hasPermission(ALERT_WINDOW))) {
@@ -62,33 +58,35 @@ public class Hook extends CordovaPlugin {
             }
             switch (Action.valueOf(action)) {
                 case enumerateDevices:
-                    return _service.enumerateDevices(args, callbackContext);
+                    return service.enumerateDevices(args, callbackContext);
                 case getUserMedia:
-                    return _service.getUserMedia(args, callbackContext);
+                    return service.getUserMedia(args, callbackContext);
+                case stopMediaStreamTrack:
+                    return service.stopMediaStreamTrack(args, callbackContext);
                 //Keep Instance context for callback
                 case createInstance:
-                    return _service.createInstance(args, callbackContext);
+                    return service.createInstance(args, callbackContext);
                 //PeerConnection sub functions
                 case addTrack:
-                    return _service.addTrack(args, callbackContext);
+                    return service.addTrack(args, callbackContext);
                 case getTransceivers:
-                    return _service.getTransceivers(args);
+                    return service.getTransceivers(args);
                 case addTransceiver:
-                    return _service.addTransceiver(args);
+                    return service.addTransceiver(args);
                 case createOffer:
-                    return _service.createOffer(args, callbackContext);
+                    return service.createOffer(args, callbackContext);
                 case setLocalDescription:
-                    return _service.setLocalDescription(args, callbackContext);
+                    return service.setLocalDescription(args, callbackContext);
                 case setRemoteDescription:
-                    return _service.setRemoteDescription(args, callbackContext);
+                    return service.setRemoteDescription(args, callbackContext);
                 case addIceCandidate:
-                    return _service.addIceCandidate(args, callbackContext);
+                    return service.addIceCandidate(args, callbackContext);
                 case close:
-                    return _service.close(args);
+                    return service.close(args);
                 case removeTrack:
-                    return _service.removeTrack(args);
+                    return service.removeTrack(args);
                 case getStats:
-                    return _service.getStats(args, callbackContext);
+                    return service.getStats(args, callbackContext);
                 //MediaDevice functions
                 default:
                     Log.e(TAG, "Not implement action of :" + action);
@@ -131,6 +129,6 @@ public class Hook extends CordovaPlugin {
     public void onReset() {
         super.onReset();
         Log.e(TAG, "reset pages");
-        _service.reset();
+        service.reset();
     }
 }

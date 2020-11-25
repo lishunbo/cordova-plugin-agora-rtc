@@ -103,7 +103,10 @@ class MediaStreamTrack {
     }
 
     stop(){
-        console.log("MediaStreamTrack.stop not implement")
+        cordova.exec(function (ev) {
+        }, function (ev) {
+            console.log("Failed to stop MediaStreamTrack object");
+        }, 'Hook', 'stopMediaStreamTrack', [this.id]);
     }
 
     addEventListener(eventType, func) {

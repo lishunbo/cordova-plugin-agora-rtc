@@ -74,6 +74,20 @@ public class WebRTCService {
         return true;
     }
 
+    public boolean stopMediaStreamTrack(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        String trackId = args.getString(0);
+
+        MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.popMediaStreamTrackById(trackId);
+        if (wrapper==null){
+            callbackContext.error("not found track");
+            return false;
+        }
+        wrapper.close();
+
+        callbackContext.success();
+        return true;
+    }
+
     public boolean createInstance(JSONArray args, final CallbackContext callbackContext) throws JSONException {
         String id = args.getString(0);
 
@@ -231,14 +245,6 @@ public class WebRTCService {
 
     public boolean close(JSONArray args) {
         return false;
-    }
-
-    private Context getApplicationContext() {
-        return mainActivity.getApplicationContext();
-    }
-
-    private Object getSystemService(String name) {
-        return mainActivity.getSystemService(name);
     }
 
     public void reset() {

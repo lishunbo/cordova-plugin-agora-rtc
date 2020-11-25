@@ -3,7 +3,6 @@ package com.agora.cordova.plugin.webrtc.services;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
-import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.media.AudioDeviceInfo;
@@ -31,18 +30,18 @@ import java.util.UUID;
 public class MediaDevice {
     private final static String TAG = MediaDevice.class.getCanonicalName();
 
-    static Activity _activity;
-    static Context _context;
+    static Activity activity;
+    static Context context;
 
     public static void Initialize(Activity activity, Context context) {
-        _activity = activity;
-        _context = context;
+        MediaDevice.activity = activity;
+        MediaDevice.context = context;
     }
 
     @TargetApi(Build.VERSION_CODES.M)
     public static String enumerateDevices() {
-        AudioManager audioManager = (AudioManager) _activity.getSystemService(Context.AUDIO_SERVICE);
-        CameraManager cameraManager = (CameraManager) _activity.getSystemService(Context.CAMERA_SERVICE);
+        AudioManager audioManager = (AudioManager) activity.getSystemService(Context.AUDIO_SERVICE);
+        CameraManager cameraManager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
 
         List<MediaDeviceInfo> infos = new ArrayList<>();
 
@@ -203,7 +202,7 @@ public class MediaDevice {
         SurfaceTextureHelper surfaceTextureHelper = SurfaceTextureHelper.create("CaptureThread", PCFactory.eglBase());
         VideoSource videoSource = PCFactory.factory().createVideoSource(videoCapturer.isScreencast());
 
-        videoCapturer.initialize(surfaceTextureHelper, _context, videoSource.getCapturerObserver());
+        videoCapturer.initialize(surfaceTextureHelper, context, videoSource.getCapturerObserver());
         videoCapturer.startCapture(w, h, fps);
 
         VideoTrack videoTrack = PCFactory.factory().createVideoTrack(UUID.randomUUID().toString(), videoSource);

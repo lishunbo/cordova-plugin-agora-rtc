@@ -3,6 +3,7 @@ package com.agora.cordova.plugin.webrtc;
 public enum Action {
     enumerateDevices("enumerateDevices"),
     getUserMedia("getUserMedia"),
+    stopMediaStreamTrack("stopMediaStreamTrack"),
 
     createInstance("createInstance"),
     createOffer("createOffer"),
