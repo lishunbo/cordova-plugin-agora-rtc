@@ -1,28 +1,26 @@
 package com.agora.cordova.plugin.view;
 
 import android.app.Activity;
-import android.os.Build;
-import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.WindowManager;
 
+import com.agora.cordova.plugin.view.enums.Action;
+import com.agora.cordova.plugin.view.interfaces.Player;
+import com.agora.cordova.plugin.view.interfaces.Supervisor;
 import com.agora.cordova.plugin.view.model.PlayConfig;
-import com.agora.cordova.plugin.webrtc.services.PCFactory;
+import com.agora.cordova.plugin.webrtc.services.MediaDevice;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.webrtc.RendererCommon;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static android.content.Context.WINDOW_SERVICE;
 import static org.apache.cordova.PluginResult.Status.OK;
 
-public class VideoViewService {
+public class VideoViewService implements Supervisor {
     private final static String TAG = VideoViewService.class.getCanonicalName();
 
 
@@ -34,17 +32,40 @@ public class VideoViewService {
         VideoView.Initialize(mainActivity);
     }
 
+    @Override
+    public void onObserveEvent(String id, Action action, String message, String usage) {
+
+        CallbackVVPeer peer = instances.get(id);
+        if (peer == null) {
+            return;
+        }
+
+        Log.v(TAG, usage + " onObserveEvent " + action + " " + message);
+
+        JSONObject obj = new JSONObject();
+        try {
+            obj.put("event", action.toString());
+            obj.put("id", id);
+            obj.put("payload", message);
+        } catch (Exception e) {
+            Log.e(TAG, "event exception:" + action);
+        }
+        PluginResult result = new PluginResult(OK, obj);
+        result.setKeepCallback(true);
+        peer.context.sendPluginResult(result);
+    }
+
     static class CallbackVVPeer {
         CallbackContext context;
-        VideoView vv;
+        Player player;
 
         CallbackVVPeer setCallbackContext(CallbackContext context) {
             this.context = context;
             return this;
         }
 
-        CallbackVVPeer setVideoView(VideoView vv) {
-            this.vv = vv;
+        CallbackVVPeer setPlayer(Player player) {
+            this.player = player;
             return this;
         }
     }
@@ -67,7 +88,7 @@ public class VideoViewService {
         VideoView vp = new VideoView(id, cfg);
 
         //for eventCallback
-        this.instances.put(id, new CallbackVVPeer().setCallbackContext(callbackContext).setVideoView(vp));
+        this.instances.put(id, new CallbackVVPeer().setCallbackContext(callbackContext).setPlayer(vp));
 
         PluginResult result = new PluginResult(OK);
         result.setKeepCallback(true);
@@ -91,7 +112,7 @@ public class VideoViewService {
 
         CallbackVVPeer peer = this.instances.get(id);
         assert peer != null;
-        peer.vv.updateConfig(cfg);
+        ((VideoView) peer.player).updateConfig(cfg);
 
         callbackContext.success();
         return true;
@@ -105,7 +126,7 @@ public class VideoViewService {
 
         Log.v(TAG, "updateVideoTrack " + args.getString(1) + " " + args.getString(2));
 
-        peer.vv.updateVideoTrack(args.getString(1));
+        ((VideoView) peer.player).updateVideoTrack(args.getString(1));
 
         callbackContext.success();
         return true;
@@ -123,7 +144,7 @@ public class VideoViewService {
         callbackContext.sendPluginResult(result);
 
         // this function will do finally callback in main ui thread
-        peer.vv.play(callbackContext);
+        ((VideoView) peer.player).play(callbackContext);
         return true;
     }
 
@@ -139,7 +160,7 @@ public class VideoViewService {
         CallbackVVPeer peer = this.instances.get(id);
         assert peer != null;
 
-        peer.vv.destroy();
+        ((VideoView) peer.player).destroy();
         peer.context.success("dispose");
 
         this.instances.remove(id);
@@ -172,15 +193,57 @@ public class VideoViewService {
 
         CallbackVVPeer peer = this.instances.get(id);
         assert peer != null;
-        peer.vv.setViewAttribute(w, h, x, y);
+        ((VideoView) peer.player).setViewAttribute(w, h, x, y);
         callbackContext.success();
         return true;
     }
 
+    //AudioPlayer
+    public boolean createAudioPlayer(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        String id = args.getString(0);
+
+        AudioPlayer ap = new AudioPlayer(this, id);
+
+        //for eventCallback
+        this.instances.put(id, new CallbackVVPeer().setCallbackContext(callbackContext).setPlayer(ap));
+
+        PluginResult result = new PluginResult(OK);
+        result.setKeepCallback(true);
+
+        callbackContext.sendPluginResult(result);
+
+        ap.init();
+
+        return true;
+    }
+
+    public boolean getVolumeRange(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        JSONObject obj = new JSONObject();
+        obj.put("max", MediaDevice.getMaxVolume());
+        obj.put("min", MediaDevice.getMinVolume());
+
+        callbackContext.success(obj.toString());
+
+        return true;
+    }
+
+    public boolean getVolume(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        callbackContext.success(MediaDevice.getVolume());
+        return true;
+    }
+
+    public boolean setVolume(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        int volume = args.getInt(1);
+        MediaDevice.setVolume(volume);
+        callbackContext.success();
+        return true;
+    }
+
+
     public boolean onActivityPause() {
         for (Map.Entry<String, CallbackVVPeer> peer :
                 this.instances.entrySet()) {
-            peer.getValue().vv.onActivityPause();
+            peer.getValue().player.onActivityPause();
         }
 
         return true;
@@ -189,7 +252,7 @@ public class VideoViewService {
     public boolean onActivityResume() {
         for (Map.Entry<String, CallbackVVPeer> peer :
                 this.instances.entrySet()) {
-            peer.getValue().vv.onActivityResume();
+            peer.getValue().player.onActivityResume();
         }
         return true;
     }
@@ -197,7 +260,7 @@ public class VideoViewService {
     public void reset() {
         for (Map.Entry<String, CallbackVVPeer> peer :
                 this.instances.entrySet()) {
-            peer.getValue().vv.dispose();
+            peer.getValue().player.dispose();
         }
         this.instances.clear();
     }

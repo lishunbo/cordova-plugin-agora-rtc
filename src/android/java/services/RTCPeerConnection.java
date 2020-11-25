@@ -317,7 +317,7 @@ public class RTCPeerConnection {
         @Override
         public void onSignalingChange(PeerConnection.SignalingState signalingState) {
             Log.v(TAG, usage + " onSignalingChange " + signalingState.toString());
-            if (supervisor!=null){
+            if (supervisor != null) {
                 supervisor.onObserveEvent(pc_id, Action.onSignalingStateChange, signalingState.toString().toLowerCase(), usage);
             }
         }
@@ -326,14 +326,14 @@ public class RTCPeerConnection {
         public void onIceConnectionChange(PeerConnection.IceConnectionState iceConnectionState) {
             Log.v(TAG, usage + " onIceConnectionChange " + iceConnectionState.toString());
 
-            if (supervisor!=null){
+            if (supervisor != null) {
                 supervisor.onObserveEvent(pc_id, Action.onICEConnectionStateChange, iceConnectionState.toString().toLowerCase(), usage);
             }
         }
 
         @Override
         public void onConnectionChange(PeerConnection.PeerConnectionState newState) {
-            Log.v(TAG, usage + " onConnectionChange " + newState.toString() + " pc connection size: " + peerConnection.getSenders().size() + " " + peerConnection.getReceivers().size());
+            Log.v(TAG, usage + " onConnectionChange " + newState.toString());
             state = newState;
             if (newState == PeerConnection.PeerConnectionState.DISCONNECTED) {//||
                 //    newState == PeerConnection.PeerConnectionState.CLOSED ||
@@ -352,7 +352,7 @@ public class RTCPeerConnection {
         @Override
         public void onIceConnectionReceivingChange(boolean b) {
             Log.v(TAG, usage + " onIceConnectionReceivingChange " + String.valueOf(b));
-            if (supervisor!=null){
+            if (supervisor != null) {
                 supervisor.onObserveEvent(pc_id, Action.onIceConnectionReceivingChange, String.valueOf(b), usage);
             }
         }
@@ -365,7 +365,7 @@ public class RTCPeerConnection {
                 //send empty candidate if complete
                 supervisor.onObserveEvent(pc_id, Action.onIceCandidate, "", usage);
             }
-            if (supervisor!=null){
+            if (supervisor != null) {
                 supervisor.onObserveEvent(pc_id, Action.onIceGatheringChange, iceGatheringState.toString().toLowerCase(), usage);
             }
         }

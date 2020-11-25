@@ -1,7 +1,7 @@
 package com.agora.cordova.plugin.webrtc;
 
 import android.app.Activity;
-import android.content.Context;
+import android.os.Handler;
 import android.util.Log;
 
 import com.agora.cordova.plugin.webrtc.models.MediaStreamConstraints;
@@ -11,6 +11,7 @@ import com.agora.cordova.plugin.webrtc.models.RTCOfferOptions;
 import com.agora.cordova.plugin.webrtc.services.MediaDevice;
 import com.agora.cordova.plugin.webrtc.services.PCFactory;
 import com.agora.cordova.plugin.webrtc.services.RTCPeerConnection;
+import com.agora.cordova.plugin.webrtc.services.SettingsContentObserver;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
@@ -53,7 +54,7 @@ public class WebRTCService {
 
         instances = new HashMap<>();
 
-        MediaDevice.Initialize(this.mainActivity, this.mainActivity.getApplicationContext());
+        MediaDevice.initialize(this.mainActivity, this.mainActivity.getApplicationContext());
         PCFactory.initializationOnce(this.mainActivity.getApplicationContext());
     }
 
@@ -78,7 +79,7 @@ public class WebRTCService {
         String trackId = args.getString(0);
 
         MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.popMediaStreamTrackById(trackId);
-        if (wrapper==null){
+        if (wrapper == null) {
             callbackContext.error("not found track");
             return false;
         }
@@ -259,6 +260,10 @@ public class WebRTCService {
         MediaDevice.reset();
     }
 
+    public void onDestroy() {
+        MediaDevice.unInitialize();
+    }
+
     class SupervisorImp implements RTCPeerConnection.Supervisor {
         @Override
         public void onDisconnect(RTCPeerConnection pc) {
@@ -293,6 +298,7 @@ public class WebRTCService {
             peer.context.sendPluginResult(result);
         }
     }
+
 
     class MessageHandler implements RTCPeerConnection.MessageHandler {
 

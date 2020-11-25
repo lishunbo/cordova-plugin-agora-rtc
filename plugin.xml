@@ -70,6 +70,9 @@
 
         <!-- VideoPlayer -->
         <source-file src="src/android/java/view/NativePlayerHook.java" target-dir="src/com/agora/cordova/plugin/view"/>
+        <source-file src="src/android/java/view/interfaces/Player.java" target-dir="src/com/agora/cordova/plugin/view/interfaces"/>
+        <source-file src="src/android/java/view/interfaces/Supervisor.java" target-dir="src/com/agora/cordova/plugin/view/interfaces"/>
+        <source-file src="src/android/java/view/AudioPlayer.java" target-dir="src/com/agora/cordova/plugin/view"/>
         <source-file src="src/android/java/view/VideoView.java" target-dir="src/com/agora/cordova/plugin/view"/>
         <source-file src="src/android/java/view/VideoViewService.java" target-dir="src/com/agora/cordova/plugin/view"/>
         <source-file src="src/android/java/view/enums/Action.java" target-dir="src/com/agora/cordova/plugin/view/enums"/>
@@ -88,6 +91,7 @@
         <source-file src="src/android/java/services/MediaDevice.java" target-dir="src/com/agora/cordova/plugin/webrtc/services"/>
         <source-file src="src/android/java/services/PCFactory.java" target-dir="src/com/agora/cordova/plugin/webrtc/services"/>
         <source-file src="src/android/java/services/RTCPeerConnection.java" target-dir="src/com/agora/cordova/plugin/webrtc/services"/>
+        <source-file src="src/android/java/services/SettingsContentObserver.java" target-dir="src/com/agora/cordova/plugin/services"/>
         <!-- interfaces -->
         <source-file src="src/android/java/interfaces/CredentialDetail.java" target-dir="src/com/agora/cordova/plugin/webrtc/interfaces"/>
         <!-- models -->

@@ -1,5 +1,5 @@
 /**
- * AgoraWebSDK_N-v4.1.1-56-g69ce1bc-dirty Copyright AgoraInc.
+ * AgoraWebSDK_N-v4.1.1-57-g29f0c58-dirty Copyright AgoraInc.
  */
 
 (function (global, factory) {
@@ -8523,7 +8523,7 @@
 	 * Agora Web SDK 的编译信息。
 	 * @public
 	 */
-	var BUILD = "v4.1.1-56-g69ce1bc-dirty(11/23/2020, 11:12:20 AM)";
+	var BUILD = "v4.1.1-57-g29f0c58-dirty(11/25/2020, 8:12:58 PM)";
 	var VERSION = transferVersion("4.1.1");
 	var IS_GLOBAL_VERSION = isGlobalVersion();
 	var DEFAULT_TURN_CONFIG = {
@@ -25857,6 +25857,16 @@
 	    _this.track = track;
 	    var ms = new MediaStream([_this.track]);
 	    _this.isRemoteTrack = !!isRemoteTrack;
+	    _this.maxVolume = 0;
+	    _this.minVolume = 0;
+	    _this.audioPlayer = new cordovaPluginAgoraRtc_NativePlayer.AudioPlayer(track);
+
+	    _this.audioPlayer.getVolumeRange().then(function (range) {
+	      _this.maxVolume = range.max;
+	      _this.minVolume = range.min;
+	      logger.debug("[native_audio_track] audio volume range [" + _this.minVolume + "," + _this.maxVolume + "]");
+	    });
+
 	    return _this;
 	  }
 
@@ -25886,7 +25896,13 @@
 
 	  NativeAudioTrack.prototype.setVolume = function (volume) {
 	    // throw new Error("Method not implemented.");
-	    return;
+	    if (volume > this.maxVolume) {
+	      volume = this.maxVolume;
+	    } else if (volume < this.minVolume) {
+	      volume = this.minVolume;
+	    }
+
+	    this.audioPlayer.setVolume(volume).then().catch();
 	  };
 
 	  NativeAudioTrack.prototype.createOutputTrack = function () {
@@ -25895,8 +25911,7 @@
 	  };
 
 	  NativeAudioTrack.prototype.getAudioLevel = function () {
-	    // throw new Error("Method not implemented.");
-	    return 0;
+	    return this.audioPlayer.getVolume();
 	  };
 
 	  NativeAudioTrack.prototype.getAudioAvgLevel = function () {
@@ -25914,6 +25929,7 @@
 	  NativeAudioTrack.prototype.updateTrack = function (track) {
 	    this.track = track;
 	    this.isCurrentTrackCloned = false;
+	    this.audioPlayer.updateTrack(track);
 	  };
 
 	  NativeAudioTrack.prototype.play = function () {};
@@ -30718,7 +30734,6 @@
 	              throw new Error("offer sdp is empty");
 	            }
 
-	            logger.info("create offer success:", offer);
 	            return [2
 	            /*return*/
 	            , offer.sdp];
@@ -36939,8 +36954,6 @@
 	                  remoteMediaStream = new MediaStream();
 	                  onStreamPromise = new promise$3(function (resolve) {
 	                    _this.pc.onTrack = function (track, stream) {
-	                      logger.debug("[" + _this.connectionId + "] onTrack " + track.kind + " " + track.id + " subscribeOption: " + _this.subscribeOptions);
-
 	                      if (track.kind === "audio" && !_this.subscribeOptions.audio || track.kind === "video" && !_this.subscribeOptions.video) {
 	                        // 收到了预期之外的流，暂时保存在这里
 	                        _this.unusedTracks.push(track);

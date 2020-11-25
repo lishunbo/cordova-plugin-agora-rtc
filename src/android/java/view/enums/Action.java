@@ -13,6 +13,19 @@ public enum Action {
 
     onFirstFrameDecoded("onFirstFrameDecoded"),
 
+
+    createAudioPlayer("createAudioPlayer"),
+    playAudioPlayer("playAudioPlayer"),
+    pauseAudioPlayer("pauseAudioPlayer"),
+    destroyAudioPlayer("destroyAudioPlayer"),
+    updateTrackAudioPlayer("updateTrackAudioPlayer"),
+    getVolumeRange("getVolumeRange"),
+    AudioPlayer_getVolume("AudioPlayer_getVolume"),
+    AudioPlayer_setVolume("AudioPlayer_setVolume"),
+
+    onVolumeChange("onVolumeChange"),
+
+
     MaxAction("maxAction");
 
     private String name;

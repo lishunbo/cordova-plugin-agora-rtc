@@ -10,6 +10,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 
+import com.agora.cordova.plugin.view.enums.Action;
+import com.agora.cordova.plugin.view.interfaces.Player;
 import com.agora.cordova.plugin.view.model.PlayConfig;
 import com.agora.cordova.plugin.view.model.ProxyVideoSink;
 import com.agora.cordova.plugin.webrtc.models.MediaStreamTrackWrapper;
@@ -22,7 +24,7 @@ import org.webrtc.VideoTrack;
 
 import static android.content.Context.WINDOW_SERVICE;
 
-public class VideoView extends SurfaceViewRenderer implements View.OnTouchListener {
+public class VideoView extends SurfaceViewRenderer implements View.OnTouchListener, Player {
     private final static String TAG = VideoView.class.getCanonicalName();
 
     static WindowManager windowManager;
@@ -63,6 +65,9 @@ public class VideoView extends SurfaceViewRenderer implements View.OnTouchListen
         this.id = id;
         this.config = config;
         setOnTouchListener(this);
+    }
+
+    public interface Supervisor {
     }
 
     public ProxyVideoSink getSink() {
@@ -164,6 +169,7 @@ public class VideoView extends SurfaceViewRenderer implements View.OnTouchListen
         dispose();
     }
 
+    @Override
     public void dispose() {
         if (id == null) {
             return;
@@ -184,6 +190,7 @@ public class VideoView extends SurfaceViewRenderer implements View.OnTouchListen
         sink = null;
     }
 
+    @Override
     public void onActivityPause() {
 
         VideoView that = this;
@@ -195,6 +202,7 @@ public class VideoView extends SurfaceViewRenderer implements View.OnTouchListen
         });
     }
 
+    @Override
     public void onActivityResume() {
         VideoView that = this;
         mainActivity.runOnUiThread(new Runnable() {

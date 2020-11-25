@@ -8,6 +8,7 @@ import android.hardware.camera2.CameraManager;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.os.Build;
+import android.os.Handler;
 import android.util.Log;
 
 import com.agora.cordova.plugin.webrtc.models.MediaDeviceInfo;
@@ -33,9 +34,14 @@ public class MediaDevice {
     static Activity activity;
     static Context context;
 
-    public static void Initialize(Activity activity, Context context) {
+    public static void initialize(Activity activity, Context context) {
         MediaDevice.activity = activity;
         MediaDevice.context = context;
+        SettingsContentObserver.initialize(activity, new Handler());
+    }
+
+    public static void unInitialize() {
+        SettingsContentObserver.unInitialize();
     }
 
     @TargetApi(Build.VERSION_CODES.M)
@@ -56,9 +62,9 @@ public class MediaDevice {
                 case AudioDeviceInfo.TYPE_BUILTIN_MIC:
                     label = device.getProductName().toString() + " Built-in Microphone " + builtinMicCnt++;
                     break;
-                case AudioDeviceInfo.TYPE_TELEPHONY:
-                    label = device.getProductName().toString() + " Telephony Microphone";
-                    break;
+//                case AudioDeviceInfo.TYPE_TELEPHONY:
+//                    label = device.getProductName().toString() + " Telephony Microphone";
+//                    break;
                 case AudioDeviceInfo.TYPE_WIRED_HEADSET:
                     label = device.getProductName().toString() + " Wired Microphone";
                     break;
@@ -94,9 +100,9 @@ public class MediaDevice {
                 case AudioDeviceInfo.TYPE_BUILTIN_EARPIECE:
                     label = device.getProductName().toString() + " Earphone Speaker";
                     break;
-                case AudioDeviceInfo.TYPE_TELEPHONY:
-                    label = device.getProductName().toString() + " Telephony Speaker";
-                    break;
+//                case AudioDeviceInfo.TYPE_TELEPHONY:
+//                    label = device.getProductName().toString() + " Telephony Speaker";
+//                    break;
                 case AudioDeviceInfo.TYPE_BLUETOOTH_SCO:
                     label = device.getProductName().toString() + " Bluetooth Speaker";
                     break;
@@ -187,6 +193,26 @@ public class MediaDevice {
         return builder.toString();
     }
 
+    public static int getMaxVolume() {
+        AudioManager audioManager = (AudioManager) activity.getSystemService(Context.AUDIO_SERVICE);
+        return audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+    }
+
+    @TargetApi(Build.VERSION_CODES.P)
+    public static int getMinVolume() {
+        AudioManager audioManager = (AudioManager) activity.getSystemService(Context.AUDIO_SERVICE);
+        return audioManager.getStreamMinVolume(AudioManager.STREAM_MUSIC);
+    }
+
+    public static int getVolume() {
+        return SettingsContentObserver.getSettingsContentObserver().getVolume();
+    }
+
+    public static void setVolume(int volume) {
+        AudioManager audioManager = (AudioManager) activity.getSystemService(Context.AUDIO_SERVICE);
+        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, volume, AudioManager.ADJUST_SAME);
+    }
+
     public static MediaStreamTrackWrapper createLocalAudioTrack() {
         AudioSource audioSource = PCFactory.factory().createAudioSource(new MediaConstraints());
         AudioTrack audioTrack = PCFactory.factory().createAudioTrack(UUID.randomUUID().toString(), audioSource);
@@ -230,5 +256,6 @@ public class MediaDevice {
 
     public static void reset() {
         MediaStreamTrackWrapper.reset();
+        SettingsContentObserver.getSettingsContentObserver().clear();
     }
 }

@@ -12,6 +12,7 @@ let VideoPlayStatus = {
 
 var EventType = {
     onFirstFrameDecoded: "onFirstFrameDecoded",
+    onVolumeChange: "onVolumeChange",
     dispose: "dispose",
 }
 
@@ -142,7 +143,7 @@ class VideoPlayer {
     }
 
     cordovaEventHandler(ev) {
-        console.log("PeerConnection Event: " + JSON.stringify(ev));
+        console.log("VideoPlayer Event: " + JSON.stringify(ev));
         switch (ev.event) {
             case EventType.onFirstFrameDecoded:
                 // console.log("got event " + EventType.onIceCandidate);
@@ -160,11 +161,117 @@ class VideoPlayer {
     }
 }
 
+class AudioPlayer {
+    constructor(track) {
+        this.id = uuidv4();
+        console.log("construct interface in plugin AudioPlayer", track)
+        this.audioTrack = track;
+        this.maxVolume = 0;
+        this.minVolume = 0;
+        this.volume = 0;
+
+        this.onVolumeChange = null;
+
+        var self = this;
+        cordova.exec(function (ev) {
+            self.cordovaEventHandler(ev);
+        }, function (ev) {
+            console.log("Failed create AudioPlayer object");
+        }, PlayerService, 'createAudioPlayer', [this.id, track.id]);
+    }
+
+    play() {
+        return new Promise((resolve, reject) => {
+            cordova.exec(function (ev) {
+                resolve(ev)
+            }, function (ev) {
+                reject(ev)
+                console.log("Failed AudioPlayer play");
+            }, PlayerService, 'playAudioPlayer', [this.id]);
+        });
+    }
+    pause() {
+        return new Promise((resolve, reject) => {
+            cordova.exec(function (ev) {
+                resolve(ev)
+            }, function (ev) {
+                reject(ev)
+                console.log("Failed AudioPlayer pause");
+            }, PlayerService, 'pauseAudioPlayer', [this.id]);
+        });
+    }
+
+    destroy() {
+        cordova.exec(function (ev) {
+            resolve(ev)
+        }, function (ev) {
+            reject(ev)
+            console.log("Failed AudioPlayer destroy");
+        }, PlayerService, 'destroyAudioPlayer', [this.id]);
+    }
+
+    updateTrack(track) {
+        cordova.exec(function (ev) {
+            self.cordovaEventHandler(ev);
+        }, function (ev) {
+            console.log("Failed create AudioPlayer object");
+        }, PlayerService, 'updateTrackAudioPlayer', [this.id, track.id]);
+    }
+
+    getVolumeRange() {
+        return new Promise((resolve, reject) => {
+            var that = this;
+            cordova.exec(function (ev) {
+                var range = JSON.parse(ev)
+                that.minVolume = range.min;
+                that.maxVolume = range.max;
+                resolve(range);
+            }, function (ev) {
+                console.log("Failed AudioPlayer getVolumeRange object");
+                if (reject != null) {
+                    reject(ev)
+                }
+            }, PlayerService, 'getVolumeRange', [this.id]);
+        })
+    }
+    getVolume() {
+        return this.volume
+    }
+    setVolume(volume) {
+        return new Promise((resolve, reject) => {
+            cordova.exec(function (ev) {
+                resolve(ev);
+            }, function (ev) {
+                console.log("Failed AudioPlayer setVolume object");
+                if (reject != null) {
+                    reject(ev)
+                }
+            }, PlayerService, 'AudioPlayer_setVolume', [this.id, volume]);
+        })
+    }
+
+    cordovaEventHandler(ev) {
+        console.log("AudioPlayer Event: " + JSON.stringify(ev));
+        switch (ev.event) {
+            case EventType.onVolumeChange:
+                this.volume = parseInt(ev.payload);
+                if (this.onVolumeChange != null) {
+                    this.onVolumeChange(this.volume);
+                }
+            case EventType.dispose:
+                this.audioTrack = null;
+            default:
+                console.log("not implement AudioPlayer eventhandler function " + ev.event);
+        }
+    }
+}
+
 /**
  * @module NativeVideoPlayer
  */
 module.exports = {
     VideoPlayStatus,
     VideoPlayer,
+    AudioPlayer,
 }
 console.log("player.js onloaded");

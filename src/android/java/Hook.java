@@ -4,6 +4,8 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.util.Log;
 
+import com.agora.cordova.plugin.webrtc.services.MediaDevice;
+
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
@@ -47,6 +49,7 @@ public class Hook extends CordovaPlugin {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        service.onDestroy();
     }
 
     @Override

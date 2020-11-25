@@ -71,7 +71,23 @@ public class NativePlayerHook extends CordovaPlugin {
                     return service.getWindowAttribute(args, callbackContext);
                 case setViewAttribute:
                     return service.setViewAttribute(args, callbackContext);
-                    //AudioControl
+                //AudioControl
+
+                case getVolumeRange:
+                    return service.getVolumeRange(args, callbackContext);
+                case AudioPlayer_getVolume:
+                    return service.getVolume(args, callbackContext);
+                case AudioPlayer_setVolume:
+                    return service.setVolume(args, callbackContext);
+                case createAudioPlayer:
+                    return service.createAudioPlayer(args, callbackContext);
+                case playAudioPlayer:
+                case pauseAudioPlayer:
+                case destroyAudioPlayer:
+                case updateTrackAudioPlayer:
+                    callbackContext.success();
+                    return true;
+
                 default:
                     Log.e(TAG, "Not implement action of :" + action);
                     callbackContext.error("RTCPeerConnection not implement action:" + action);
