@@ -91,7 +91,7 @@
         <source-file src="src/android/java/services/MediaDevice.java" target-dir="src/com/agora/cordova/plugin/webrtc/services"/>
         <source-file src="src/android/java/services/PCFactory.java" target-dir="src/com/agora/cordova/plugin/webrtc/services"/>
         <source-file src="src/android/java/services/RTCPeerConnection.java" target-dir="src/com/agora/cordova/plugin/webrtc/services"/>
-        <source-file src="src/android/java/services/SettingsContentObserver.java" target-dir="src/com/agora/cordova/plugin/services"/>
+        <source-file src="src/android/java/services/SettingsContentObserver.java" target-dir="src/com/agora/cordova/plugin/webrtc/services"/>
         <!-- interfaces -->
         <source-file src="src/android/java/interfaces/CredentialDetail.java" target-dir="src/com/agora/cordova/plugin/webrtc/interfaces"/>
         <!-- models -->

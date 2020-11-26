@@ -1,5 +1,5 @@
 /**
- * AgoraWebSDK_N-v4.1.1-57-g29f0c58-dirty Copyright AgoraInc.
+ * AgoraWebSDK_N-v4.1.1-58-gfdaff12-dirty Copyright AgoraInc.
  */
 
 (function (global, factory) {
@@ -8523,7 +8523,7 @@
 	 * Agora Web SDK 的编译信息。
 	 * @public
 	 */
-	var BUILD = "v4.1.1-57-g29f0c58-dirty(11/25/2020, 8:12:58 PM)";
+	var BUILD = "v4.1.1-58-gfdaff12-dirty(11/26/2020, 2:57:21 PM)";
 	var VERSION = transferVersion("4.1.1");
 	var IS_GLOBAL_VERSION = isGlobalVersion();
 	var DEFAULT_TURN_CONFIG = {
@@ -25857,14 +25857,13 @@
 	    _this.track = track;
 	    var ms = new MediaStream([_this.track]);
 	    _this.isRemoteTrack = !!isRemoteTrack;
-	    _this.maxVolume = 0;
+	    _this.maxVolume = 100;
 	    _this.minVolume = 0;
 	    _this.audioPlayer = new cordovaPluginAgoraRtc_NativePlayer.AudioPlayer(track);
 
 	    _this.audioPlayer.getVolumeRange().then(function (range) {
 	      _this.maxVolume = range.max;
-	      _this.minVolume = range.min;
-	      logger.debug("[native_audio_track] audio volume range [" + _this.minVolume + "," + _this.maxVolume + "]");
+	      _this.minVolume = range.min; // logger.debug(`[native_audio_track] audio volume range [${this.minVolume},${this.maxVolume}]`);
 	    });
 
 	    return _this;
@@ -25896,22 +25895,18 @@
 
 	  NativeAudioTrack.prototype.setVolume = function (volume) {
 	    // throw new Error("Method not implemented.");
-	    if (volume > this.maxVolume) {
-	      volume = this.maxVolume;
-	    } else if (volume < this.minVolume) {
-	      volume = this.minVolume;
-	    }
-
-	    this.audioPlayer.setVolume(volume).then().catch();
+	    this.audioPlayer.setVolume(Math.round(volume * this.maxVolume / 100)).then().catch();
 	  };
 
 	  NativeAudioTrack.prototype.createOutputTrack = function () {
 	    // throw new Error("Method not implemented.");
-	    return new MediaStreamTrack();
+	    return this.track;
 	  };
 
 	  NativeAudioTrack.prototype.getAudioLevel = function () {
-	    return this.audioPlayer.getVolume();
+	    var val = Math.round(this.audioPlayer.getVolume() * 100 / this.maxVolume); // logger.debug(`[native_audio_track] audio volume [${this.audioPlayer.getVolume()},${val}]`);
+
+	    return Math.round(this.audioPlayer.getVolume() * 100 / this.maxVolume);
 	  };
 
 	  NativeAudioTrack.prototype.getAudioAvgLevel = function () {
@@ -26153,14 +26148,14 @@
 	  LocalAudioTrack.prototype.setVolume = function (volume) {
 	    var _this = this;
 
-	    checkValidNumber(volume, "volume", 0, 1000);
+	    checkValidNumber(volume, "volume", 0, 100);
 	    var executor = report.reportApiInvoke(null, {
 	      tag: AgoraAPITag.TRACER,
 	      name: AgoraAPIName.LOCAL_AUDIO_TRACK_SET_VOLUME,
 	      options: [this.getTrackId(), volume]
 	    }, 300);
 
-	    this._source.setVolume(volume / 100);
+	    this._source.setVolume(volume);
 
 	    try {
 	      // 有可能浏览器不支持 webaudio track output
