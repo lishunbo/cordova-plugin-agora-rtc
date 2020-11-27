@@ -40,7 +40,9 @@ public class VideoViewService implements Supervisor {
             return;
         }
 
-        Log.v(TAG, usage + " onObserveEvent " + action + " " + message);
+        if (!(action == Action.onAudioLevel)) {
+            Log.v(TAG, usage + " onObserveEvent " + action + " " + message);
+        }
 
         JSONObject obj = new JSONObject();
         try {
@@ -202,7 +204,7 @@ public class VideoViewService implements Supervisor {
     public boolean createAudioPlayer(JSONArray args, final CallbackContext callbackContext) throws JSONException {
         String id = args.getString(0);
 
-        AudioPlayer ap = new AudioPlayer(this, id);
+        AudioPlayer ap = new AudioPlayer(this, id, args.getString(1));
 
         //for eventCallback
         this.instances.put(id, new CallbackVVPeer().setCallbackContext(callbackContext).setPlayer(ap));
@@ -234,6 +236,13 @@ public class VideoViewService implements Supervisor {
 
     public boolean setVolume(JSONArray args, final CallbackContext callbackContext) throws JSONException {
         int volume = args.getInt(1);
+
+        CallbackVVPeer peer = this.instances.get(args.getString(0));
+        if (peer != null) {
+            ((AudioPlayer) peer.player).setVolume(volume / 15.0);
+        }
+
+
         MediaDevice.setVolume(volume);
         callbackContext.success();
         return true;

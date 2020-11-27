@@ -13,7 +13,12 @@ import org.webrtc.PeerConnection;
 import org.webrtc.PeerConnectionFactory;
 import org.webrtc.SoftwareVideoDecoderFactory;
 import org.webrtc.SoftwareVideoEncoderFactory;
+import org.webrtc.audio.AudioDeviceModule;
+import org.webrtc.audio.JavaAudioDeviceModule;
+import org.webrtc.voiceengine.WebRtcAudioRecord;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -70,12 +75,23 @@ public class PCFactory {
         }
     }
 
+    public class abc implements JavaAudioDeviceModule.SamplesReadyCallback {
+
+        @Override
+        public void onWebRtcAudioRecordSamplesReady(JavaAudioDeviceModule.AudioSamples audioSamples) {
+
+        }
+    }
+
     public static void initializationOnce(Context applicationContext) {
         if (once.get()) return;
         if (once.compareAndSet(false, true)) {
             if (_factory == null) {
                 _factory = new PCFactory();
             }
+            JavaAudioDeviceModule adm = (JavaAudioDeviceModule) JavaAudioDeviceModule.builder(applicationContext)
+                    .setSamplesReadyCallback(MediaDevice.LocalAudioSampleSupervisor.supervisor)
+                    .createAudioDeviceModule();
 
             _factory.eglBase = EglBase.create().getEglBaseContext();
             PeerConnectionFactory.initialize(PeerConnectionFactory.InitializationOptions.builder(applicationContext)
@@ -94,10 +110,11 @@ public class PCFactory {
             defaultVideoDecoderFactory.getSupportedCodecs();
             _factory.factory = PeerConnectionFactory.builder()
                     .setOptions(options)
+                    .setAudioDeviceModule(adm)
                     .setVideoEncoderFactory(defaultVideoEncoderFactory)
                     .setVideoDecoderFactory(defaultVideoDecoderFactory)
                     .createPeerConnectionFactory();
-
+            adm.release();
         }
 
     }

@@ -23,8 +23,14 @@ import org.webrtc.SurfaceTextureHelper;
 import org.webrtc.VideoCapturer;
 import org.webrtc.VideoSource;
 import org.webrtc.VideoTrack;
+import org.webrtc.audio.JavaAudioDeviceModule;
+import org.webrtc.voiceengine.WebRtcAudioRecord;
+import org.webrtc.voiceengine.WebRtcAudioUtils;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 
@@ -180,6 +186,7 @@ public class MediaDevice {
 
         if (constraints.audio != null) {
             MediaStreamTrackWrapper wrapper = createLocalAudioTrack();
+            Log.e(TAG, "VOLUME: trackid" + wrapper.getId());
             builder.append(wrapper.toString());
         }
 
@@ -211,6 +218,50 @@ public class MediaDevice {
     public static void setVolume(int volume) {
         AudioManager audioManager = (AudioManager) activity.getSystemService(Context.AUDIO_SERVICE);
         audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, volume, AudioManager.ADJUST_SAME);
+    }
+
+    public static class LocalAudioSampleSupervisor implements JavaAudioDeviceModule.SamplesReadyCallback {
+        public static final LocalAudioSampleSupervisor supervisor = new LocalAudioSampleSupervisor();
+        static List<LocalAudioSampleListener> listeners = new LinkedList<>();
+
+        public interface LocalAudioSampleListener {
+            public void onAudioLevel(double level);
+        }
+
+        public void addListener(LocalAudioSampleListener listener) {
+            listeners.add(listener);
+        }
+
+        public void removeListener(LocalAudioSampleListener listener) {
+            listeners.remove(listener);
+        }
+
+        @Override
+        public void onWebRtcAudioRecordSamplesReady(JavaAudioDeviceModule.AudioSamples audioSamples) {
+            short max = (short) ~(1 << 15);
+            final ByteBuffer buf = ByteBuffer.wrap(audioSamples.getData())
+                    .order(ByteOrder.LITTLE_ENDIAN);
+//            StringBuilder builder = new StringBuilder();
+
+            int sample = 0;
+            while (buf.hasRemaining()) {
+                sample += (int) buf.getShort();
+            }
+            sample = (int) (sample * 2.0 / audioSamples.getData().length);
+            double level = (double) sample / max;
+//            builder.append(sample).append(" ").append(max).append(" ").append(level);
+//            Log.v("ADD", builder.toString());
+
+            for (LocalAudioSampleListener listener :
+                    listeners) {
+                if (listener != null) {
+                    listener.onAudioLevel(level);
+                }
+            }
+        }
+
+        private LocalAudioSampleSupervisor() {
+        }
     }
 
     public static MediaStreamTrackWrapper createLocalAudioTrack() {

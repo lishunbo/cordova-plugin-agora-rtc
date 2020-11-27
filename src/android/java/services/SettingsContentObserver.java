@@ -28,6 +28,27 @@ public class SettingsContentObserver extends ContentObserver {
 
         audio = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
 
+        //if(shouldEnableExternalSpeaker) {
+        //    if(isBlueToothConnected) {
+        //        // 1. case - bluetooth device
+        //        mAudioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+        //        mAudioManager.startBluetoothSco();
+        //        mAudioManager.setBluetoothScoOn(true);
+        //    } else {
+        //        // 2. case - wired device
+        //        mAudioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+        //        mAudioManager.stopBluetoothSco();
+        //        mAudioManager.setBluetoothScoOn(false);
+        //        mAudioManager.setSpeakerphoneOn(false);
+        //    }
+        //} else {
+        //   // 3. case - phone speaker
+        //   mAudioManager.setMode(AudioManager.MODE_NORMAL);
+        //   mAudioManager.stopBluetoothSco();
+        //   mAudioManager.setBluetoothScoOn(false);
+        //   mAudioManager.setSpeakerphoneOn(true);
+        //}
+
         volume = audio.getStreamVolume(AudioManager.STREAM_MUSIC);
         preVolume = volume;
 

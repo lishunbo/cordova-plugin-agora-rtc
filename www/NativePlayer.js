@@ -13,6 +13,7 @@ let VideoPlayStatus = {
 var EventType = {
     onFirstFrameDecoded: "onFirstFrameDecoded",
     onVolumeChange: "onVolumeChange",
+    onAudioLevel: "onAudioLevel",
     dispose: "dispose",
 }
 
@@ -171,6 +172,7 @@ class AudioPlayer {
         this.volume = 0;
 
         this.onVolumeChange = null;
+        this.onAudioLevel = null;
 
         var self = this;
         cordova.exec(function (ev) {
@@ -251,15 +253,23 @@ class AudioPlayer {
     }
 
     cordovaEventHandler(ev) {
-        console.log("AudioPlayer Event: " + JSON.stringify(ev));
+        // console.log("AudioPlayer Event: " + JSON.stringify(ev));
         switch (ev.event) {
             case EventType.onVolumeChange:
                 this.volume = parseInt(ev.payload);
                 if (this.onVolumeChange != null) {
                     this.onVolumeChange(this.volume);
                 }
+                break;
+            case EventType.onAudioLevel:
+                // console.log("audio level: " + ev.payload)
+                if (this.onAudioLevel != null) {
+                    this.onAudioLevel(parseFloat(ev.payload))
+                }
+                break;
             case EventType.dispose:
                 this.audioTrack = null;
+                break;
             default:
                 console.log("not implement AudioPlayer eventhandler function " + ev.event);
         }

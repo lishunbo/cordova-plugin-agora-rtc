@@ -24,6 +24,7 @@ public enum Action {
     AudioPlayer_setVolume("AudioPlayer_setVolume"),
 
     onVolumeChange("onVolumeChange"),
+    onAudioLevel("onAudioLevel"),
 
 
     MaxAction("maxAction");
