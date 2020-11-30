@@ -1,6 +1,7 @@
 package com.agora.cordova.plugin.view;
 
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
@@ -117,6 +118,7 @@ public class NativePlayerHook extends CordovaPlugin {
     public void onReset() {
         super.onReset();
         Log.e(TAG, "reset pages");
+        cordova.getActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
         service.reset();
     }
 }

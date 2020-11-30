@@ -36,7 +36,7 @@ public class Hook extends CordovaPlugin {
 
         Log.v(TAG, "Hook initializing");
 
-        service = new WebRTCService(cordova.getActivity());
+        service = new WebRTCService(cordova.getActivity(), cordova);
 
         if (!(cordova.hasPermission(CAMERA) && cordova.hasPermission(INTERNET)
                 && cordova.hasPermission(RECORD_AUDIO) && cordova.hasPermission(WAKE_LOCK) && cordova.hasPermission(ALERT_WINDOW))) {

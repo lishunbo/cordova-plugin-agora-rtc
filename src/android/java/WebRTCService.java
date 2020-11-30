@@ -14,6 +14,7 @@ import com.agora.cordova.plugin.webrtc.services.RTCPeerConnection;
 import com.agora.cordova.plugin.webrtc.services.SettingsContentObserver;
 
 import org.apache.cordova.CallbackContext;
+import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -30,6 +31,7 @@ public class WebRTCService {
     private final static String TAG = WebRTCService.class.getCanonicalName();
 
     Activity mainActivity;
+    CordovaInterface cordova;
 
     Map<String, CallbackPCPeer> instances;
     List<RTCPeerConnection> allPC = new LinkedList<>();
@@ -49,8 +51,9 @@ public class WebRTCService {
         }
     }
 
-    public WebRTCService(Activity mainActivity) {
+    public WebRTCService(Activity mainActivity, CordovaInterface cordova) {
         this.mainActivity = mainActivity;
+        this.cordova = cordova;
 
         instances = new HashMap<>();
 
@@ -230,10 +233,16 @@ public class WebRTCService {
 
         CallbackPCPeer peer = instances.get(id);
         assert peer != null;
-        peer.pc.getStats(new MessageHandler() {
+
+        cordova.getThreadPool().execute(new Runnable() {
             @Override
-            public void success(String msg) {
-                callbackContext.success(msg);
+            public void run() {
+                peer.pc.getStats(new MessageHandler() {
+                    @Override
+                    public void success(String msg) {
+                        callbackContext.success(msg);
+                    }
+                });
             }
         });
 
