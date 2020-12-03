@@ -203,10 +203,10 @@ class RTCPeerConnection {
         }, MediaService, 'close', [this.id]);
     }
 
-    removeTrack() {
+    removeTrack(track) {
         cordova.exec(function (ev) {
         }, function (ev) {
-        }, MediaService, 'removeTrack', [this.id]);
+        }, MediaService, 'removeTrack', [this.id, track.id, track.kind]);
     }
 
     getTransceivers() {

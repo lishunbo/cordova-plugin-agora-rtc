@@ -249,8 +249,25 @@ public class WebRTCService {
         return true;
     }
 
-    public boolean removeTrack(JSONArray args) {
-        return false;
+    public boolean removeTrack(JSONArray args, final CallbackContext callbackContext) throws Exception {
+        String id = args.getString(0);
+        String tid = args.getString(1);
+        String kind = args.getString(2);
+
+        MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.popMediaStreamTrackById(tid);
+        if (wrapper == null) {
+            String err = "Cannot found cached MediaStreamTrack by id:" + tid;
+            Log.e(TAG, err);
+            callbackContext.error(err);
+            return false;
+        }
+
+        CallbackPCPeer peer = instances.get(id);
+        assert peer != null;
+        peer.pc.removeTrack(kind, wrapper.getTrack());
+
+        callbackContext.success(wrapper.toString());
+        return true;
     }
 
     public boolean close(JSONArray args) {

@@ -87,7 +87,7 @@ public class Hook extends CordovaPlugin {
                 case close:
                     return service.close(args);
                 case removeTrack:
-                    return service.removeTrack(args);
+                    return service.removeTrack(args, callbackContext);
                 case getStats:
                     return service.getStats(args, callbackContext);
                 //MediaDevice functions

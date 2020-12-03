@@ -11,7 +11,6 @@ public class MediaStreamConstraints {
     public MediaTrackConstraints audio;
     public MediaTrackConstraints video;
 
-
     public static MediaStreamConstraints fromJson(String json) {
         ObjectMapper mapper = new ObjectMapper();
         try {

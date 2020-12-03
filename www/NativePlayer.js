@@ -251,6 +251,18 @@ class AudioPlayer {
             }, PlayerService, 'AudioPlayer_setVolume', [this.id, volume]);
         })
     }
+    setSinkID(trackId, deviceId) {
+        return new Promise((resolve, reject) => {
+            cordova.exec(function (ev) {
+                resolve(ev);
+            }, function (ev) {
+                console.log("Failed AudioPlayer setSinkID object");
+                if (reject != null) {
+                    reject(ev)
+                }
+            }, PlayerService, 'AudioPlayer_setSinkId', [this.id, trackId, deviceId]);
+        })
+    }
 
     cordovaEventHandler(ev) {
         // console.log("AudioPlayer Event: " + JSON.stringify(ev));

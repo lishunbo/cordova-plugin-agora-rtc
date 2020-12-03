@@ -7,6 +7,7 @@ import com.agora.cordova.plugin.view.interfaces.Player;
 import com.agora.cordova.plugin.view.interfaces.Supervisor;
 import com.agora.cordova.plugin.webrtc.models.MediaStreamTrackWrapper;
 import com.agora.cordova.plugin.webrtc.services.MediaDevice;
+import com.agora.cordova.plugin.webrtc.services.PCFactory;
 import com.agora.cordova.plugin.webrtc.services.SettingsContentObserver;
 
 import org.webrtc.AudioTrack;
@@ -49,12 +50,15 @@ public class AudioPlayer implements SettingsContentObserver.VolumeChangeListener
 
     public void setVolume(double volume) {
         if (wrapper != null) {
-            Log.e(TAG, "setVolume " + volume);
-            if (volume == 0) {
-                wrapper.getTrack().setEnabled(false);
-                return;
+            Log.v(TAG, "setVolume" + volume);
+            if (wrapper.isLocal()) {
+                Log.v(TAG, "setVolume set local");
+                if (PCFactory.audioDeviceModule()!=null) {
+                    PCFactory.audioDeviceModule().setMicrophoneMute(volume == 0);
+                }
             } else {
-                wrapper.getTrack().setEnabled(true);
+                Log.v(TAG, "setVolume set remote");
+                wrapper.getTrack().setEnabled(volume != 0);
             }
 
             ((AudioTrack) wrapper.getTrack()).setVolume(volume);

@@ -23,6 +23,7 @@ import org.webrtc.RTCStats;
 import org.webrtc.RTCStatsCollectorCallback;
 import org.webrtc.RTCStatsReport;
 import org.webrtc.RtpReceiver;
+import org.webrtc.RtpSender;
 import org.webrtc.SdpObserver;
 import org.webrtc.SessionDescription;
 import org.webrtc.VideoTrack;
@@ -194,6 +195,26 @@ public class RTCPeerConnection {
         }
     }
 
+    public void removeTrack(String kind, MediaStreamTrack track) {
+        if (localStream == null) {
+            if (kind.equals("video")) {
+                localStream.removeTrack((VideoTrack) track);
+            } else {
+                localStream.removeTrack((AudioTrack) track);
+            }
+        }
+
+        for (RtpSender sender :
+                peerConnection.getSenders()) {
+            if (sender.track() == track) {
+                Log.w(TAG, "remove track " + kind);
+                peerConnection.removeTrack(sender);
+                break;
+            }
+        }
+
+    }
+
     void closeStream() {
         if (localStream != null) {
             for (VideoTrack videoTrack : localStream.videoTracks) {
@@ -335,13 +356,15 @@ public class RTCPeerConnection {
         public void onConnectionChange(PeerConnection.PeerConnectionState newState) {
             Log.v(TAG, usage + " onConnectionChange " + newState.toString());
             state = newState;
-            if (newState == PeerConnection.PeerConnectionState.DISCONNECTED) {//||
-                //    newState == PeerConnection.PeerConnectionState.CLOSED ||
+            if (newState == PeerConnection.PeerConnectionState.CLOSED ||
+                    newState == PeerConnection.PeerConnectionState.FAILED) {// ||
                 //           newState == PeerConnection.PeerConnectionState.FAILED) {
 
                 MediaStreamTrackWrapper.removeMediaStreamTrackByPCId(pc_id);
 
-                supervisor.onDisconnect(pc);
+                if (supervisor != null) {
+                    supervisor.onDisconnect(pc);
+                }
                 dispose();
             }
             if (supervisor != null) {

@@ -49,6 +49,10 @@ public class MediaStreamTrackWrapper {
         return id;
     }
 
+    public boolean isLocal() {
+        return this.pcid.length() == 0;
+    }
+
     public MediaStreamTrack getTrack() {
         return track;
     }
@@ -113,11 +117,11 @@ public class MediaStreamTrackWrapper {
 
         getRelatedObject().clear();
         getTrack().dispose();
-        id=null;
-        pcid=null;
-        track=null;
-        relatedObject=null;
-        vv=null;
+        id = null;
+        pcid = null;
+        track = null;
+        relatedObject = null;
+        vv = null;
     }
 
     // static method

@@ -1,6 +1,12 @@
 package com.agora.cordova.plugin.webrtc.services;
 
+import android.annotation.TargetApi;
 import android.content.Context;
+import android.media.AudioDeviceInfo;
+import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.media.MediaRecorder;
+import android.os.Build;
 import android.util.Log;
 
 import org.webrtc.DefaultVideoDecoderFactory;
@@ -28,25 +34,27 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class PCFactory {
     public PeerConnectionFactory factory;
     public EglBase.Context eglBase;
+    JavaAudioDeviceModule adm;
 
     static PCFactory _factory = null;
     static final AtomicBoolean once = new AtomicBoolean();
+    static Context context;
 
     private PCFactory() {
     }
 
-    public static PCFactory GetInstance() {
-        if (_factory == null) {
-            _factory = new PCFactory();
-        }
-        return _factory;
-    }
-
     public static PeerConnectionFactory factory() {
         if (_factory == null) {
-            _factory = new PCFactory();
+            _factory = Builder.createPCFactory();
         }
         return _factory.factory;
+    }
+
+    public static JavaAudioDeviceModule audioDeviceModule() {
+        if (_factory == null) {
+            _factory = Builder.createPCFactory();
+        }
+        return _factory.adm;
     }
 
     public static EglBase.Context eglBase() {
@@ -75,47 +83,78 @@ public class PCFactory {
         }
     }
 
-    public class abc implements JavaAudioDeviceModule.SamplesReadyCallback {
-
-        @Override
-        public void onWebRtcAudioRecordSamplesReady(JavaAudioDeviceModule.AudioSamples audioSamples) {
-
-        }
-    }
-
+    @TargetApi(Build.VERSION_CODES.M)
     public static void initializationOnce(Context applicationContext) {
         if (once.get()) return;
         if (once.compareAndSet(false, true)) {
-            if (_factory == null) {
-                _factory = new PCFactory();
-            }
-            JavaAudioDeviceModule adm = (JavaAudioDeviceModule) JavaAudioDeviceModule.builder(applicationContext)
-                    .setSamplesReadyCallback(MediaDevice.LocalAudioSampleSupervisor.supervisor)
-                    .createAudioDeviceModule();
-
-            _factory.eglBase = EglBase.create().getEglBaseContext();
+            context = applicationContext;
             PeerConnectionFactory.initialize(PeerConnectionFactory.InitializationOptions.builder(applicationContext)
 //                    .setInjectableLogger(new PCFLoggable(), Logging.Severity.LS_WARNING)
                     .createInitializationOptions());
-            PeerConnectionFactory.Options options = new PeerConnectionFactory.Options();
-            DefaultVideoEncoderFactory defaultVideoEncoderFactory =
-                    new DefaultVideoEncoderFactory(_factory.eglBase, true, true);
-            DefaultVideoDecoderFactory defaultVideoDecoderFactory =
-                    new DefaultVideoDecoderFactory(_factory.eglBase);
 
-            SoftwareVideoDecoderFactory dec = new SoftwareVideoDecoderFactory();
-            SoftwareVideoEncoderFactory enc = new SoftwareVideoEncoderFactory();
-            dec.getSupportedCodecs();
-            enc.getSupportedCodecs();
-            defaultVideoDecoderFactory.getSupportedCodecs();
-            _factory.factory = PeerConnectionFactory.builder()
-                    .setOptions(options)
-                    .setAudioDeviceModule(adm)
-                    .setVideoEncoderFactory(defaultVideoEncoderFactory)
-                    .setVideoDecoderFactory(defaultVideoDecoderFactory)
-                    .createPeerConnectionFactory();
-            adm.release();
+            if (_factory == null) {
+                _factory = Builder.createPCFactory(applicationContext, "", 0, false, null);
+            }
+        }
+    }
+
+    public static class Builder {
+        PeerConnectionFactory.Builder builder = null;
+        PeerConnectionFactory.Options options = null;
+        EglBase.Context eglBase;
+        DefaultVideoEncoderFactory defaultVideoEncoderFactory = null;
+        DefaultVideoDecoderFactory defaultVideoDecoderFactory = null;
+
+        static Builder that = new Builder();
+
+        private Builder() {
+            builder = PeerConnectionFactory.builder();
+            options = new PeerConnectionFactory.Options();
+            eglBase = EglBase.create().getEglBaseContext();
+            defaultVideoEncoderFactory = new DefaultVideoEncoderFactory(eglBase, true, true);
+            defaultVideoDecoderFactory = new DefaultVideoDecoderFactory(eglBase);
         }
 
+        public static PCFactory createPCFactory() {
+            PCFactory factory = new PCFactory();
+            JavaAudioDeviceModule.Builder admBuilder = JavaAudioDeviceModule.builder(context);
+            factory.adm = (JavaAudioDeviceModule) admBuilder.createAudioDeviceModule();
+
+            factory.factory = that.builder.setOptions(that.options)
+                    .setAudioDeviceModule(factory.adm)
+                    .setVideoDecoderFactory(that.defaultVideoDecoderFactory)
+                    .setVideoEncoderFactory(that.defaultVideoEncoderFactory)
+                    .createPeerConnectionFactory();
+            return factory;
+        }
+
+        @TargetApi(Build.VERSION_CODES.M)
+        public static PCFactory createPCFactory(Context applicationContext, String deviceId, int sampleRate, boolean stereo, JavaAudioDeviceModule.SamplesReadyCallback callback) {
+            PCFactory factory = new PCFactory();
+
+            JavaAudioDeviceModule.Builder admBuilder = JavaAudioDeviceModule.builder(applicationContext)
+                    .setUseStereoInput(stereo);
+            if (sampleRate != 0) {
+                admBuilder.setInputSampleRate(sampleRate);
+            }
+
+
+            factory.adm = (JavaAudioDeviceModule) admBuilder.createAudioDeviceModule();
+
+            if (deviceId.length() > 0) {
+                AudioDeviceInfo info = MediaDevice.getAudioDeviceByID(deviceId);
+                if (info != null) {
+                    factory.adm.setPreferredInputDevice(info);
+                }
+            }
+
+            factory.factory = that.builder.setOptions(that.options)
+                    .setAudioDeviceModule(factory.adm)
+                    .setVideoDecoderFactory(that.defaultVideoDecoderFactory)
+                    .setVideoEncoderFactory(that.defaultVideoEncoderFactory)
+                    .createPeerConnectionFactory();
+//            adm.release();
+            return factory;
+        }
     }
 }

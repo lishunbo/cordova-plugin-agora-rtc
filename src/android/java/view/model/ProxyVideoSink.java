@@ -8,13 +8,23 @@ import org.webrtc.VideoSink;
 public class ProxyVideoSink implements VideoSink {
     private final static String TAG = ProxyVideoSink.class.getCanonicalName();
     private VideoSink target;
+
     @Override
     synchronized
     public void onFrame(VideoFrame videoFrame) {
-        if (target == null) { Log.d(TAG, "Dropping frame in proxy because target is null."); return; } target.onFrame(videoFrame);
+        if (target == null) {
+            Log.d(TAG, "Dropping frame in proxy because target is null.");
+            return;
+        }
+        target.onFrame(videoFrame);
     }
+
     synchronized
-    public void setTarget(VideoSink videoSink){
+    public void setTarget(VideoSink videoSink) {
         target = videoSink;
+    }
+
+    public VideoSink getTarget() {
+        return target;
     }
 }

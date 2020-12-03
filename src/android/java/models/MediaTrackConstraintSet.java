@@ -33,9 +33,9 @@ public class MediaTrackConstraintSet {
     }
 
     public static class ParamStringSet {
-        public String[] mean;
-        public String[] exact;
-        public String[] ideal;
+        public String mean;
+        public String exact;
+        public String ideal;
     }
 
     @JsonDeserialize(using = DoubleDeserializer.class)
@@ -68,6 +68,10 @@ public class MediaTrackConstraintSet {
     public ParamULongRange sampleSize;
     @JsonDeserialize(using = LongDeserializer.class)
     public ParamULongRange width;
+
+    public boolean googAutoGainControl;
+    public boolean googAutoGainControl2;
+    public boolean googNoiseSuppression;
 
     public static class DoubleDeserializer extends JsonDeserializer<ParamDoubleRange> {
         @Override
@@ -127,7 +131,7 @@ public class MediaTrackConstraintSet {
             JsonToken jsonToken = p.getCurrentToken();
             if (jsonToken == JsonToken.VALUE_STRING) {
                 ParamStringSet d = new ParamStringSet();
-                d.mean = new String[]{p.getValueAsString()};
+                d.mean = p.getValueAsString();
                 return d;
             } else if (jsonToken == JsonToken.START_OBJECT) {
                 return p.readValueAs(ParamStringSet.class);

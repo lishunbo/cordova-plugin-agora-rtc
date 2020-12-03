@@ -7,6 +7,7 @@ import com.agora.cordova.plugin.view.enums.Action;
 import com.agora.cordova.plugin.view.interfaces.Player;
 import com.agora.cordova.plugin.view.interfaces.Supervisor;
 import com.agora.cordova.plugin.view.model.PlayConfig;
+import com.agora.cordova.plugin.webrtc.models.MediaStreamTrackWrapper;
 import com.agora.cordova.plugin.webrtc.services.MediaDevice;
 
 import org.apache.cordova.CallbackContext;
@@ -242,8 +243,7 @@ public class VideoViewService implements Supervisor {
             ((AudioPlayer) peer.player).setVolume(volume / 15.0);
         }
 
-
-        MediaDevice.setVolume(volume);
+//        MediaDevice.setVolume(volume);
         callbackContext.success();
         return true;
     }
