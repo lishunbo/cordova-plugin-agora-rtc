@@ -80,6 +80,8 @@ public class NativePlayerHook extends CordovaPlugin {
                     return service.getVolume(args, callbackContext);
                 case AudioPlayer_setVolume:
                     return service.setVolume(args, callbackContext);
+                case AudioPlayer_setSinkId:
+                    return service.setSinkID(args, callbackContext);
                 case createAudioPlayer:
                     return service.createAudioPlayer(args, callbackContext);
                 case playAudioPlayer:

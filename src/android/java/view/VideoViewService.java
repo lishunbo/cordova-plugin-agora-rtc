@@ -240,10 +240,17 @@ public class VideoViewService implements Supervisor {
 
         CallbackVVPeer peer = this.instances.get(args.getString(0));
         if (peer != null) {
-            ((AudioPlayer) peer.player).setVolume(volume / 15.0);
+            ((AudioPlayer) peer.player).setVolume(volume);
         }
 
-//        MediaDevice.setVolume(volume);
+        callbackContext.success();
+        return true;
+    }
+
+    public boolean setSinkID(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        int deviceId = args.getInt(2);
+
+        MediaDevice.setPlaybackDevice(deviceId);
         callbackContext.success();
         return true;
     }

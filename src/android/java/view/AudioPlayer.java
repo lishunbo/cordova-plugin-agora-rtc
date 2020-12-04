@@ -49,11 +49,12 @@ public class AudioPlayer implements SettingsContentObserver.VolumeChangeListener
     }
 
     public void setVolume(double volume) {
+        volume /= 10.0;
         if (wrapper != null) {
             Log.v(TAG, "setVolume" + volume);
             if (wrapper.isLocal()) {
                 Log.v(TAG, "setVolume set local");
-                if (PCFactory.audioDeviceModule()!=null) {
+                if (PCFactory.audioDeviceModule() != null) {
                     PCFactory.audioDeviceModule().setMicrophoneMute(volume == 0);
                 }
             } else {

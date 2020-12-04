@@ -1,9 +1,11 @@
 package com.agora.cordova.plugin.webrtc.services;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.database.ContentObserver;
 import android.media.AudioManager;
+import android.os.Build;
 import android.os.Handler;
 
 import com.agora.cordova.plugin.view.enums.Action;
@@ -21,6 +23,7 @@ public class SettingsContentObserver extends ContentObserver {
 
     static Activity activity;
     static SettingsContentObserver _this = null;
+    static final int STREAM_TYPE = AudioManager.STREAM_VOICE_CALL;
 
     SettingsContentObserver(Context c, Handler handler) {
         super(handler);
@@ -28,28 +31,7 @@ public class SettingsContentObserver extends ContentObserver {
 
         audio = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
 
-        //if(shouldEnableExternalSpeaker) {
-        //    if(isBlueToothConnected) {
-        //        // 1. case - bluetooth device
-        //        mAudioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
-        //        mAudioManager.startBluetoothSco();
-        //        mAudioManager.setBluetoothScoOn(true);
-        //    } else {
-        //        // 2. case - wired device
-        //        mAudioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
-        //        mAudioManager.stopBluetoothSco();
-        //        mAudioManager.setBluetoothScoOn(false);
-        //        mAudioManager.setSpeakerphoneOn(false);
-        //    }
-        //} else {
-        //   // 3. case - phone speaker
-        //   mAudioManager.setMode(AudioManager.MODE_NORMAL);
-        //   mAudioManager.stopBluetoothSco();
-        //   mAudioManager.setBluetoothScoOn(false);
-        //   mAudioManager.setSpeakerphoneOn(true);
-        //}
-
-        volume = audio.getStreamVolume(AudioManager.STREAM_MUSIC);
+        volume = audio.getStreamVolume(STREAM_TYPE);
         preVolume = volume;
 
         listeners = new LinkedList<>();
@@ -58,7 +40,7 @@ public class SettingsContentObserver extends ContentObserver {
     public static void initialize(Activity activity, Handler handler) {
         if (_this == null) {
             SettingsContentObserver.activity = activity;
-            activity.setVolumeControlStream(AudioManager.STREAM_MUSIC);
+            activity.setVolumeControlStream(STREAM_TYPE);
             _this = new SettingsContentObserver(activity.getApplication(), handler);
             activity.getContentResolver().registerContentObserver(android.provider.Settings.System.CONTENT_URI,
                     true, _this);
@@ -78,6 +60,19 @@ public class SettingsContentObserver extends ContentObserver {
         return volume;
     }
 
+    public int getStreamMaxVolume() {
+        return audio.getStreamMaxVolume(STREAM_TYPE);
+    }
+
+    @TargetApi(Build.VERSION_CODES.P)
+    public int getStreamMinVolume() {
+        return audio.getStreamMinVolume(STREAM_TYPE);
+    }
+
+    public void setVolume(int volume) {
+        audio.setStreamVolume(STREAM_TYPE, volume, AudioManager.ADJUST_SAME);
+    }
+
     @Override
     public boolean deliverSelfNotifications() {
         return super.deliverSelfNotifications();
@@ -87,7 +82,7 @@ public class SettingsContentObserver extends ContentObserver {
     public void onChange(boolean selfChange) {
         super.onChange(selfChange);
 
-        volume = audio.getStreamVolume(AudioManager.STREAM_MUSIC);
+        volume = audio.getStreamVolume(STREAM_TYPE);
         if (volume != preVolume) {
             preVolume = volume;
             for (VolumeChangeListener listener :

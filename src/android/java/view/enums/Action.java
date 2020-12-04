@@ -22,6 +22,7 @@ public enum Action {
     getVolumeRange("getVolumeRange"),
     AudioPlayer_getVolume("AudioPlayer_getVolume"),
     AudioPlayer_setVolume("AudioPlayer_setVolume"),
+    AudioPlayer_setSinkId("AudioPlayer_setSinkId"),
 
     onVolumeChange("onVolumeChange"),
     onAudioLevel("onAudioLevel"),

@@ -95,15 +95,14 @@ public class MediaDevice {
                 case AudioDeviceInfo.TYPE_BLUETOOTH_SCO:
                     label = device.getProductName().toString() + " Bluetooth Microphone";
                     break;
-                case AudioDeviceInfo.TYPE_USB_DEVICE:
-                    label = device.getProductName().toString() + " USB Microphone";
-                    break;
-                case AudioDeviceInfo.TYPE_USB_HEADSET:
-                    label = device.getProductName().toString() + " USB Headphones Microphone";
-                    break;
+//                case AudioDeviceInfo.TYPE_USB_DEVICE:
+//                    label = device.getProductName().toString() + " USB Microphone";
+//                    break;
+//                case AudioDeviceInfo.TYPE_USB_HEADSET:
+//                    label = device.getProductName().toString() + " USB Headphones Microphone";
+//                    break;
                 default:
 //                    label = Integer.toString(device.getType());
-
                     break;
             }
             if (label.length() > 0) {
@@ -134,9 +133,9 @@ public class MediaDevice {
                 case AudioDeviceInfo.TYPE_BLUETOOTH_A2DP:
                     label = device.getProductName().toString() + " Bluetooth A2DP Speaker";
                     break;
-                case AudioDeviceInfo.TYPE_WIRED_HEADSET:
-                    label = device.getProductName().toString() + " Wired Headphones Speaker";
-                    break;
+//                case AudioDeviceInfo.TYPE_WIRED_HEADSET:
+//                    label = device.getProductName().toString() + " Wired Headphones Speaker";
+//                    break;
                 default:
 //                    label = Integer.toString(device.getType());
                     break;
@@ -206,6 +205,72 @@ public class MediaDevice {
         return builder.toString();
     }
 
+    @TargetApi(Build.VERSION_CODES.M)
+    public static void setPlaybackDevice(int deviceId){
+        AudioManager audioManager = (AudioManager) activity.getSystemService(Context.AUDIO_SERVICE);
+        AudioDeviceInfo[] audioOutputDevices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
+
+        //if(shouldEnableExternalSpeaker) {
+        //    if(isBlueToothConnected) {
+        //        // 1. case - bluetooth device
+        //        mAudioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+        //        mAudioManager.startBluetoothSco();
+        //        mAudioManager.setBluetoothScoOn(true);
+        //    } else {
+        //        // 2. case - wired device
+        //        mAudioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+        //        mAudioManager.stopBluetoothSco();
+        //        mAudioManager.setBluetoothScoOn(false);
+        //        mAudioManager.setSpeakerphoneOn(false);
+        //    }
+        //} else {
+        //   // 3. case - phone speaker
+        //   mAudioManager.setMode(AudioManager.MODE_NORMAL);
+        //   mAudioManager.stopBluetoothSco();
+        //   mAudioManager.setBluetoothScoOn(false);
+        //   mAudioManager.setSpeakerphoneOn(true);
+        //}
+        for (AudioDeviceInfo device :
+                audioOutputDevices) {
+            if (device.getId() == deviceId){
+                switch (device.getType()){
+                    case AudioDeviceInfo.TYPE_BUILTIN_SPEAKER:
+                        audioManager.setMode(AudioManager.MODE_NORMAL);
+                        audioManager.stopBluetoothSco();
+                        audioManager.setBluetoothScoOn(false);
+                        audioManager.setSpeakerphoneOn(true);
+                        break;
+                    case AudioDeviceInfo.TYPE_BUILTIN_EARPIECE:
+                        audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+                        audioManager.stopBluetoothSco();
+                        audioManager.setBluetoothScoOn(false);
+                        audioManager.setSpeakerphoneOn(false);
+                        break;
+                    case AudioDeviceInfo.TYPE_BLUETOOTH_SCO:
+                        audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+                        audioManager.startBluetoothSco();
+                        audioManager.setBluetoothScoOn(true);
+                        audioManager.setSpeakerphoneOn(false);
+                        break;
+                    case AudioDeviceInfo.TYPE_BLUETOOTH_A2DP:
+                        audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+                        audioManager.startBluetoothSco();
+                        audioManager.setBluetoothScoOn(false);
+                        audioManager.setSpeakerphoneOn(false);
+                        break;
+//                    case AudioDeviceInfo.TYPE_WIRED_HEADSET:
+//                        audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+//                        audioManager.stopBluetoothSco();
+//                        audioManager.setBluetoothScoOn(false);
+//                        audioManager.setSpeakerphoneOn(false);
+//                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+    }
+
     public static String getUserMedia(MediaStreamConstraints constraints) {
         if (constraints == null) {
             Log.e(TAG, "fault, getUserMedia no sdp data");
@@ -266,14 +331,12 @@ public class MediaDevice {
     }
 
     public static int getMaxVolume() {
-        AudioManager audioManager = (AudioManager) activity.getSystemService(Context.AUDIO_SERVICE);
-        return audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+        return SettingsContentObserver.getSettingsContentObserver().getStreamMaxVolume();
     }
 
     @TargetApi(Build.VERSION_CODES.P)
     public static int getMinVolume() {
-        AudioManager audioManager = (AudioManager) activity.getSystemService(Context.AUDIO_SERVICE);
-        return audioManager.getStreamMinVolume(AudioManager.STREAM_MUSIC);
+        return SettingsContentObserver.getSettingsContentObserver().getStreamMinVolume();
     }
 
     public static int getVolume() {
@@ -281,8 +344,7 @@ public class MediaDevice {
     }
 
     public static void setVolume(int volume) {
-        AudioManager audioManager = (AudioManager) activity.getSystemService(Context.AUDIO_SERVICE);
-        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, volume, AudioManager.ADJUST_SAME);
+        SettingsContentObserver.getSettingsContentObserver().setVolume(volume);
     }
 
     public static class LocalAudioSampleSupervisor implements JavaAudioDeviceModule.SamplesReadyCallback {
