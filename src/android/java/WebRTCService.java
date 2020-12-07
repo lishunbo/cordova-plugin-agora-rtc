@@ -62,7 +62,12 @@ public class WebRTCService {
     }
 
     public boolean enumerateDevices(JSONArray args, final CallbackContext callbackContext) throws JSONException {
-        callbackContext.success(MediaDevice.enumerateDevices());
+        cordova.getThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                callbackContext.success(MediaDevice.enumerateDevices());
+            }
+        });
         return true;
     }
 
@@ -178,6 +183,11 @@ public class WebRTCService {
         assert peer != null;
         peer.pc.setLocalDescription(new MessageHandler() {
             @Override
+            public void success(String msg) {
+                callbackContext.success(msg);
+            }
+
+            @Override
             public void success() {
                 callbackContext.success();
             }
@@ -243,6 +253,27 @@ public class WebRTCService {
                         callbackContext.success(msg);
                     }
                 });
+            }
+        });
+
+        return true;
+    }
+
+    public boolean setSenderParameter(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        String id = args.getString(0);
+        String track = args.getString(1);
+        String degradation = args.getString(2);
+        int maxBitrate = args.getInt(3);
+        int minBitrate = args.getInt(4);
+
+        CallbackPCPeer peer = instances.get(id);
+        assert peer != null;
+
+        cordova.getThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                peer.pc.setRtpSenderParameters(track, degradation, maxBitrate, minBitrate);
+                callbackContext.success();
             }
         });
 

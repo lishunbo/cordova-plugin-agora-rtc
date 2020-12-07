@@ -98,7 +98,7 @@
         <source-file src="src/android/java/models/MediaDeviceInfo.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
         <source-file src="src/android/java/models/MediaStream.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
         <source-file src="src/android/java/models/MediaStreamConstraints.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
-        <source-file src="src/android/java/models/MediaStreamTrack.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
+        <!-- <source-file src="src/android/java/models/MediaStreamTrack.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/> -->
         <source-file src="src/android/java/models/MediaStreamTrackWrapper.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
         <source-file src="src/android/java/models/MediaTrackConstraints.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
         <source-file src="src/android/java/models/MediaTrackConstraintSet.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>

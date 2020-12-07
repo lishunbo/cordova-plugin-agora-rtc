@@ -17,6 +17,8 @@ public enum Action {
     addTrack("addTrack"),
     getStats("getStats"),
 
+    setSenderParameter("setSenderParameter"),
+
     onIceCandidate("onIceCandidate"),
     onICEConnectionStateChange("onICEConnectionStateChange"),
     onConnectionStateChange("onConnectionStateChange"),

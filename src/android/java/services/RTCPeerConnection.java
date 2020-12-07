@@ -8,6 +8,7 @@ import com.agora.cordova.plugin.webrtc.models.RTCConfiguration;
 import com.agora.cordova.plugin.webrtc.models.RTCIceServer;
 import com.agora.cordova.plugin.webrtc.models.RTCOfferOptions;
 import com.agora.cordova.plugin.webrtc.models.enums.RTCIceCredentialType;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -22,6 +23,7 @@ import org.webrtc.PeerConnection;
 import org.webrtc.RTCStats;
 import org.webrtc.RTCStatsCollectorCallback;
 import org.webrtc.RTCStatsReport;
+import org.webrtc.RtpParameters;
 import org.webrtc.RtpReceiver;
 import org.webrtc.RtpSender;
 import org.webrtc.SdpObserver;
@@ -32,6 +34,10 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
+
+import static org.webrtc.RtpParameters.DegradationPreference.BALANCED;
+import static org.webrtc.RtpParameters.DegradationPreference.MAINTAIN_FRAMERATE;
+import static org.webrtc.RtpParameters.DegradationPreference.MAINTAIN_RESOLUTION;
 
 
 public class RTCPeerConnection {
@@ -153,7 +159,41 @@ public class RTCPeerConnection {
             @Override
             public void onSetSuccess() {
                 super.onSetSuccess();
-                handler.success();
+                StringBuilder builder = new StringBuilder();
+                builder.append("[");
+                boolean first = true;
+                for (RtpSender sender :
+                        peerConnection.getSenders()) {
+//                    if (sender.track().kind().equals("video")) {
+//                        Log.w(TAG, "add track found sender ");
+//                        RtpParameters parameters = sender.getParameters();
+//                        Log.v(TAG, "senderParameters 2 " + parameters.encodings.size());
+//                        parameters.degradationPreference = MAINTAIN_RESOLUTION;
+//                        parameters.encodings.get(0).maxBitrateBps = 200 * 1024;
+//                        parameters.encodings.get(0).maxFramerate = 20;
+//                        sender.setParameters(parameters);
+//                        Log.v(TAG, "senderParameters" + parameters.toString());
+//                    }
+                    JSONObject obj = new JSONObject();
+                    try {
+                        obj.put("track", sender.track().kind());
+                        ObjectMapper objectMapper = new ObjectMapper();
+
+                        obj.put("parameter", objectMapper.writeValueAsString(sender.getParameters()));
+                    } catch (Exception e) {
+                        Log.e(TAG, "put parameter failed:" + e.toString());
+                    }
+                    if (first) {
+                        first = false;
+                    } else {
+                        builder.append(",");
+                    }
+                    builder.append(obj.toString());
+                }
+                builder.append("]");
+                Log.e(TAG, "getSenders:" + builder.toString());
+                handler.success(builder.toString());
+
             }
 
             @Override
@@ -212,7 +252,36 @@ public class RTCPeerConnection {
                 break;
             }
         }
+    }
 
+    public void replaceTrack(String kind, MediaStreamTrack track) {
+        for (RtpSender sender :
+                peerConnection.getSenders()) {
+            if (sender.track().kind().equals(kind)) {
+                sender.setTrack(track, true);
+                break;
+            }
+        }
+    }
+
+    public void setRtpSenderParameters(String kind, String degradation, int maxBitrate, int minBitrate) {
+        for (RtpSender sender :
+                peerConnection.getSenders()) {
+            if (sender.track().kind().equals(kind)) {
+                RtpParameters parameters = sender.getParameters();
+                if (degradation.length() > 0) {
+                    parameters.degradationPreference = RtpParameters.DegradationPreference.valueOf(degradation.toUpperCase());
+                }
+                if (maxBitrate > 0) {
+                    parameters.encodings.get(0).maxBitrateBps = maxBitrate;
+                }
+                if (minBitrate > 0) {
+                    parameters.encodings.get(0).minBitrateBps = minBitrate;
+                }
+                sender.setParameters(parameters);
+                break;
+            }
+        }
     }
 
     void closeStream() {

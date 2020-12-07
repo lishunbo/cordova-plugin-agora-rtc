@@ -90,6 +90,8 @@ public class Hook extends CordovaPlugin {
                     return service.removeTrack(args, callbackContext);
                 case getStats:
                     return service.getStats(args, callbackContext);
+                case setSenderParameter:
+                    return service.setSenderParameter(args, callbackContext);
                 //MediaDevice functions
                 default:
                     Log.e(TAG, "Not implement action of :" + action);
