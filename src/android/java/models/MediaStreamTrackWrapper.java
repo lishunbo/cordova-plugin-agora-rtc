@@ -86,7 +86,7 @@ public class MediaStreamTrackWrapper {
             if (vv != null) {
                 VideoTrack videoTrack = (VideoTrack) getTrack();
                 videoTrack.removeSink(vv.getSink());
-                vv.dispose();
+                vv.close();
                 vv = null;
             }
             if (getRelatedObject().size() != 0) {

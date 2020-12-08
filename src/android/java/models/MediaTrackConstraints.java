@@ -7,7 +7,7 @@ public class MediaTrackConstraints extends MediaTrackConstraintSet {
     public Optional[] optional;
 
     public static class Mandatory {
-        public String deviceId;
+        public String sourceId;
     }
 
     public static class Optional {

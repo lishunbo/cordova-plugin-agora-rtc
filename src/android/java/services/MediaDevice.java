@@ -15,6 +15,7 @@ import android.util.Log;
 import com.agora.cordova.plugin.webrtc.models.MediaDeviceInfo;
 import com.agora.cordova.plugin.webrtc.models.MediaStreamConstraints;
 import com.agora.cordova.plugin.webrtc.models.MediaStreamTrackWrapper;
+import com.agora.cordova.plugin.webrtc.models.MediaTrackConstraintSet;
 import com.agora.cordova.plugin.webrtc.models.MediaTrackConstraints;
 
 import org.webrtc.AudioSource;
@@ -160,29 +161,6 @@ public class MediaDevice {
 
                 infos.add(info);
             }
-//            String[] cameraIds = cameraManager.getCameraIdList();
-//            int externalCamCnt = 1;
-//            for (String cameraId : cameraIds) {
-//                CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
-//
-//                String label = "";
-//                switch (characteristics.get(CameraCharacteristics.LENS_FACING)) {
-//                    case CameraCharacteristics.LENS_FACING_FRONT:
-//                        label = "Front Camera";
-//                        break;
-//                    case CameraCharacteristics.LENS_FACING_BACK:
-//                        label = "Back Camera";
-//                        break;
-//                    case CameraCharacteristics.LENS_FACING_EXTERNAL:
-//                        label = "External Camera " + externalCamCnt++;
-//                        break;
-//                    default:
-//                        label = "Unknown Camera";
-//                }
-//
-//                Log.v(TAG, "cameraid: " + cameraId);
-//
-//            }
         } catch (Exception e) {
             Log.e(TAG, "enumerate CameraList exception: " + e.toString());
         }
@@ -205,8 +183,15 @@ public class MediaDevice {
         return builder.toString();
     }
 
+    public static boolean cameraIsFront(String deviceId) {
+        if (deviceId.length() == 0) {
+            return true;
+        }
+        return deviceId.contains("front");
+    }
+
     @TargetApi(Build.VERSION_CODES.M)
-    public static void setPlaybackDevice(int deviceId){
+    public static void setPlaybackDevice(int deviceId) {
         AudioManager audioManager = (AudioManager) activity.getSystemService(Context.AUDIO_SERVICE);
         AudioDeviceInfo[] audioOutputDevices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
 
@@ -232,8 +217,8 @@ public class MediaDevice {
         //}
         for (AudioDeviceInfo device :
                 audioOutputDevices) {
-            if (device.getId() == deviceId){
-                switch (device.getType()){
+            if (device.getId() == deviceId) {
+                switch (device.getType()) {
                     case AudioDeviceInfo.TYPE_BUILTIN_SPEAKER:
                         audioManager.setMode(AudioManager.MODE_NORMAL);
                         audioManager.stopBluetoothSco();
@@ -292,42 +277,82 @@ public class MediaDevice {
                     deviceID = constraints.audio.deviceId.exact;
                 }
             }
-            MediaStreamTrackWrapper wrapper = createLocalAudioTrack(deviceID, sampleRate, channelCount, aec, echoCancellation, noiseSuppression);
+            MediaStreamTrackWrapper wrapper = createLocalAudioTrack(deviceID, sampleRate,
+                    channelCount, aec, echoCancellation, noiseSuppression);
             Log.e(TAG, "VOLUME: trackid" + wrapper.getId());
             builder.append(wrapper.toString());
         }
 
         if (constraints.video != null) {
-            int w = 640;
-            int h = 480;
-            int fps = 15;
-            boolean isFront = true;
-            String deviceId = "";
-            if (constraints.video.optional != null) {
-                for (MediaTrackConstraints.Optional opt :
-                        constraints.video.optional) {
-                    if (opt.minWidth > 0) {
-                        w = opt.minWidth;
-                    } else if (opt.minHeight > 0) {
-                        h = opt.minHeight;
-                    } else if (opt.minFrameRate > 0) {
-                        fps = opt.minFrameRate;
-                    } else if (opt.sourceId != null && opt.sourceId.length() > 0) {
-                        deviceId = opt.sourceId;
-                    }
-                }
-            }
-            if (constraints.video.mandatory != null) {
-                deviceId = constraints.video.mandatory.deviceId;
-            }
+            getVideoParameter(constraints.video);
 
-            MediaStreamTrackWrapper wrapper = createLocalVideoTrack(deviceId, isFront, w, h, fps);
+            MediaStreamTrackWrapper wrapper = createLocalVideoTrack(constraints.video.deviceId.mean,
+                    constraints.video.facingMode.mean.equals("user"), constraints.video.width.mean.intValue(),
+                    constraints.video.height.mean.intValue(), constraints.video.frameRate.mean.intValue());
             builder.append(wrapper.toString());
         }
         builder.append("]");
 
 
         return builder.toString();
+    }
+
+    static void getVideoParameter(MediaTrackConstraints video) {
+        if (video.width == null) {
+            video.width = new MediaTrackConstraintSet.ParamULongRange();
+        }
+        if (video.width.mean == null) {
+            video.width.mean = 640L;
+        }
+        if (video.height == null) {
+            video.height = new MediaTrackConstraintSet.ParamULongRange();
+
+        }
+        if (video.height.mean == null) {
+            video.height.mean = 480L;
+        }
+        if (video.frameRate == null) {
+            video.frameRate = new MediaTrackConstraintSet.ParamDoubleRange();
+
+        }
+        if (video.frameRate.mean == null) {
+            video.frameRate.mean = (double) 15;
+        }
+        if (video.facingMode == null) {
+            video.facingMode = new MediaTrackConstraintSet.ParamStringSet();
+
+        }
+        if (video.facingMode.mean == null) {
+            video.facingMode.mean = "user";
+        }
+        if (video.deviceId == null) {
+            video.deviceId = new MediaTrackConstraintSet.ParamStringSet();
+        }
+        if (video.deviceId.mean == null) {
+            video.deviceId.mean = "";
+            if (video.deviceId.exact != null) {
+                video.deviceId.mean = video.deviceId.exact;
+            }
+        }
+        if (video.optional != null) {
+            for (MediaTrackConstraints.Optional opt :
+                    video.optional) {
+                if (opt.minWidth > 0) {
+                    video.width.mean = (long) opt.minWidth;
+                } else if (opt.minHeight > 0) {
+                    video.height.mean = (long) opt.minHeight;
+                } else if (opt.minFrameRate > 0) {
+                    video.frameRate.mean = (double) opt.minFrameRate;
+                } else if (opt.sourceId != null && opt.sourceId.length() > 0) {
+                    video.facingMode.mean = opt.sourceId;
+                }
+            }
+        }
+        if (video.mandatory != null) {
+            if (video.mandatory.sourceId != null) {
+                video.deviceId.mean = video.mandatory.sourceId;
+            }
+        }
     }
 
     public static int getMaxVolume() {
@@ -428,11 +453,10 @@ public class MediaDevice {
 
         VideoTrack videoTrack = PCFactory.factory().createVideoTrack(UUID.randomUUID().toString(), videoSource);
 
-        return MediaStreamTrackWrapper.cacheMediaStreamTrack("", videoTrack, videoCapturer, surfaceTextureHelper, videoSource);
+        return MediaStreamTrackWrapper.cacheMediaStreamTrack("", videoTrack, videoCapturer, surfaceTextureHelper, videoSource, cameraIsFront(deviceId));
     }
 
     private static VideoCapturer createCameraCapturer(String deviceId, boolean isFront) {
-
         Log.w(TAG, "camera2 is support: " + Camera2Enumerator.isSupported(context));
 
         Camera1Enumerator enumerator = new Camera1Enumerator(false);

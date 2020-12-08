@@ -8523,7 +8523,7 @@
 	 * Agora Web SDK 的编译信息。
 	 * @public
 	 */
-	var BUILD = "v4.1.1-62-g080e77b-dirty(12/7/2020, 7:34:52 PM)";
+	var BUILD = "v4.1.1-62-g080e77b-dirty(12/8/2020, 4:48:30 PM)";
 	var VERSION = transferVersion("4.1.1");
 	var IS_GLOBAL_VERSION = isGlobalVersion();
 	var DEFAULT_TURN_CONFIG = {
@@ -19645,15 +19645,7 @@
 	}
 
 	function detectReplaceTrack() {
-	  if (!window.RTCRtpSender) {
-	    return false;
-	  }
-
-	  if (typeof RTCRtpSender.prototype.replaceTrack === "function") {
-	    return true;
-	  }
-
-	  return false;
+	  return true;
 	}
 
 	function detectWebGL() {
@@ -31145,7 +31137,6 @@
 	        switch (_a.label) {
 	          case 0:
 	            compat = getCompatibility();
-	            logger.info("replacetrack supportRelaceTrack", compat.supportReplaceTrack);
 	            if (!!compat.supportReplaceTrack) return [3
 	            /*break*/
 	            , 2];
@@ -31179,15 +31170,12 @@
 	          case 3:
 	            _a.trys.push([3, 5,, 6]);
 
-	            logger.info("replacetrack replaceTrack", stringify$2(track));
 	            return [4
 	            /*yield*/
 	            , sender.replaceTrack(track)];
 
 	          case 4:
 	            _a.sent();
-
-	            logger.info("replacetrack replaceTrack done");
 
 	            if (track.kind === "audio") {
 	              this.audioTrack = track;

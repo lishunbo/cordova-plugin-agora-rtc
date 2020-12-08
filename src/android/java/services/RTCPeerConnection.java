@@ -164,16 +164,6 @@ public class RTCPeerConnection {
                 boolean first = true;
                 for (RtpSender sender :
                         peerConnection.getSenders()) {
-//                    if (sender.track().kind().equals("video")) {
-//                        Log.w(TAG, "add track found sender ");
-//                        RtpParameters parameters = sender.getParameters();
-//                        Log.v(TAG, "senderParameters 2 " + parameters.encodings.size());
-//                        parameters.degradationPreference = MAINTAIN_RESOLUTION;
-//                        parameters.encodings.get(0).maxBitrateBps = 200 * 1024;
-//                        parameters.encodings.get(0).maxFramerate = 20;
-//                        sender.setParameters(parameters);
-//                        Log.v(TAG, "senderParameters" + parameters.toString());
-//                    }
                     JSONObject obj = new JSONObject();
                     try {
                         obj.put("track", sender.track().kind());
@@ -258,7 +248,7 @@ public class RTCPeerConnection {
         for (RtpSender sender :
                 peerConnection.getSenders()) {
             if (sender.track().kind().equals(kind)) {
-                sender.setTrack(track, true);
+                sender.setTrack(track, false);
                 break;
             }
         }
@@ -278,6 +268,7 @@ public class RTCPeerConnection {
                 if (minBitrate > 0) {
                     parameters.encodings.get(0).minBitrateBps = minBitrate;
                 }
+                Log.v(TAG, "setRtpSenderParameter "+parameters.degradationPreference+" "+parameters.encodings.get(0).maxBitrateBps+" "+parameters.encodings.get(0).minBitrateBps);
                 sender.setParameters(parameters);
                 break;
             }

@@ -81,6 +81,10 @@ public class MediaTrackConstraintSet {
                 ParamDoubleRange d = new ParamDoubleRange();
                 d.mean = p.getValueAsDouble();
                 return d;
+            } else if (jsonToken == JsonToken.VALUE_NUMBER_INT) {
+                ParamDoubleRange d = new ParamDoubleRange();
+                d.mean = (double) p.getValueAsLong();
+                return d;
             } else if (jsonToken == JsonToken.START_OBJECT) {
                 return p.readValueAs(ParamDoubleRange.class);
             }

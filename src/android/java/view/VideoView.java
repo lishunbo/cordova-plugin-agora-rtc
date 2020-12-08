@@ -10,17 +10,20 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 
-import com.agora.cordova.plugin.view.enums.Action;
 import com.agora.cordova.plugin.view.interfaces.Player;
 import com.agora.cordova.plugin.view.model.PlayConfig;
 import com.agora.cordova.plugin.view.model.ProxyVideoSink;
 import com.agora.cordova.plugin.webrtc.models.MediaStreamTrackWrapper;
+import com.agora.cordova.plugin.webrtc.services.MediaDevice;
 import com.agora.cordova.plugin.webrtc.services.PCFactory;
 
 import org.apache.cordova.CallbackContext;
 import org.webrtc.RendererCommon;
 import org.webrtc.SurfaceViewRenderer;
 import org.webrtc.VideoTrack;
+
+import java.util.LinkedList;
+import java.util.List;
 
 import static android.content.Context.WINDOW_SERVICE;
 
@@ -35,6 +38,7 @@ public class VideoView extends SurfaceViewRenderer implements View.OnTouchListen
 
     public String id;
     PlayConfig config;
+    boolean isPlayed;
     WindowManager.LayoutParams params;
     ProxyVideoSink sink;
 
@@ -64,10 +68,8 @@ public class VideoView extends SurfaceViewRenderer implements View.OnTouchListen
         super(mainActivity.getApplicationContext());
         this.id = id;
         this.config = config;
+        this.isPlayed = false;
         setOnTouchListener(this);
-    }
-
-    public interface Supervisor {
     }
 
     public ProxyVideoSink getSink() {
@@ -78,8 +80,13 @@ public class VideoView extends SurfaceViewRenderer implements View.OnTouchListen
         this.config = config;
     }
 
-    public void updateVideoTrack(String trackId) {
+    public void updateVideoTrack(String trackId, final CallbackContext callbackContext) {
         this.config.trackId = trackId;
+        if (this.isPlayed) {
+            play(callbackContext);
+        } else {
+            callbackContext.success();
+        }
     }
 
     public void setViewAttribute(int w, int h, int x, int y) {
@@ -87,7 +94,7 @@ public class VideoView extends SurfaceViewRenderer implements View.OnTouchListen
                 w,
                 h,
                 LAYOUT_FLAG,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON | WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 PixelFormat.TRANSLUCENT);
 
         params.gravity = Gravity.TOP | Gravity.LEFT;
@@ -117,9 +124,15 @@ public class VideoView extends SurfaceViewRenderer implements View.OnTouchListen
                         break;
                     case fill:
                 }
+//                mainActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
                 that.setScalingType(type);
-                that.setMirror(config.mirror);
+                boolean shouldMirror = false;
+                if (wrapper.getRelatedObject().size() >= 4) {
+                    Object obj = wrapper.getRelatedObject().get(3);
+                    shouldMirror = obj.toString().equals("true");
+                }
+                that.setMirror(shouldMirror);
                 that.setZOrderMediaOverlay(true);
 
                 VideoTrack videoTrack = (VideoTrack) wrapper.getTrack();
@@ -128,19 +141,21 @@ public class VideoView extends SurfaceViewRenderer implements View.OnTouchListen
                 videoTrack.addSink(sink);
 
                 try {
-                    that.init(PCFactory.eglBase(), new RendererCommon.RendererEvents() {
-                        @Override
-                        public void onFirstFrameRendered() {
-                            Log.v(TAG, "onFirstFrameRendered");
-                        }
+                    if (!that.isPlayed) {
+                        that.init(PCFactory.eglBase(), new RendererCommon.RendererEvents() {
+                            @Override
+                            public void onFirstFrameRendered() {
+                                Log.v(TAG, "onFirstFrameRendered");
+                            }
 
-                        @Override
-                        public void onFrameResolutionChanged(int i, int i1, int i2) {
-                            Log.v(TAG, "onFrameResolutionChanged");
-                        }
-                    });
-
+                            @Override
+                            public void onFrameResolutionChanged(int i, int i1, int i2) {
+                                Log.v(TAG, "onFrameResolutionChanged");
+                            }
+                        });
+                    }
                     windowManager.addView(that, params);
+                    that.isPlayed = true;
 
                     context.success();
                 } catch (Exception e) {
@@ -169,13 +184,7 @@ public class VideoView extends SurfaceViewRenderer implements View.OnTouchListen
         dispose();
     }
 
-    @Override
-    public void dispose() {
-        if (id == null) {
-            return;
-        }
-        super.release();
-
+    public void close() {
         VideoView that = this;
         mainActivity.runOnUiThread(new Runnable() {
             @Override
@@ -183,6 +192,16 @@ public class VideoView extends SurfaceViewRenderer implements View.OnTouchListen
                 windowManager.removeViewImmediate(that);
             }
         });
+    }
+
+    @Override
+    public void dispose() {
+        if (id == null) {
+            return;
+        }
+        close();
+
+        super.release();
 
         id = null;
         config = null;
@@ -241,4 +260,5 @@ public class VideoView extends SurfaceViewRenderer implements View.OnTouchListen
         }
         return false;
     }
+
 }

@@ -53,7 +53,9 @@ class MediaStream {
 
         return videoTrack;
     }
-    removeTrack() { }
+    removeTrack(track) {
+        this.track = this.track.filter((value, index, array) => { return value.id !== track.id })
+    }
     //addEventListener
     //removeEventListener
 }
@@ -102,7 +104,7 @@ class MediaStreamTrack {
         // removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
     }
 
-    stop(){
+    stop() {
         cordova.exec(function (ev) {
         }, function (ev) {
             console.log("Failed to stop MediaStreamTrack object");

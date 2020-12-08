@@ -126,12 +126,8 @@ public class VideoViewService implements Supervisor {
 
         CallbackVVPeer peer = this.instances.get(id);
         assert peer != null;
-
-        Log.v(TAG, "updateVideoTrack " + args.getString(1) + " " + args.getString(2));
-
-        ((VideoView) peer.player).updateVideoTrack(args.getString(1));
-
-        callbackContext.success();
+        
+        ((VideoView) peer.player).updateVideoTrack(args.getString(1), callbackContext);
         return true;
     }
 
@@ -163,7 +159,11 @@ public class VideoViewService implements Supervisor {
         CallbackVVPeer peer = this.instances.get(id);
         assert peer != null;
 
-        ((VideoView) peer.player).destroy();
+        if (peer.player instanceof VideoView) {
+            ((VideoView) peer.player).destroy();
+        } else {
+            Log.w(TAG, "audio player should be destoried");
+        }
         peer.context.success("dispose");
 
         this.instances.remove(id);

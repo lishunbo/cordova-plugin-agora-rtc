@@ -88,6 +88,8 @@ public class Hook extends CordovaPlugin {
                     return service.close(args);
                 case removeTrack:
                     return service.removeTrack(args, callbackContext);
+                case replaceTrack:
+                    return service.replaceTrack(args, callbackContext);
                 case getStats:
                     return service.getStats(args, callbackContext);
                 case setSenderParameter:

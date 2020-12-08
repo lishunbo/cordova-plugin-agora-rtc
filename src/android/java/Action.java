@@ -16,6 +16,7 @@ public enum Action {
     addTransceiver("addTransceiver"),
     addTrack("addTrack"),
     getStats("getStats"),
+    replaceTrack("replaceTrack"),
 
     setSenderParameter("setSenderParameter"),
 

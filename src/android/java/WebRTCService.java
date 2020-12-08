@@ -87,11 +87,9 @@ public class WebRTCService {
         String trackId = args.getString(0);
 
         MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.popMediaStreamTrackById(trackId);
-        if (wrapper == null) {
-            callbackContext.error("not found track");
-            return false;
+        if (wrapper != null) {
+            wrapper.close();
         }
-        wrapper.close();
 
         callbackContext.success();
         return true;
@@ -296,6 +294,27 @@ public class WebRTCService {
         CallbackPCPeer peer = instances.get(id);
         assert peer != null;
         peer.pc.removeTrack(kind, wrapper.getTrack());
+
+        callbackContext.success(wrapper.toString());
+        return true;
+    }
+
+    public boolean replaceTrack(JSONArray args, final CallbackContext callbackContext) throws Exception {
+        String id = args.getString(1);
+        String tid = args.getString(2);
+        String kind = args.getString(3);
+
+        MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.getMediaStreamTrackById(tid);
+        if (wrapper == null) {
+            String err = "Cannot found cached MediaStreamTrack by id:" + tid;
+            Log.e(TAG, err);
+            callbackContext.error(err);
+            return false;
+        }
+
+        CallbackPCPeer peer = instances.get(id);
+        assert peer != null;
+        peer.pc.replaceTrack(kind, wrapper.getTrack());
 
         callbackContext.success(wrapper.toString());
         return true;
