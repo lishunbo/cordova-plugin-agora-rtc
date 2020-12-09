@@ -131,17 +131,15 @@ public class VideoView extends SurfaceViewRenderer implements View.OnTouchListen
 
                 that.setScalingType(type);
                 boolean shouldMirror = false;
-                sink = new ProxyVideoSink();
                 if (wrapper.getRelatedObject().size() >= 4) {
                     Object obj = wrapper.getRelatedObject().get(3);
                     shouldMirror = MediaDevice.cameraIsFront(obj.toString());
-                } else{
-                    sink.shouldLog=true;
                 }
                 that.setMirror(shouldMirror);
                 that.setZOrderMediaOverlay(true);
 
                 VideoTrack videoTrack = (VideoTrack) wrapper.getTrack();
+                sink = new ProxyVideoSink();
                 sink.setTarget(that);
                 videoTrack.addSink(sink);
 

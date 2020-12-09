@@ -1,12 +1,6 @@
 package com.agora.cordova.plugin.webrtc.services;
 
-import android.annotation.TargetApi;
 import android.content.Context;
-import android.media.AudioDeviceInfo;
-import android.media.AudioFormat;
-import android.media.AudioManager;
-import android.media.MediaRecorder;
-import android.os.Build;
 import android.util.Log;
 
 import org.webrtc.DefaultVideoDecoderFactory;
@@ -38,23 +32,22 @@ public class PCFactory {
 
     static PCFactory _factory = null;
     static final AtomicBoolean once = new AtomicBoolean();
-    static Context context;
 
     private PCFactory() {
     }
 
-    public static PeerConnectionFactory factory() {
+    public static PCFactory GetInstance() {
         if (_factory == null) {
-            _factory = Builder.createPCFactory();
+            _factory = new PCFactory();
         }
-        return _factory.factory;
+        return _factory;
     }
 
-    public static JavaAudioDeviceModule audioDeviceModule() {
+    public static PeerConnectionFactory factory() {
         if (_factory == null) {
-            _factory = Builder.createPCFactory();
+            _factory = new PCFactory();
         }
-        return _factory.adm;
+        return _factory.factory;
     }
 
     public static EglBase.Context eglBase() {
@@ -62,6 +55,13 @@ public class PCFactory {
             _factory = new PCFactory();
         }
         return _factory.eglBase;
+    }
+
+    public static JavaAudioDeviceModule audioDeviceModule() {
+        if (_factory == null) {
+            _factory = new PCFactory();
+        }
+        return _factory.adm;
     }
 
     static class PCFLoggable implements Loggable {
@@ -83,78 +83,47 @@ public class PCFactory {
         }
     }
 
-    @TargetApi(Build.VERSION_CODES.M)
-    public static void initializationOnce(Context applicationContext) {
-        if (once.get()) return;
-        if (once.compareAndSet(false, true)) {
-            context = applicationContext;
-            PeerConnectionFactory.initialize(PeerConnectionFactory.InitializationOptions.builder(applicationContext)
-//                    .setInjectableLogger(new PCFLoggable(), Logging.Severity.LS_WARNING)
-                    .createInitializationOptions());
+    public class abc implements JavaAudioDeviceModule.SamplesReadyCallback {
 
-            if (_factory == null) {
-                _factory = Builder.createPCFactory(applicationContext, "", 0, false, null);
-            }
+        @Override
+        public void onWebRtcAudioRecordSamplesReady(JavaAudioDeviceModule.AudioSamples audioSamples) {
+
         }
     }
 
-    public static class Builder {
-        PeerConnectionFactory.Builder builder = null;
-        PeerConnectionFactory.Options options = null;
-        EglBase.Context eglBase;
-        DefaultVideoEncoderFactory defaultVideoEncoderFactory = null;
-        DefaultVideoDecoderFactory defaultVideoDecoderFactory = null;
-
-        static Builder that = new Builder();
-
-        private Builder() {
-            builder = PeerConnectionFactory.builder();
-            options = new PeerConnectionFactory.Options();
-            eglBase = EglBase.create().getEglBaseContext();
-            defaultVideoEncoderFactory = new DefaultVideoEncoderFactory(eglBase, true, true);
-            defaultVideoDecoderFactory = new DefaultVideoDecoderFactory(eglBase);
-        }
-
-        public static PCFactory createPCFactory() {
-            PCFactory factory = new PCFactory();
-            JavaAudioDeviceModule.Builder admBuilder = JavaAudioDeviceModule.builder(context);
-            factory.adm = (JavaAudioDeviceModule) admBuilder.createAudioDeviceModule();
-
-            factory.factory = that.builder.setOptions(that.options)
-                    .setAudioDeviceModule(factory.adm)
-                    .setVideoDecoderFactory(that.defaultVideoDecoderFactory)
-                    .setVideoEncoderFactory(that.defaultVideoEncoderFactory)
-                    .createPeerConnectionFactory();
-            return factory;
-        }
-
-        @TargetApi(Build.VERSION_CODES.M)
-        public static PCFactory createPCFactory(Context applicationContext, String deviceId, int sampleRate, boolean stereo, JavaAudioDeviceModule.SamplesReadyCallback callback) {
-            PCFactory factory = new PCFactory();
-
-            JavaAudioDeviceModule.Builder admBuilder = JavaAudioDeviceModule.builder(applicationContext)
-                    .setUseStereoInput(stereo);
-            if (sampleRate != 0) {
-                admBuilder.setInputSampleRate(sampleRate);
+    public static void initializationOnce(Context applicationContext) {
+        if (once.get()) return;
+        if (once.compareAndSet(false, true)) {
+            if (_factory == null) {
+                _factory = new PCFactory();
             }
+            _factory.adm = (JavaAudioDeviceModule) JavaAudioDeviceModule.builder(applicationContext)
+                    .setSamplesReadyCallback(MediaDevice.LocalAudioSampleSupervisor.supervisor)
+                    .createAudioDeviceModule();
 
+            _factory.eglBase = EglBase.create().getEglBaseContext();
+            PeerConnectionFactory.initialize(PeerConnectionFactory.InitializationOptions.builder(applicationContext)
+//                    .setInjectableLogger(new PCFLoggable(), Logging.Severity.LS_WARNING)
+                    .createInitializationOptions());
+            PeerConnectionFactory.Options options = new PeerConnectionFactory.Options();
+            DefaultVideoEncoderFactory defaultVideoEncoderFactory =
+                    new DefaultVideoEncoderFactory(_factory.eglBase, true, true);
+            DefaultVideoDecoderFactory defaultVideoDecoderFactory =
+                    new DefaultVideoDecoderFactory(_factory.eglBase);
 
-            factory.adm = (JavaAudioDeviceModule) admBuilder.createAudioDeviceModule();
-
-            if (deviceId.length() > 0) {
-                AudioDeviceInfo info = MediaDevice.getAudioDeviceByID(deviceId);
-                if (info != null) {
-                    factory.adm.setPreferredInputDevice(info);
-                }
-            }
-
-            factory.factory = that.builder.setOptions(that.options)
-                    .setAudioDeviceModule(factory.adm)
-                    .setVideoDecoderFactory(that.defaultVideoDecoderFactory)
-                    .setVideoEncoderFactory(that.defaultVideoEncoderFactory)
+            SoftwareVideoDecoderFactory dec = new SoftwareVideoDecoderFactory();
+            SoftwareVideoEncoderFactory enc = new SoftwareVideoEncoderFactory();
+            dec.getSupportedCodecs();
+            enc.getSupportedCodecs();
+            defaultVideoDecoderFactory.getSupportedCodecs();
+            _factory.factory = PeerConnectionFactory.builder()
+                    .setOptions(options)
+                    .setAudioDeviceModule(_factory.adm)
+                    .setVideoEncoderFactory(defaultVideoEncoderFactory)
+                    .setVideoDecoderFactory(defaultVideoDecoderFactory)
                     .createPeerConnectionFactory();
-//            adm.release();
-            return factory;
+            _factory.adm.release();
         }
+
     }
 }

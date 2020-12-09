@@ -1,18 +1,15 @@
 package com.agora.cordova.plugin.webrtc;
 
 import android.app.Activity;
-import android.os.Handler;
 import android.util.Log;
 
 import com.agora.cordova.plugin.webrtc.models.MediaStreamConstraints;
 import com.agora.cordova.plugin.webrtc.models.MediaStreamTrackWrapper;
-import com.agora.cordova.plugin.webrtc.models.MediaTrackConstraintSet;
 import com.agora.cordova.plugin.webrtc.models.RTCConfiguration;
 import com.agora.cordova.plugin.webrtc.models.RTCOfferOptions;
 import com.agora.cordova.plugin.webrtc.services.MediaDevice;
 import com.agora.cordova.plugin.webrtc.services.PCFactory;
 import com.agora.cordova.plugin.webrtc.services.RTCPeerConnection;
-import com.agora.cordova.plugin.webrtc.services.SettingsContentObserver;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaInterface;
@@ -92,28 +89,22 @@ public class WebRTCService {
             wrapper.close();
         }
 
+        Log.v(TAG, "DUALSTREAM close " + trackId);
         callbackContext.success();
         return true;
     }
 
     public boolean getNativeLowResolutionVideoTrack(JSONArray args, final CallbackContext callbackContext) throws JSONException {
-        MediaStreamConstraints constraints = MediaStreamConstraints.fromJson(args.getJSONObject(0).toString());
+//        MediaStreamConstraints constraints = MediaStreamConstraints.fromJson(args.getJSONObject(0).toString());
+        String trackId = args.getString(1);
 
-        assert constraints != null;
-        MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.getMediaStreamTrackById(args.getString(1));
-        if (wrapper.getRelatedObject().size() >= 4) {
-            String deviceId = wrapper.getRelatedObject().get(3).toString();
-            if (constraints.video.deviceId == null) {
-                constraints.video.deviceId = new MediaTrackConstraintSet.ParamStringSet();
-            }
-            constraints.video.deviceId.mean = deviceId;
-        }
+        MediaStreamTrackWrapper highStreamWrapper = MediaStreamTrackWrapper.getMediaStreamTrackById(trackId);
 
-        Log.v(TAG, "getNativeLowResolutionVideoTrack: " + constraints.toString());
+        MediaStreamTrackWrapper lowStreamWrapper = MediaStreamTrackWrapper.cacheMediaStreamTrack("",
+                highStreamWrapper.getTrack(), null, null, null, highStreamWrapper.getRelatedObject().get(3));
 
-        String summary = MediaDevice.getUserMedia(constraints);
-
-        callbackContext.success(summary);
+        Log.v(TAG, "DUALSTREAM get " + lowStreamWrapper.getId());
+        callbackContext.success(lowStreamWrapper.toString());
         return true;
     }
 
@@ -162,7 +153,7 @@ public class WebRTCService {
 
         CallbackPCPeer peer = instances.get(id);
         assert peer != null;
-        peer.pc.addTrack(kind, wrapper.getTrack());
+        peer.pc.addTrack(kind, wrapper);
 
         callbackContext.success(wrapper.toString());
         return true;
@@ -285,6 +276,7 @@ public class WebRTCService {
         String degradation = args.getString(2);
         int maxBitrate = args.getInt(3);
         int minBitrate = args.getInt(4);
+        double scaleDown = args.getDouble(5);
 
         CallbackPCPeer peer = instances.get(id);
         assert peer != null;
@@ -292,7 +284,7 @@ public class WebRTCService {
         cordova.getThreadPool().execute(new Runnable() {
             @Override
             public void run() {
-                peer.pc.setRtpSenderParameters(track, degradation, maxBitrate, minBitrate);
+                peer.pc.setRtpSenderParameters(track, degradation, maxBitrate, minBitrate, scaleDown);
                 callbackContext.success();
             }
         });
@@ -315,7 +307,7 @@ public class WebRTCService {
 
         CallbackPCPeer peer = instances.get(id);
         assert peer != null;
-        peer.pc.removeTrack(kind, wrapper.getTrack());
+        peer.pc.removeTrack(kind, wrapper);
 
         callbackContext.success(wrapper.toString());
         return true;
@@ -342,8 +334,17 @@ public class WebRTCService {
         return true;
     }
 
-    public boolean close(JSONArray args) {
-        return false;
+    public boolean close(JSONArray args, final CallbackContext callbackContext) throws Exception {
+        String id = args.getString(1);
+        CallbackPCPeer peer = instances.get(id);
+        assert peer != null;
+        instances.remove(id);
+        peer.context.success("dispose");
+        peer.pc.dispose();
+        allPC.remove(peer.pc);
+
+        callbackContext.success();
+        return true;
     }
 
     public void reset() {

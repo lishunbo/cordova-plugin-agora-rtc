@@ -206,25 +206,26 @@ class RTCPeerConnection {
                         if (idx == -1) {
                             that.senders.push(new RTCRtpSender(parameter, sender.track, that.id))
                         } else {
-                            console.log("setRtpSenderParameters x", that.senders[idx].modified)
                             if (that.senders[idx].modified) {
                                 var degradationPreference = null;
                                 if (that.senders[idx].parameter) {
                                     degradationPreference = that.senders[idx].parameter.degradationPreference
                                 }
-                                console.log("setRtpSenderParameters x1", that.senders[idx].modified)
                                 var maxBitrate = 0;
                                 var minBitrate = 0;
+                                var scaleDown = 1;
                                 if (that.senders[idx].parameter && that.senders[idx].parameter.encodings && that.senders[idx].parameter.encodings[0]) {
                                     maxBitrate = that.senders[idx].parameter.encodings[0].maxBitrate;
                                     minBitrate = that.senders[idx].parameter.encodings[0].minBitrate;
+                                    scaleDown = that.senders[idx].parameter.encodings[0].scaleResolutionDownBy;
                                 }
-                                console.log("setRtpSenderParameters x2", that.senders[idx].modified)
                                 cordova.exec(function (ev) {
                                     resolve(ev);
                                 }, function (ev) {
                                     reject(ev);
-                                }, MediaService, 'setSenderParameter', [that.id, that.senders[idx].track.kind, degradationPreference, maxBitrate == null ? 0 : maxBitrate, minBitrate == null ? 0 : minBitrate]);
+                                }, MediaService, 'setSenderParameter', [that.id, that.senders[idx].track.kind, degradationPreference,
+                                    maxBitrate == null ? 0 : maxBitrate, minBitrate == null ? 0 : minBitrate,
+                                    scaleDown == null ? 1 : scaleDown]);
                             }
                             that.senders[idx].parameter = parameter
                             that.senders[idx].modified = false

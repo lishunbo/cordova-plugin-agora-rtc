@@ -298,7 +298,7 @@ function getNativeLowResolutionVideoTrack(track, width, heigth, framerate) {
         }
         cordova.exec(function (ev) {
             var tracks = JSON.parse(ev);
-            resolve(new Stream.MediaStreamTrack(tracks[0].kind, tracks[0].id))
+            resolve(new Stream.MediaStreamTrack(tracks.kind, tracks.id))
         }, function (ev) {
             console.log("Failed to getNativeLowResolutionVideoTrack");
         }, 'Hook', 'getNativeLowResolutionVideoTrack', [args, track.id]);

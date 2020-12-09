@@ -87,7 +87,7 @@ public class Hook extends CordovaPlugin {
                 case addIceCandidate:
                     return service.addIceCandidate(args, callbackContext);
                 case close:
-                    return service.close(args);
+                    return service.close(args, callbackContext);
                 case removeTrack:
                     return service.removeTrack(args, callbackContext);
                 case replaceTrack:

@@ -26,6 +26,7 @@ import org.webrtc.RTCStatsReport;
 import org.webrtc.RtpParameters;
 import org.webrtc.RtpReceiver;
 import org.webrtc.RtpSender;
+import org.webrtc.RtpTransceiver;
 import org.webrtc.SdpObserver;
 import org.webrtc.SessionDescription;
 import org.webrtc.VideoTrack;
@@ -33,6 +34,7 @@ import org.webrtc.VideoTrack;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import static org.webrtc.RtpParameters.DegradationPreference.BALANCED;
@@ -48,7 +50,8 @@ public class RTCPeerConnection {
 
     RTCConfiguration config;
     PeerConnection peerConnection;
-    MediaStream localStream;
+    List<MediaStreamTrackWrapper> localTrackWrappers = new LinkedList<>();
+    //    MediaStream localStream;
     MediaStream remoteStream;
     PeerConnection.PeerConnectionState state;
 
@@ -69,6 +72,7 @@ public class RTCPeerConnection {
     public RTCPeerConnection(Supervisor supervisor, String pc_id, RTCConfiguration config) {
         this.supervisor = supervisor;
         this.pc_id = pc_id;
+        Log.v(TAG, "DUALSTREAM pc_id" + pc_id);
         this.config = config;
     }
 
@@ -109,17 +113,19 @@ public class RTCPeerConnection {
 //        timer.scheduleAtFixedRate(task, 1000L, 5000L);
     }
 
-    public void addTrack(String kind, MediaStreamTrack track) {
-        if (localStream == null) {
-            localStream = PCFactory.factory().createLocalMediaStream("AgoraLocalStream");
-        }
-        if (kind.equals("video")) {
-            localStream.addTrack((VideoTrack) track);
-        } else {
-            localStream.addTrack((AudioTrack) track);
-        }
-
-        peerConnection.addStream(localStream);
+    public void addTrack(String kind, MediaStreamTrackWrapper wrapper) {
+        localTrackWrappers.add(wrapper);
+        peerConnection.addTrack(wrapper.getTrack());
+//        if (localStream == null) {
+//            localStream = PCFactory.factory().createLocalMediaStream("AgoraLocalStream");
+//        }
+//        if (kind.equals("video")) {
+//            localStream.addTrack((VideoTrack) wrapper.getTrack());
+//        } else {
+//            localStream.addTrack((AudioTrack) wrapper.getTrack());
+//        }
+//
+//        peerConnection.addStream(localStream);
     }
 
     public void createOffer(MessageHandler handler, RTCOfferOptions options) {
@@ -225,18 +231,12 @@ public class RTCPeerConnection {
         }
     }
 
-    public void removeTrack(String kind, MediaStreamTrack track) {
-        if (localStream == null) {
-            if (kind.equals("video")) {
-                localStream.removeTrack((VideoTrack) track);
-            } else {
-                localStream.removeTrack((AudioTrack) track);
-            }
-        }
+    public void removeTrack(String kind, MediaStreamTrackWrapper wrapper) {
+        localTrackWrappers.remove(wrapper);
 
         for (RtpSender sender :
                 peerConnection.getSenders()) {
-            if (sender.track() == track) {
+            if (sender.track() == wrapper.getTrack()) {
                 Log.w(TAG, "remove track " + kind);
                 peerConnection.removeTrack(sender);
                 break;
@@ -254,7 +254,7 @@ public class RTCPeerConnection {
         }
     }
 
-    public void setRtpSenderParameters(String kind, String degradation, int maxBitrate, int minBitrate) {
+    public void setRtpSenderParameters(String kind, String degradation, int maxBitrate, int minBitrate, double scaleDown) {
         for (RtpSender sender :
                 peerConnection.getSenders()) {
             if (sender.track().kind().equals(kind)) {
@@ -270,7 +270,15 @@ public class RTCPeerConnection {
                 if (minBitrate > 0) {
                     parameters.encodings.get(0).minBitrateBps = minBitrate;
                 }
-                Log.v(TAG, "setRtpSenderParameter " + parameters.degradationPreference + " " + parameters.encodings.get(0).maxBitrateBps + " " + parameters.encodings.get(0).minBitrateBps);
+                if (scaleDown > 0) {
+                    parameters.encodings.get(0).scaleResolutionDownBy = scaleDown;
+                }
+                StringBuilder l = new StringBuilder();
+                l.append("setRtpSenderParameter ").append(parameters.degradationPreference).append(" ").
+                        append(parameters.encodings.get(0).maxBitrateBps).append(" ").
+                        append(parameters.encodings.get(0).minBitrateBps).append(" ").
+                        append(parameters.encodings.get(0).scaleResolutionDownBy);
+                Log.v(TAG, l.toString());
                 sender.setParameters(parameters);
                 break;
             }
@@ -278,21 +286,15 @@ public class RTCPeerConnection {
     }
 
     void closeStream() {
-        if (localStream != null) {
-            for (VideoTrack videoTrack : localStream.videoTracks) {
-                MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.popMediaStreamTrackByTrack(videoTrack);
-                if (wrapper != null) {
-                    wrapper.close();
-                }
-            }
-            for (AudioTrack audioTrack : localStream.audioTracks) {
-                MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.popMediaStreamTrackByTrack(audioTrack);
-                if (wrapper != null) {
-                    wrapper.close();
-                }
-            }
-            peerConnection.removeStream(localStream);
-            localStream = null;
+        for (MediaStreamTrackWrapper wrapper :
+                localTrackWrappers) {
+            MediaStreamTrackWrapper.popMediaStreamTrackById(wrapper.getId());
+            wrapper.close();
+        }
+        localTrackWrappers.clear();
+        for (RtpSender sender :
+                peerConnection.getSenders()) {
+            peerConnection.removeTrack(sender);
         }
         if (remoteStream != null) {
             for (VideoTrack videoTrack : remoteStream.videoTracks) {
@@ -417,6 +419,7 @@ public class RTCPeerConnection {
         @Override
         public void onConnectionChange(PeerConnection.PeerConnectionState newState) {
             Log.v(TAG, usage + " onConnectionChange " + newState.toString());
+            Log.v(TAG, "DUALSTREAM pc_id" + pc_id + " " + newState.toString());
             state = newState;
             if (newState == PeerConnection.PeerConnectionState.CLOSED ||
                     newState == PeerConnection.PeerConnectionState.FAILED) {// ||

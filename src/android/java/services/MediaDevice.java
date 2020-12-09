@@ -287,12 +287,10 @@ public class MediaDevice {
         if (constraints.video != null) {
             getVideoParameter(constraints.video);
 
-            MediaStreamTrackWrapper wrapper1 = createLocalVideoTrack(constraints.video.deviceId.mean,
-                    constraints.video.facingMode.mean.equals("user"), constraints.video.width.mean.intValue(),
-                    constraints.video.height.mean.intValue(), constraints.video.frameRate.mean.intValue());
             MediaStreamTrackWrapper wrapper = createLocalVideoTrack(constraints.video.deviceId.mean,
                     constraints.video.facingMode.mean.equals("user"), constraints.video.width.mean.intValue(),
                     constraints.video.height.mean.intValue(), constraints.video.frameRate.mean.intValue());
+            Log.v(TAG, "DUALSTREAM original " + wrapper.getId());
             builder.append(wrapper.toString());
         }
         builder.append("]");

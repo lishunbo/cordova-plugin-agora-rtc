@@ -53,6 +53,16 @@ public class MediaStreamTrackWrapper {
         return this.pcid.length() == 0;
     }
 
+    public boolean isSubTrack() {
+        if (!track.kind().equals("video")) {
+            return false;
+        }
+        if (getRelatedObject().size() > 1 && getRelatedObject().get(0) instanceof VideoCapturer) {
+            return false;
+        }
+        return true;
+    }
+
     public MediaStreamTrack getTrack() {
         return track;
     }
@@ -77,6 +87,9 @@ public class MediaStreamTrackWrapper {
     }
 
     public void close() {
+        if (getTrack() == null || isSubTrack()) {
+            return;
+        }
         if (getTrack().kind().equals("audio") && getRelatedObject().size() != 0 &&
                 getRelatedObject().get(0) != null && getRelatedObject().get(0) instanceof AudioSource) {
             ((AudioSource) getRelatedObject().get(0)).dispose();
@@ -91,6 +104,8 @@ public class MediaStreamTrackWrapper {
             }
             if (getRelatedObject().size() != 0) {
                 if (getRelatedObject().get(0) != null && getRelatedObject().get(0) instanceof VideoCapturer) {
+                    //only dispose when real video captured track
+                    getTrack().dispose();
                     try {
                         ((VideoCapturer) getRelatedObject().get(0)).stopCapture();
                     } catch (Exception e) {
@@ -116,7 +131,6 @@ public class MediaStreamTrackWrapper {
         }
 
         getRelatedObject().clear();
-        getTrack().dispose();
         id = null;
         pcid = null;
         track = null;
@@ -202,9 +216,11 @@ public class MediaStreamTrackWrapper {
     }
 
     public static MediaStreamTrackWrapper cacheMediaStreamTrack(String pcid, MediaStreamTrack track, Object... relatedObject) {
+        if (pcid.length() == 0) {
+            return cacheMediaStreamTrackWrapper(pcid, track, relatedObject);
+        }
         MediaStreamTrackWrapper wrapper = getMediaStreamTrackByTrack(track);
         if (wrapper == null) {
-            Log.v(TAG, "cameraIdisFront store " + relatedObject.length);
             wrapper = cacheMediaStreamTrackWrapper(pcid, track, relatedObject);
         }
         return wrapper;
