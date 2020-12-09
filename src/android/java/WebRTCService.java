@@ -6,6 +6,7 @@ import android.util.Log;
 
 import com.agora.cordova.plugin.webrtc.models.MediaStreamConstraints;
 import com.agora.cordova.plugin.webrtc.models.MediaStreamTrackWrapper;
+import com.agora.cordova.plugin.webrtc.models.MediaTrackConstraintSet;
 import com.agora.cordova.plugin.webrtc.models.RTCConfiguration;
 import com.agora.cordova.plugin.webrtc.models.RTCOfferOptions;
 import com.agora.cordova.plugin.webrtc.services.MediaDevice;
@@ -92,6 +93,27 @@ public class WebRTCService {
         }
 
         callbackContext.success();
+        return true;
+    }
+
+    public boolean getNativeLowResolutionVideoTrack(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        MediaStreamConstraints constraints = MediaStreamConstraints.fromJson(args.getJSONObject(0).toString());
+
+        assert constraints != null;
+        MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.getMediaStreamTrackById(args.getString(1));
+        if (wrapper.getRelatedObject().size() >= 4) {
+            String deviceId = wrapper.getRelatedObject().get(3).toString();
+            if (constraints.video.deviceId == null) {
+                constraints.video.deviceId = new MediaTrackConstraintSet.ParamStringSet();
+            }
+            constraints.video.deviceId.mean = deviceId;
+        }
+
+        Log.v(TAG, "getNativeLowResolutionVideoTrack: " + constraints.toString());
+
+        String summary = MediaDevice.getUserMedia(constraints);
+
+        callbackContext.success(summary);
         return true;
     }
 

@@ -204,6 +204,7 @@ public class MediaStreamTrackWrapper {
     public static MediaStreamTrackWrapper cacheMediaStreamTrack(String pcid, MediaStreamTrack track, Object... relatedObject) {
         MediaStreamTrackWrapper wrapper = getMediaStreamTrackByTrack(track);
         if (wrapper == null) {
+            Log.v(TAG, "cameraIdisFront store " + relatedObject.length);
             wrapper = cacheMediaStreamTrackWrapper(pcid, track, relatedObject);
         }
         return wrapper;

@@ -288,6 +288,23 @@ class AudioPlayer {
     }
 }
 
+function getNativeLowResolutionVideoTrack(track, width, heigth, framerate) {
+    return new Promise((resolve, reject) => {
+        var args = {}
+        args.video = {
+            width: width,
+            height: heigth,
+            frameRate: framerate,
+        }
+        cordova.exec(function (ev) {
+            var tracks = JSON.parse(ev);
+            resolve(new Stream.MediaStreamTrack(tracks[0].kind, tracks[0].id))
+        }, function (ev) {
+            console.log("Failed to getNativeLowResolutionVideoTrack");
+        }, 'Hook', 'getNativeLowResolutionVideoTrack', [args, track.id]);
+    })
+}
+
 /**
  * @module NativeVideoPlayer
  */
@@ -295,5 +312,6 @@ module.exports = {
     VideoPlayStatus,
     VideoPlayer,
     AudioPlayer,
+    getNativeLowResolutionVideoTrack,
 }
 console.log("player.js onloaded");

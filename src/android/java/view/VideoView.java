@@ -39,6 +39,7 @@ public class VideoView extends SurfaceViewRenderer implements View.OnTouchListen
     public String id;
     PlayConfig config;
     boolean isPlayed;
+    boolean isShown;
     WindowManager.LayoutParams params;
     ProxyVideoSink sink;
 
@@ -69,6 +70,7 @@ public class VideoView extends SurfaceViewRenderer implements View.OnTouchListen
         this.id = id;
         this.config = config;
         this.isPlayed = false;
+        this.isShown = false;
         setOnTouchListener(this);
     }
 
@@ -107,6 +109,7 @@ public class VideoView extends SurfaceViewRenderer implements View.OnTouchListen
         mainActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                Log.v(TAG, "playing");
                 MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.getMediaStreamTrackById(config.trackId);
                 if (wrapper == null || wrapper.getTrack() == null || !wrapper.getTrack().kind().toLowerCase().equals("video")) {
                     Log.e(TAG, "cannot show VideoTrack because not found valid VideoTrack " + config.trackId);
@@ -128,15 +131,17 @@ public class VideoView extends SurfaceViewRenderer implements View.OnTouchListen
 
                 that.setScalingType(type);
                 boolean shouldMirror = false;
+                sink = new ProxyVideoSink();
                 if (wrapper.getRelatedObject().size() >= 4) {
                     Object obj = wrapper.getRelatedObject().get(3);
-                    shouldMirror = obj.toString().equals("true");
+                    shouldMirror = MediaDevice.cameraIsFront(obj.toString());
+                } else{
+                    sink.shouldLog=true;
                 }
                 that.setMirror(shouldMirror);
                 that.setZOrderMediaOverlay(true);
 
                 VideoTrack videoTrack = (VideoTrack) wrapper.getTrack();
-                sink = new ProxyVideoSink();
                 sink.setTarget(that);
                 videoTrack.addSink(sink);
 
@@ -154,8 +159,12 @@ public class VideoView extends SurfaceViewRenderer implements View.OnTouchListen
                             }
                         });
                     }
-                    windowManager.addView(that, params);
+                    if (!that.isShown) {
+                        that.isShown = true;
+                        windowManager.addView(that, params);
+                    }
                     that.isPlayed = true;
+                    Log.v(TAG, "playing done");
 
                     context.success();
                 } catch (Exception e) {
@@ -189,7 +198,10 @@ public class VideoView extends SurfaceViewRenderer implements View.OnTouchListen
         mainActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                windowManager.removeViewImmediate(that);
+                if (that.isShown) {
+                    that.isShown = false;
+                    windowManager.removeViewImmediate(that);
+                }
             }
         });
     }

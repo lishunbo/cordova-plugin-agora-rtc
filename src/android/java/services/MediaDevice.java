@@ -218,6 +218,7 @@ public class MediaDevice {
         for (AudioDeviceInfo device :
                 audioOutputDevices) {
             if (device.getId() == deviceId) {
+                Log.v(TAG, "found targetDevice: " + deviceId + " " + device.getType());
                 switch (device.getType()) {
                     case AudioDeviceInfo.TYPE_BUILTIN_SPEAKER:
                         audioManager.setMode(AudioManager.MODE_NORMAL);
@@ -286,6 +287,9 @@ public class MediaDevice {
         if (constraints.video != null) {
             getVideoParameter(constraints.video);
 
+            MediaStreamTrackWrapper wrapper1 = createLocalVideoTrack(constraints.video.deviceId.mean,
+                    constraints.video.facingMode.mean.equals("user"), constraints.video.width.mean.intValue(),
+                    constraints.video.height.mean.intValue(), constraints.video.frameRate.mean.intValue());
             MediaStreamTrackWrapper wrapper = createLocalVideoTrack(constraints.video.deviceId.mean,
                     constraints.video.facingMode.mean.equals("user"), constraints.video.width.mean.intValue(),
                     constraints.video.height.mean.intValue(), constraints.video.frameRate.mean.intValue());
@@ -453,7 +457,7 @@ public class MediaDevice {
 
         VideoTrack videoTrack = PCFactory.factory().createVideoTrack(UUID.randomUUID().toString(), videoSource);
 
-        return MediaStreamTrackWrapper.cacheMediaStreamTrack("", videoTrack, videoCapturer, surfaceTextureHelper, videoSource, cameraIsFront(deviceId));
+        return MediaStreamTrackWrapper.cacheMediaStreamTrack("", videoTrack, videoCapturer, surfaceTextureHelper, videoSource, deviceId);
     }
 
     private static VideoCapturer createCameraCapturer(String deviceId, boolean isFront) {

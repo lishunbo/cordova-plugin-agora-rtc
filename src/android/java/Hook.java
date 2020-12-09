@@ -66,6 +66,8 @@ public class Hook extends CordovaPlugin {
                     return service.getUserMedia(args, callbackContext);
                 case stopMediaStreamTrack:
                     return service.stopMediaStreamTrack(args, callbackContext);
+                case getNativeLowResolutionVideoTrack:
+                    return service.getNativeLowResolutionVideoTrack(args, callbackContext);
                 //Keep Instance context for callback
                 case createInstance:
                     return service.createInstance(args, callbackContext);

@@ -1,5 +1,5 @@
 /**
- * AgoraWebSDK_N-v4.1.1-62-g080e77b-dirty Copyright AgoraInc.
+ * AgoraWebSDK_N-v4.1.1-63-g7259b83-dirty Copyright AgoraInc.
  */
 
 (function (global, factory) {
@@ -8523,7 +8523,7 @@
 	 * Agora Web SDK 的编译信息。
 	 * @public
 	 */
-	var BUILD = "v4.1.1-62-g080e77b-dirty(12/8/2020, 4:48:30 PM)";
+	var BUILD = "v4.1.1-63-g7259b83-dirty(12/9/2020, 2:34:37 PM)";
 	var VERSION = transferVersion("4.1.1");
 	var IS_GLOBAL_VERSION = isGlobalVersion();
 	var DEFAULT_TURN_CONFIG = {
@@ -26070,14 +26070,7 @@
 
 	  NativeAudioTrack.prototype.stopGetAudioBuffer = function () {};
 
-	  NativeAudioTrack.prototype.startGetAudioBuffer = function (frameSize) {
-	    var opt = {
-	      length: 10,
-	      numberOfChannels: 2,
-	      sampleRate: 44100
-	    };
-	    this.emit(AudioSourceEvents.ON_AUDIO_BUFFER, new AudioBuffer(opt));
-	  };
+	  NativeAudioTrack.prototype.startGetAudioBuffer = function (frameSize) {};
 
 	  NativeAudioTrack.prototype.updateTrack = function (track) {
 	    this.track = track;
@@ -31287,12 +31280,10 @@
 	      return __generator$i(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
-	            logger.info("setRtpSenderParameters");
 	            videoSender = this.videoSender || (this.videoTransceiver ? this.videoTransceiver.sender : undefined);
 	            if (!videoSender) return [2
 	            /*return*/
 	            ];
-	            logger.info("setRtpSenderParameters 1");
 	            parameters = videoSender.getParameters();
 	            /* TODO: 暂时无法修改编码器的 encoding 配置，需要调查原因，怀疑是只有在编码开始后设置才有效
 	            */
@@ -31307,7 +31298,6 @@
 
 	            parameters.encodings[0].maxBitrate = encoder.maxBitrate;
 	            parameters.degradationPreference = degradation;
-	            logger.info("setRtpSenderParameters 2", parameters);
 	            _a.label = 1;
 
 	          case 1:
@@ -31320,7 +31310,6 @@
 	          case 2:
 	            _a.sent();
 
-	            logger.info("setRtpSenderParameters 3", parameters);
 	            return [3
 	            /*break*/
 	            , 4];
@@ -34991,81 +34980,6 @@
 	  }).join("\r\n") + "\r\n";
 	}
 
-	function getLowResolutionVideoTrack(inputTrack, lowStreamParams) {
-	  var videoElement = document.createElement("video");
-	  var canvas = document.createElement("canvas");
-	  videoElement.setAttribute("style", "display:none");
-	  canvas.setAttribute("style", "display:none");
-	  videoElement.setAttribute("muted", "");
-	  videoElement.muted = true;
-	  videoElement.setAttribute("autoplay", "");
-	  videoElement.autoplay = true;
-	  videoElement.setAttribute("playsinline", "");
-	  canvas.width = constrainLongToNumber(lowStreamParams.width);
-	  canvas.height = constrainLongToNumber(lowStreamParams.height);
-	  var framerate = constrainLongToNumber(lowStreamParams.framerate || 15);
-	  document.body.append(videoElement);
-	  document.body.append(canvas);
-	  var inputMediaStreamTrack = inputTrack._mediaStreamTrack;
-	  videoElement.srcObject = new MediaStream([inputMediaStreamTrack]);
-	  videoElement.play();
-	  var ctx = canvas.getContext("2d");
-
-	  if (!ctx) {
-	    throw new AgoraRTCError(AgoraRTCErrorCode.UNEXPECTED_ERROR, "can not get canvas context");
-	  }
-
-	  var compatibility = getCompatibility();
-	  var stream = canvas.captureStream(compatibility.supportRequestFrame ? 0 : framerate);
-	  var track = stream.getVideoTracks()[0];
-
-	  var draw = function () {
-	    // auto resume muted video in safari
-	    if (videoElement.paused) {
-	      videoElement.play();
-	    }
-
-	    if (videoElement.videoHeight > 2 && videoElement.videoWidth > 2) {
-	      var videoWidth = videoElement.videoWidth;
-	      var videoHeight = videoElement.videoHeight;
-	      var videoAspectRatio = videoHeight / videoWidth;
-	      var newCanvasHeight = canvas.width * videoAspectRatio; // 尽量减少更改 canvas 宽高的次数，高度差值大于 2 时才会触发 canvas 尺寸更新
-
-	      if (Math.abs(newCanvasHeight - canvas.height) >= 2) {
-	        logger.debug("adjust low stream resolution", canvas.width + "x" + canvas.height + " -> " + canvas.width + "x" + newCanvasHeight);
-	        canvas.height = newCanvasHeight;
-	      }
-	    }
-
-	    ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height); // @ts-ignore
-
-	    track.requestFrame && track.requestFrame();
-
-	    if (inputMediaStreamTrack !== inputTrack._mediaStreamTrack) {
-	      inputMediaStreamTrack = inputTrack._mediaStreamTrack;
-	      videoElement.srcObject = new MediaStream([inputMediaStreamTrack]);
-	    }
-	  };
-
-	  var cancelLoop = audioTimerLoop(function () {
-	    return draw();
-	  }, framerate);
-	  var originTrackStop = track.stop;
-
-	  track.stop = function () {
-	    originTrackStop.call(track);
-	    cancelLoop();
-	    videoElement.remove();
-	    canvas.width = 0;
-	    canvas.remove();
-	    canvas = null;
-	    videoElement = null;
-	    logger.debug("clean low stream renderer");
-	  };
-
-	  return track;
-	}
-
 	var __extends$j = undefined && undefined.__extends || function () {
 	  var extendStatics = function (d, b) {
 	    extendStatics = setPrototypeOf$2 || {
@@ -35467,7 +35381,7 @@
 	          case 6:
 	            if (!(i < tracks.length)) return [3
 	            /*break*/
-	            , 16];
+	            , 17];
 	            track = tracks[i];
 
 	            if (!(track instanceof LocalTrack)) {
@@ -35530,14 +35444,19 @@
 	          case 10:
 	            return [3
 	            /*break*/
-	            , 15];
+	            , 16];
 
 	          case 11:
 	            if (!(track instanceof LocalVideoTrack && this.isLowStreamConnection)) return [3
 	            /*break*/
-	            , 13];
+	            , 14];
 	            streamParameter = this.lowStreamParameter || getDefaultLowStreamParameter();
-	            lowMediaStreamTrack = getLowResolutionVideoTrack(track, streamParameter);
+	            return [4
+	            /*yield*/
+	            , cordovaPluginAgoraRtc_NativePlayer.getNativeLowResolutionVideoTrack(track._mediaStreamTrack, streamParameter.width, streamParameter.height, streamParameter.framerate)];
+
+	          case 12:
+	            lowMediaStreamTrack = _a.sent();
 	            lowVideoTrack = new LocalVideoTrack(lowMediaStreamTrack, {
 	              bitrateMax: streamParameter.bitrate,
 	              bitrateMin: streamParameter.bitrate
@@ -35549,13 +35468,13 @@
 	            /*yield*/
 	            , this.addTrackWithPC(lowVideoTrack)];
 
-	          case 12:
+	          case 13:
 	            needRenegotiate = _a.sent();
 	            return [3
 	            /*break*/
-	            , 15];
+	            , 16];
 
-	          case 13:
+	          case 14:
 	            /** 发布大流视频，进入 detecting 状态 8 秒以过渡码率爬升影响网络质量阶段 */
 	            this.detecting = true;
 
@@ -35567,30 +35486,30 @@
 	            /*yield*/
 	            , this.addTrackWithPC(track)];
 
-	          case 14:
-	            needRenegotiate = _a.sent();
-	            _a.label = 15;
-
 	          case 15:
+	            needRenegotiate = _a.sent();
+	            _a.label = 16;
+
+	          case 16:
 	            i += 1;
 	            return [3
 	            /*break*/
 	            , 6];
 
-	          case 16:
+	          case 17:
 	            if (!needRenegotiate) return [3
 	            /*break*/
-	            , 18];
+	            , 19];
 	            return [4
 	            /*yield*/
 	            , this.renegotiateWithGateway()];
 
-	          case 17:
+	          case 18:
 	            _a.sent();
 
-	            _a.label = 18;
+	            _a.label = 19;
 
-	          case 18:
+	          case 19:
 	            forEach$3(tracks).call(tracks, function (track) {
 	              return _this.bindTrackEvents(track);
 	            });

@@ -260,6 +260,8 @@ public class RTCPeerConnection {
             if (sender.track().kind().equals(kind)) {
                 RtpParameters parameters = sender.getParameters();
                 if (degradation.length() > 0) {
+                    degradation = degradation.replace("-", "_");
+                    Log.e(TAG, "degration:" + BALANCED + " " + MAINTAIN_FRAMERATE + " " + MAINTAIN_RESOLUTION + " " + degradation);
                     parameters.degradationPreference = RtpParameters.DegradationPreference.valueOf(degradation.toUpperCase());
                 }
                 if (maxBitrate > 0) {
@@ -268,7 +270,7 @@ public class RTCPeerConnection {
                 if (minBitrate > 0) {
                     parameters.encodings.get(0).minBitrateBps = minBitrate;
                 }
-                Log.v(TAG, "setRtpSenderParameter "+parameters.degradationPreference+" "+parameters.encodings.get(0).maxBitrateBps+" "+parameters.encodings.get(0).minBitrateBps);
+                Log.v(TAG, "setRtpSenderParameter " + parameters.degradationPreference + " " + parameters.encodings.get(0).maxBitrateBps + " " + parameters.encodings.get(0).minBitrateBps);
                 sender.setParameters(parameters);
                 break;
             }

@@ -4,6 +4,7 @@ public enum Action {
     enumerateDevices("enumerateDevices"),
     getUserMedia("getUserMedia"),
     stopMediaStreamTrack("stopMediaStreamTrack"),
+    getNativeLowResolutionVideoTrack("getNativeLowResolutionVideoTrack"),
 
     createInstance("createInstance"),
     createOffer("createOffer"),
