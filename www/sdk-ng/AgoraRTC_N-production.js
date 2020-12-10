@@ -8523,7 +8523,7 @@
 	 * Agora Web SDK 的编译信息。
 	 * @public
 	 */
-	var BUILD = "v4.1.1-63-g7259b83-dirty(12/9/2020, 2:34:37 PM)";
+	var BUILD = "v4.1.1-63-g7259b83-dirty(12/10/2020, 11:27:01 AM)";
 	var VERSION = transferVersion("4.1.1");
 	var IS_GLOBAL_VERSION = isGlobalVersion();
 	var DEFAULT_TURN_CONFIG = {
@@ -27994,6 +27994,8 @@
 
 	              if (oldPeer.B_st !== peer.B_st) {
 	                nextTick(function () {
+	                  logger.debug("gateway emit event STREAM_TYPE_CHANGE");
+
 	                  _this.emit(GatewayEvent.STREAM_TYPE_CHANGE, peer.peer_uid, peer.B_st);
 	                });
 	              }
@@ -31274,7 +31276,7 @@
 	    });
 	  };
 
-	  PubRTCPeerConnection.prototype.setRtpSenderParameters = function (encoder, degradation) {
+	  PubRTCPeerConnection.prototype.setRtpSenderParameters = function (encoder, degradation, isLowTrack) {
 	    return __awaiter$i(this, void 0, void 0, function () {
 	      var videoSender, parameters, e_5;
 	      return __generator$i(this, function (_a) {
@@ -31297,6 +31299,11 @@
 	            }
 
 	            parameters.encodings[0].maxBitrate = encoder.maxBitrate;
+
+	            if (isLowTrack) {
+	              parameters.encodings[0].scaleResolutionDownBy = 8;
+	            }
+
 	            parameters.degradationPreference = degradation;
 	            _a.label = 1;
 
@@ -36020,6 +36027,8 @@
 	    return __awaiter$o(this, void 0, void 0, function () {
 	      var error, lastVideoTrack, needRenegotiate, compat, encoderParams, mode;
 	      return __generator$o(this, function (_a) {
+	        var _context5, _context6;
+
 	        switch (_a.label) {
 	          case 0:
 	            if (this.connectionState === "connecting") {
@@ -36114,10 +36123,10 @@
 	              mode = "maintain-resolution";
 	            }
 
-	            logger.debug("[" + this.connectionId + "] set pc rtp sender", encoderParams, mode);
+	            logger.debug("[" + this.connectionId + "] set pc rtp sender", encoderParams, mode, indexOf$3(_context5 = track._hints).call(_context5, TrackHint.LOW_STREAM));
 	            return [4
 	            /*yield*/
-	            , this.pc.setRtpSenderParameters(encoderParams, mode)];
+	            , this.pc.setRtpSenderParameters(encoderParams, mode, indexOf$3(_context6 = track._hints).call(_context6, TrackHint.LOW_STREAM) !== -1)];
 
 	          case 9:
 	            _a.sent();
@@ -36134,14 +36143,14 @@
 	  };
 
 	  PubStreamConnection.prototype.updateAnswerSDP = function (sdp) {
-	    var _context5, _context6;
+	    var _context7, _context8;
 
 	    /** replace Track 到 screen 的时候，这个标签不会重置，帧率会被固定到 5 */
 	    sdp = sdp.replace(/a=x-google-flag:conference\r\n/g, "");
 
-	    if (this.videoTrack && indexOf$3(_context5 = this.videoTrack._hints).call(_context5, TrackHint.SCREEN_TRACK) !== -1) ;
+	    if (this.videoTrack && indexOf$3(_context7 = this.videoTrack._hints).call(_context7, TrackHint.SCREEN_TRACK) !== -1) ;
 
-	    if (this.videoTrack && this.videoTrack._encoderConfig && indexOf$3(_context6 = this.videoTrack._hints).call(_context6, TrackHint.SCREEN_TRACK) === -1) {
+	    if (this.videoTrack && this.videoTrack._encoderConfig && indexOf$3(_context8 = this.videoTrack._hints).call(_context8, TrackHint.SCREEN_TRACK) === -1) {
 	      sdp = updateAnswerSDPWithVideoEncoderConfiguration(sdp, this.codec, this.videoTrack._encoderConfig);
 	    }
 
@@ -36189,7 +36198,7 @@
 	  };
 
 	  PubStreamConnection.prototype.onPCDisconnected = function (reason) {
-	    var _context7;
+	    var _context9;
 
 	    report.publish(this.joinInfo.sid, {
 	      lts: this.startTime,
@@ -36197,7 +36206,7 @@
 	      ec: reason.code,
 	      audioName: this.audioTrack && this.audioTrack.getTrackLabel(),
 	      videoName: this.videoTrack && this.videoTrack.getTrackLabel(),
-	      screenshare: !!(this.videoTrack && indexOf$3(_context7 = this.videoTrack._hints).call(_context7, TrackHint.SCREEN_TRACK) !== -1),
+	      screenshare: !!(this.videoTrack && indexOf$3(_context9 = this.videoTrack._hints).call(_context9, TrackHint.SCREEN_TRACK) !== -1),
 	      audio: !!this.audioTrack,
 	      video: !!this.videoTrack,
 	      p2pid: this.pc.ID,
@@ -41817,6 +41826,7 @@
 	              throw err;
 	            }
 
+	            logger.info("[" + this._clientId + "] ready to enable dual stream", this._highStream);
 	            if (!(this._highStream && this._highStream.connectionState === "connected" && this._highStream.videoTrack)) return [3
 	            /*break*/
 	            , 4];
@@ -43359,6 +43369,8 @@
 	    });
 
 	    this._gateway.on(GatewayEvent.STREAM_TYPE_CHANGE, function (uid, streamType) {
+	      logger.debug("gateway have event STREAM_TYPE_CHANGE");
+
 	      _this.emit(ClientEvents.STREAM_TYPE_CHANGED, uid, streamType);
 
 	      var executor = report.reportApiInvoke(_this._sessionId, {

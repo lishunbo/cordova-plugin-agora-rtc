@@ -224,8 +224,8 @@ class RTCPeerConnection {
                                 }, function (ev) {
                                     reject(ev);
                                 }, MediaService, 'setSenderParameter', [that.id, that.senders[idx].track.kind, degradationPreference,
-                                    maxBitrate == null ? 0 : maxBitrate, minBitrate == null ? 0 : minBitrate,
-                                    scaleDown == null ? 1 : scaleDown]);
+                                maxBitrate == null ? 0 : maxBitrate, minBitrate == null ? 0 : minBitrate,
+                                scaleDown == null ? 1 : scaleDown]);
                             }
                             that.senders[idx].parameter = parameter
                             that.senders[idx].modified = false
@@ -284,10 +284,11 @@ class RTCPeerConnection {
         }, MediaService, 'close', [this.id]);
     }
 
-    removeTrack(track) {
+    removeTrack(sender) {
+        console.log("peerconnection  removeTrack", JSON.stringify(sender))
         cordova.exec(function (ev) {
         }, function (ev) {
-        }, MediaService, 'removeTrack', [this.id, track.id, track.kind]);
+        }, MediaService, 'removeTrack', [this.id, sender.track.id, sender.track.kind]);
     }
 
     getTransceivers() {

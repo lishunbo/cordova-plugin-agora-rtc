@@ -236,7 +236,7 @@ public class RTCPeerConnection {
 
         for (RtpSender sender :
                 peerConnection.getSenders()) {
-            if (sender.track() == wrapper.getTrack()) {
+            if (sender.track().kind().equals(kind)) {
                 Log.w(TAG, "remove track " + kind);
                 peerConnection.removeTrack(sender);
                 break;

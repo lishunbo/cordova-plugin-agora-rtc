@@ -298,12 +298,13 @@ public class WebRTCService {
         String kind = args.getString(2);
 
         MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.popMediaStreamTrackById(tid);
-        if (wrapper == null) {
-            String err = "Cannot found cached MediaStreamTrack by id:" + tid;
-            Log.e(TAG, err);
-            callbackContext.error(err);
-            return false;
-        }
+//        because the target MediaStreamTrack has been closed before
+//        if (wrapper == null) {
+//            String err = "Cannot found cached MediaStreamTrack by id:" + tid;
+//            Log.e(TAG, err);
+//            callbackContext.error(err);
+//            return false;
+//        }
 
         CallbackPCPeer peer = instances.get(id);
         assert peer != null;
