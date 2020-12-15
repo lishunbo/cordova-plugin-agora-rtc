@@ -40,9 +40,6 @@
                 <param name="onload" value="true" />
             </feature>
         </config-file>
-        <!-- <config-file target="AndroidManifest.xml" parent="/manifest/application">
-            <activity android:name="com.agora.cordova.plugin.webrtc.WebRTCViewActivity" >    </activity>
-        </config-file> -->
         <config-file target="AndroidManifest.xml" parent="/*">
             <uses-feature android:name="android.hardware.camera" />
             <uses-feature android:name="android.hardware.camera.autofocus" />
@@ -61,18 +58,6 @@
             <service android:name="com.agora.cordova.plugin.webrtc.ScreenCapture"
                 android:foregroundServiceType="mediaProjection"></service>
         </config-file>
-        <!-- <config-file target="AndroidManifest.xml" parent="application">
-          <provider
-              android:name="org.apache.cordova.camera.FileProvider"
-              android:authorities="${applicationId}.cordova.plugin.camera.provider"
-              android:exported="false"
-              android:grantUriPermissions="true" >
-              <meta-data
-                  android:name="android.support.FILE_PROVIDER_PATHS"
-                  android:resource="@xml/camera_provider_paths"/>
-          </provider>
-        </config-file> -->
-
         <!-- VideoPlayer -->
         <source-file src="src/android/java/view/NativePlayerHook.java" target-dir="src/com/agora/cordova/plugin/view"/>
         <source-file src="src/android/java/view/interfaces/Player.java" target-dir="src/com/agora/cordova/plugin/view/interfaces"/>
