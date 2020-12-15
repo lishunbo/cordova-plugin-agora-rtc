@@ -55,6 +55,11 @@
             <uses-permission android:name="android.permission.WAKE_LOCK" />
             <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
             <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+            <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+        </config-file>
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">
+            <service android:name="com.agora.cordova.plugin.webrtc.ScreenCapture"
+                android:foregroundServiceType="mediaProjection"></service>
         </config-file>
         <!-- <config-file target="AndroidManifest.xml" parent="application">
           <provider
@@ -84,6 +89,7 @@
         <source-file src="src/android/java/Action.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
         <source-file src="src/android/java/Config.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
         <source-file src="src/android/java/Hook.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
+        <source-file src="src/android/java/ScreenCapture.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
         <source-file src="src/android/java/WebRTCService.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
         <!-- utils -->
         <source-file src="src/android/java/utils/MessageBus.java" target-dir="src/com/agora/cordova/plugin/webrtc/utils"/>

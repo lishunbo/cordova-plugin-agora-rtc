@@ -309,8 +309,7 @@ public class WebRTCService {
         CallbackPCPeer peer = instances.get(id);
         assert peer != null;
         peer.pc.removeTrack(kind, wrapper);
-
-        callbackContext.success(wrapper.toString());
+        callbackContext.success();
         return true;
     }
 
