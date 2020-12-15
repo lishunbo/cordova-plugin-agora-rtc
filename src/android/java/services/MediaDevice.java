@@ -3,20 +3,26 @@ package com.agora.cordova.plugin.webrtc.services;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
+import android.media.MediaPlayer;
+import android.media.projection.MediaProjection;
+import android.media.projection.MediaProjectionManager;
 import android.os.Build;
 import android.os.Handler;
 import android.util.Log;
 
+import com.agora.cordova.plugin.webrtc.ScreenCapture;
 import com.agora.cordova.plugin.webrtc.models.MediaDeviceInfo;
 import com.agora.cordova.plugin.webrtc.models.MediaStreamConstraints;
 import com.agora.cordova.plugin.webrtc.models.MediaStreamTrackWrapper;
 import com.agora.cordova.plugin.webrtc.models.MediaTrackConstraintSet;
 import com.agora.cordova.plugin.webrtc.models.MediaTrackConstraints;
+import com.agora.example.five.R;
 
 import org.webrtc.AudioSource;
 import org.webrtc.AudioTrack;
@@ -24,6 +30,7 @@ import org.webrtc.Camera1Enumerator;
 import org.webrtc.Camera2Capturer;
 import org.webrtc.Camera2Enumerator;
 import org.webrtc.MediaConstraints;
+import org.webrtc.ScreenCapturerAndroid;
 import org.webrtc.SurfaceTextureHelper;
 import org.webrtc.VideoCapturer;
 import org.webrtc.VideoSource;
@@ -39,16 +46,23 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 
+import static android.app.Activity.RESULT_OK;
+
 public class MediaDevice {
     private final static String TAG = MediaDevice.class.getCanonicalName();
 
     static Activity activity;
     static Context context;
+    static Intent screenCaptureIntent = null;
 
     public static void initialize(Activity activity, Context context) {
         MediaDevice.activity = activity;
         MediaDevice.context = context;
         SettingsContentObserver.initialize(activity, new Handler());
+    }
+
+    public static void setScreenCaptureIntent(Intent intent) {
+        MediaDevice.screenCaptureIntent = intent;
     }
 
     public static void unInitialize() {
@@ -305,6 +319,9 @@ public class MediaDevice {
         }
         if (video.width.mean == null) {
             video.width.mean = 640L;
+            if (video.width.max != null) {
+                video.width.mean = video.width.max;
+            }
         }
         if (video.height == null) {
             video.height = new MediaTrackConstraintSet.ParamULongRange();
@@ -312,6 +329,9 @@ public class MediaDevice {
         }
         if (video.height.mean == null) {
             video.height.mean = 480L;
+            if (video.height.max != null) {
+                video.height.mean = video.height.max;
+            }
         }
         if (video.frameRate == null) {
             video.frameRate = new MediaTrackConstraintSet.ParamDoubleRange();
@@ -418,6 +438,29 @@ public class MediaDevice {
         }
     }
 
+    public static MediaStreamTrackWrapper createMusicFileAudioTrack() {
+
+        MediaPlayer player = MediaPlayer.create(context, R.raw.simgmetosleep);
+        player.setLooping(true);
+        player.start();
+//        player.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+//            @Override
+//            public void onPrepared(MediaPlayer mp) {
+//                player.setAudioStreamType(AudioManager.STREAM_VOICE_CALL);
+//                player.setVolume(1,1);
+//                try {
+//                    player.start();
+//                }catch (Exception e){
+//                    Log.e(TAG, e.toString());
+//                }
+//            }
+//        });
+
+        Log.v(TAG, "start playing music file");
+
+        return null;
+    }
+
     public static MediaStreamTrackWrapper createLocalAudioTrack(String deviceID, int sampleRate, int channelCount, boolean aec, boolean echo, boolean noise) {
         MediaConstraints mediaConstraints = new MediaConstraints();
         mediaConstraints.mandatory.add(new MediaConstraints.KeyValuePair("googEchoCancellation", "true"));
@@ -436,10 +479,38 @@ public class MediaDevice {
         AudioSource audioSource = PCFactory.factory().createAudioSource(new MediaConstraints());
         AudioTrack audioTrack = PCFactory.factory().createAudioTrack(UUID.randomUUID().toString(), audioSource);
 
+//        createMusicFileAudioTrack();
+
         return MediaStreamTrackWrapper.cacheMediaStreamTrack("", audioTrack, audioSource);
     }
 
+    public static MediaStreamTrackWrapper createLocalScreenTrack(String deviceId, boolean isFront, int w, int h, int fps) {
+        ScreenCapturerAndroid videoCapturer = new ScreenCapturerAndroid(screenCaptureIntent, new MediaProjection.Callback() {
+            @Override
+            public void onStop() {
+                super.onStop();
+                Log.v(TAG, "stop screen capture");
+            }
+        });
+        SurfaceTextureHelper surfaceTextureHelper = SurfaceTextureHelper.create("ScreenCaptureThread", PCFactory.eglBase());
+        VideoSource videoSource = PCFactory.factory().createVideoSource(videoCapturer.isScreencast());
+
+        videoSource.adaptOutputFormat(w, h, fps);
+
+        videoCapturer.initialize(surfaceTextureHelper, context, videoSource.getCapturerObserver());
+        videoCapturer.startCapture(w, h, fps);
+
+        VideoTrack videoTrack = PCFactory.factory().createVideoTrack(UUID.randomUUID().toString(), videoSource);
+
+        return MediaStreamTrackWrapper.cacheMediaStreamTrack("", videoTrack, videoCapturer, surfaceTextureHelper, videoSource, "back");
+    }
+
+
     public static MediaStreamTrackWrapper createLocalVideoTrack(String deviceId, boolean isFront, int w, int h, int fps) {
+        if (deviceId.equals("screen")) {
+            return createLocalScreenTrack(deviceId, isFront, w, h, fps);
+        }
+
         VideoCapturer videoCapturer = createCameraCapturer(deviceId, isFront);
         if (videoCapturer == null) {
             return null;

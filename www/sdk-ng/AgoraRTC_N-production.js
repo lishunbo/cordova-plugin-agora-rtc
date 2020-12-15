@@ -1,5 +1,5 @@
 /**
- * AgoraWebSDK_N-v4.1.1-63-g7259b83-dirty Copyright AgoraInc.
+ * AgoraWebSDK_N-v0.2.0-0-g1ca0960-dirty Copyright AgoraInc.
  */
 
 (function (global, factory) {
@@ -8523,7 +8523,7 @@
 	 * Agora Web SDK 的编译信息。
 	 * @public
 	 */
-	var BUILD = "v4.1.1-63-g7259b83-dirty(12/10/2020, 11:27:01 AM)";
+	var BUILD = "v0.2.0-0-g1ca0960-dirty(12/15/2020, 2:50:10 PM)";
 	var VERSION = transferVersion("4.1.1");
 	var IS_GLOBAL_VERSION = isGlobalVersion();
 	var DEFAULT_TURN_CONFIG = {
@@ -16880,10 +16880,6 @@
 	  GatewayEvent["NEED_RENEW_SESSION"] = "need-sid";
 	})(GatewayEvent || (GatewayEvent = {}));
 
-	function isScreenSourceType(mediaSource) {
-	  checkValidEnum(mediaSource, "mediaSource", ["screen", "window", "application"]);
-	  return true;
-	}
 	var TrackInternalEvent;
 
 	(function (TrackInternalEvent) {
@@ -19653,17 +19649,7 @@
 	}
 
 	function detectSupportShareAudio() {
-	  // https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia
-	  // Windows 支持分享整个系统的音频，Linux 和 Mac 支持分享单个标签页的音频。
-	  var browserInfo = getBrowserInfo();
-
-	  if (browserInfo.os === BrowserOS.WIN_10 || browserInfo.os === BrowserOS.WIN_81 || browserInfo.os === BrowserOS.WIN_7 || browserInfo.os === BrowserOS.LINUX || browserInfo.os === BrowserOS.MAC_OS || browserInfo.os === BrowserOS.MAC_OS_X) {
-	    if (browserInfo.name === BrowserName.CHROME && Number(browserInfo.version) >= 74) {
-	      return true;
-	    }
-	  }
-
-	  return false;
+	  return true; // https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia
 	} // https://github.com/webrtc/samples/blob/gh-pages/src/content/peerconnection/bandwidth/js/main.js#L181
 
 
@@ -19679,6 +19665,57 @@
 	  if (browserInfo.name === BrowserName.FIREFOX && Number(browserInfo.version) >= 64) return true;
 	  return false;
 	}
+
+	var lockId = 1;
+
+	var PromiseMutex =
+	/** @class */
+	function () {
+	  function PromiseMutex(name) {
+	    this.lockingPromise = promise$3.resolve();
+	    this.locks = 0;
+	    this.name = "";
+	    this.lockId = lockId++;
+
+	    if (name) {
+	      this.name = name;
+	    }
+
+	    logger.debug("[lock-" + this.name + "-" + this.lockId + "] is created.");
+	  }
+
+	  defineProperty$4(PromiseMutex.prototype, "isLocked", {
+	    get: function () {
+	      return this.locks > 0;
+	    },
+	    enumerable: true,
+	    configurable: true
+	  });
+
+	  PromiseMutex.prototype.lock = function () {
+	    var _this = this;
+
+	    this.locks += 1;
+	    logger.debug("[lock-" + this.name + "-" + this.lockId + "] is locked, current queue " + this.locks + ".");
+	    var unlockNext;
+	    var willLock = new promise$3(function (resolve) {
+	      unlockNext = function () {
+	        _this.locks -= 1;
+	        logger.debug("[lock-" + _this.name + "-" + _this.lockId + "] is not locked, current queue " + _this.locks + ".");
+	        resolve();
+	      };
+	    });
+	    var willUnlock = this.lockingPromise.then(function () {
+	      return unlockNext;
+	    });
+	    this.lockingPromise = this.lockingPromise.then(function () {
+	      return willLock;
+	    });
+	    return willUnlock;
+	  };
+
+	  return PromiseMutex;
+	}();
 
 	var __awaiter$1 = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
@@ -19820,437 +19857,6 @@
 	    };
 	  }
 	};
-	function isElectron() {
-	  return !!getElectronInstance();
-	}
-	function getElectronScreenStream(sourceId, config) {
-	  return __awaiter$1(this, void 0, void 0, function () {
-	    var getMaxValue, getUserMediaConfig;
-	    return __generator$1(this, function (_a) {
-	      switch (_a.label) {
-	        case 0:
-	          getMaxValue = function (value, defaultValue) {
-	            if (!value) return defaultValue;
-
-	            if (typeof value !== "number") {
-	              return value.max || value.exact || value.ideal || value.min || defaultValue;
-	            }
-
-	            return value;
-	          };
-
-	          getUserMediaConfig = {
-	            audio: false,
-	            video: {
-	              mandatory: {
-	                chromeMediaSource: "desktop",
-	                chromeMediaSourceId: sourceId,
-	                maxHeight: getMaxValue(config.height, 1080),
-	                maxWidth: getMaxValue(config.width, 1920)
-	              }
-	            }
-	          };
-
-	          if (config.frameRate && typeof config.frameRate !== "number") {
-	            getUserMediaConfig.video.mandatory.maxFrameRate = config.frameRate.max;
-	            getUserMediaConfig.video.mandatory.minFrameRate = config.frameRate.min;
-	          } else if (typeof config.frameRate === "number") {
-	            getUserMediaConfig.video.mandatory.maxFrameRate = config.frameRate;
-	          }
-
-	          return [4
-	          /*yield*/
-	          , navigator.mediaDevices.getUserMedia(getUserMediaConfig)];
-
-	        case 1:
-	          /**
-	           * 这里暂时不 catch 错误，抛到统一处理 getUserMedia 错误的上层
-	           */
-	          return [2
-	          /*return*/
-	          , _a.sent()];
-	      }
-	    });
-	  });
-	}
-	function getElectronScreenStreamByUserSelect(config) {
-	  return __awaiter$1(this, void 0, void 0, function () {
-	    var sources, sourceId;
-	    return __generator$1(this, function (_a) {
-	      switch (_a.label) {
-	        case 0:
-	          return [4
-	          /*yield*/
-	          , getElectronScreenSources(config.mediaSource)];
-
-	        case 1:
-	          sources = _a.sent();
-	          return [4
-	          /*yield*/
-	          , showElectronSelectSourceWindow(sources)];
-
-	        case 2:
-	          sourceId = _a.sent();
-	          return [4
-	          /*yield*/
-	          , getElectronScreenStream(sourceId, config)];
-
-	        case 3:
-	          return [2
-	          /*return*/
-	          , _a.sent()];
-	      }
-	    });
-	  });
-	}
-	function getElectronScreenSources(type) {
-	  return __awaiter$1(this, void 0, void 0, function () {
-	    var sourceTypes, electron, getSourcesPromise, err_1;
-	    return __generator$1(this, function (_a) {
-	      switch (_a.label) {
-	        case 0:
-	          sourceTypes = ["window", "screen"];
-
-	          if (type === "application" || type === "window") {
-	            sourceTypes = ["window"];
-	          }
-
-	          if (type === "screen") {
-	            sourceTypes = ["screen"];
-	          }
-
-	          electron = getElectronInstance();
-
-	          if (!electron) {
-	            throw new AgoraRTCError(AgoraRTCErrorCode.ELECTRON_IS_NULL);
-	          }
-
-	          getSourcesPromise = null;
-
-	          try {
-	            getSourcesPromise = electron.desktopCapturer.getSources({
-	              types: sourceTypes
-	            }); // @ts-ignore
-	          } catch (e) {
-	            /**
-	             * 如果这里发生来错误，说明不支持 promise api
-	             */
-	            getSourcesPromise = null;
-	          } // @ts-ignore
-
-
-	          if (!getSourcesPromise || !getSourcesPromise.then) {
-	            getSourcesPromise = new promise$3(function (resolve, reject) {
-	              electron.desktopCapturer.getSources({
-	                types: sourceTypes
-	              }, function (err, sources) {
-	                if (err) {
-	                  reject(err);
-	                  return;
-	                }
-
-	                resolve(sources);
-	              });
-	            });
-	          }
-
-	          _a.label = 1;
-
-	        case 1:
-	          _a.trys.push([1, 3,, 4]);
-
-	          return [4
-	          /*yield*/
-	          , getSourcesPromise];
-
-	        case 2:
-	          return [2
-	          /*return*/
-	          , _a.sent()];
-
-	        case 3:
-	          err_1 = _a.sent();
-	          throw new AgoraRTCError(AgoraRTCErrorCode.ELECTRON_DESKTOP_CAPTURER_GET_SOURCES_ERROR, err_1.toString());
-
-	        case 4:
-	          return [2
-	          /*return*/
-	          ];
-	      }
-	    });
-	  });
-	}
-	/**
-	 * 显示一个界面展示所有的 sources，当用户完成选择时，resolve 目标的 sourceId
-	 */
-
-	function showElectronSelectSourceWindow(sources) {
-	  return new promise$3(function (resolve, reject) {
-	    // header
-	    var header = document.createElement("div");
-	    header.innerText = "share screen";
-	    header.setAttribute("style", "text-align: center; height: 25px; line-height: 25px; border-radius: 4px 4px 0 0; background: #D4D2D4; border-bottom:  solid 1px #B9B8B9;"); // section
-
-	    var section = document.createElement("div");
-	    section.setAttribute("style", "width: 100%; height: 500px; padding: 15px 25px ; box-sizing: border-box;");
-	    var tip = document.createElement("div");
-	    tip.innerText = "Agora Web Screensharing wants to share the contents of your screen with webdemo.agorabeckon.com. Choose what you'd like to share.";
-	    tip.setAttribute("style", "height: 12%;");
-	    var box = document.createElement("div");
-	    box.setAttribute("style", "width: 100%; height: 80%; background: #FFF; border:  solid 1px #CBCBCB; display: flex; flex-wrap: wrap; justify-content: space-around; overflow-y: scroll; padding: 0 15px; box-sizing: border-box;");
-	    var bottom = document.createElement("div");
-	    bottom.setAttribute("style", "text-align: right; padding: 16px 0;");
-	    var cancel = document.createElement("button");
-	    cancel.innerHTML = "cancel";
-	    cancel.setAttribute("style", "width: 85px;");
-
-	    cancel.onclick = function () {
-	      document.body.removeChild(dialog);
-	      /**
-	       * 这里抛出的 Error 对象模拟原生的 NotAllowedError 对象
-	       * 方便上层统一处理
-	       */
-
-	      var notAllowedError = new Error("NotAllowedError");
-	      notAllowedError.name = "NotAllowedError";
-	      reject(notAllowedError);
-	    };
-
-	    bottom.appendChild(cancel);
-	    section.appendChild(tip);
-	    section.appendChild(box);
-	    section.appendChild(bottom); // dialog
-
-	    var dialog = document.createElement("div");
-	    dialog.setAttribute("style", "position: fixed; z-index: 99999999; top: 50%; left: 50%; width: 620px; height: 525px; background: #ECECEC; border-radius: 4px; -webkit-transform: translate(-50%,-50%); transform: translate(-50%,-50%);");
-	    dialog.appendChild(header);
-	    dialog.appendChild(section);
-	    document.body.appendChild(dialog); // select box
-
-	    map$5(sources).call(sources, function (source) {
-	      if (source.id) {
-	        var item = document.createElement("div");
-	        item.setAttribute("style", "width: 30%; height: 160px; padding: 20px 0; text-align: center;box-sizing: content-box;");
-	        item.innerHTML = "<div style=\"height: 120px; display: table-cell; vertical-align: middle;\">" + "<img style=\"width: 100%; background: #333333; box-shadow: 1px 1px 1px 1px rgba(0, 0, 0, 0.2);\" src=" + source.thumbnail.toDataURL() + " />" + "</div>" + "<span style=\"\theight: 40px; line-height: 40px; display: inline-block; width: 70%; word-break: keep-all; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;\">" + source.name + "</span>";
-
-	        item.onclick = function () {
-	          document.body.removeChild(dialog);
-	          resolve(source.id);
-	        };
-
-	        box.appendChild(item);
-	      }
-	    });
-	  });
-	}
-	var electron = null;
-
-	function getElectronInstance() {
-	  if (electron) return electron;
-
-	  try {
-	    /**
-	     * 这段代码只在运行环境在 Electron 下时才有效
-	     */
-	    // @ts-ignore
-	    electron = window.require("electron");
-	    return electron;
-	  } catch (e) {
-	    return null;
-	  }
-	}
-
-	var lockId = 1;
-
-	var PromiseMutex =
-	/** @class */
-	function () {
-	  function PromiseMutex(name) {
-	    this.lockingPromise = promise$3.resolve();
-	    this.locks = 0;
-	    this.name = "";
-	    this.lockId = lockId++;
-
-	    if (name) {
-	      this.name = name;
-	    }
-
-	    logger.debug("[lock-" + this.name + "-" + this.lockId + "] is created.");
-	  }
-
-	  defineProperty$4(PromiseMutex.prototype, "isLocked", {
-	    get: function () {
-	      return this.locks > 0;
-	    },
-	    enumerable: true,
-	    configurable: true
-	  });
-
-	  PromiseMutex.prototype.lock = function () {
-	    var _this = this;
-
-	    this.locks += 1;
-	    logger.debug("[lock-" + this.name + "-" + this.lockId + "] is locked, current queue " + this.locks + ".");
-	    var unlockNext;
-	    var willLock = new promise$3(function (resolve) {
-	      unlockNext = function () {
-	        _this.locks -= 1;
-	        logger.debug("[lock-" + _this.name + "-" + _this.lockId + "] is not locked, current queue " + _this.locks + ".");
-	        resolve();
-	      };
-	    });
-	    var willUnlock = this.lockingPromise.then(function () {
-	      return unlockNext;
-	    });
-	    this.lockingPromise = this.lockingPromise.then(function () {
-	      return willLock;
-	    });
-	    return willUnlock;
-	  };
-
-	  return PromiseMutex;
-	}();
-
-	var __awaiter$2 = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
-	  function adopt(value) {
-	    return value instanceof P ? value : new P(function (resolve) {
-	      resolve(value);
-	    });
-	  }
-
-	  return new (P || (P = promise$3))(function (resolve, reject) {
-	    function fulfilled(value) {
-	      try {
-	        step(generator.next(value));
-	      } catch (e) {
-	        reject(e);
-	      }
-	    }
-
-	    function rejected(value) {
-	      try {
-	        step(generator["throw"](value));
-	      } catch (e) {
-	        reject(e);
-	      }
-	    }
-
-	    function step(result) {
-	      result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected);
-	    }
-
-	    step((generator = generator.apply(thisArg, _arguments || [])).next());
-	  });
-	};
-
-	var __generator$2 = undefined && undefined.__generator || function (thisArg, body) {
-	  var _ = {
-	    label: 0,
-	    sent: function () {
-	      if (t[0] & 1) throw t[1];
-	      return t[1];
-	    },
-	    trys: [],
-	    ops: []
-	  },
-	      f,
-	      y,
-	      t,
-	      g;
-	  return g = {
-	    next: verb(0),
-	    "throw": verb(1),
-	    "return": verb(2)
-	  }, typeof symbol$2 === "function" && (g[iterator$2] = function () {
-	    return this;
-	  }), g;
-
-	  function verb(n) {
-	    return function (v) {
-	      return step([n, v]);
-	    };
-	  }
-
-	  function step(op) {
-	    if (f) throw new TypeError("Generator is already executing.");
-
-	    while (_) try {
-	      if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-	      if (y = 0, t) op = [op[0] & 2, t.value];
-
-	      switch (op[0]) {
-	        case 0:
-	        case 1:
-	          t = op;
-	          break;
-
-	        case 4:
-	          _.label++;
-	          return {
-	            value: op[1],
-	            done: false
-	          };
-
-	        case 5:
-	          _.label++;
-	          y = op[1];
-	          op = [0];
-	          continue;
-
-	        case 7:
-	          op = _.ops.pop();
-
-	          _.trys.pop();
-
-	          continue;
-
-	        default:
-	          if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) {
-	            _ = 0;
-	            continue;
-	          }
-
-	          if (op[0] === 3 && (!t || op[1] > t[0] && op[1] < t[3])) {
-	            _.label = op[1];
-	            break;
-	          }
-
-	          if (op[0] === 6 && _.label < t[1]) {
-	            _.label = t[1];
-	            t = op;
-	            break;
-	          }
-
-	          if (t && _.label < t[2]) {
-	            _.label = t[2];
-
-	            _.ops.push(op);
-
-	            break;
-	          }
-
-	          if (t[2]) _.ops.pop();
-
-	          _.trys.pop();
-
-	          continue;
-	      }
-
-	      op = body.call(thisArg, _);
-	    } catch (e) {
-	      op = [6, e];
-	      y = 0;
-	    } finally {
-	      f = t = 0;
-	    }
-
-	    if (op[0] & 5) throw op[1];
-	    return {
-	      value: op[0] ? op[1] : void 0,
-	      done: true
-	    };
-	  }
-	};
 	/**
 	 * 全局 getUserMedia 锁，确保每次 GUM 时上一个 GUM 已经完成
 	 *
@@ -20263,9 +19869,9 @@
 	var HAS_GUM_AUDIO = false;
 	var HAS_GUM_VIDEO = false;
 	function getLocalStream(config, id) {
-	  return __awaiter$2(this, void 0, void 0, function () {
+	  return __awaiter$1(this, void 0, void 0, function () {
 	    var retryCount, stream, e_1, errorName, err;
-	    return __generator$2(this, function (_a) {
+	    return __generator$1(this, function (_a) {
 	      switch (_a.label) {
 	        case 0:
 	          retryCount = 0;
@@ -20343,9 +19949,9 @@
 	 */
 
 	function getUserMedia(config, trackId, forceNoResolution) {
-	  return __awaiter$2(this, void 0, void 0, function () {
-	    var compatibility, mediaStream, stream_1, stream_2, sourceId, stream_3, videoConstraints, stream_4, options, stream_5, constraint, browserInfo, unlock, stream, e_2;
-	    return __generator$2(this, function (_a) {
+	  return __awaiter$1(this, void 0, void 0, function () {
+	    var mediaStream, constraint_1, stream_1, e_2, constraint, browserInfo, unlock, stream, e_3;
+	    return __generator$1(this, function (_a) {
 	      switch (_a.label) {
 	        case 0:
 	          /**
@@ -20366,8 +19972,6 @@
 	              delete config.screen.height;
 	            }
 	          }
-
-	          compatibility = getCompatibility();
 	          mediaStream = new MediaStream();
 
 	          if (config.audioSource) {
@@ -20388,130 +19992,41 @@
 
 	          if (!config.screen) return [3
 	          /*break*/
-	          , 13];
-	          if (!isElectron()) return [3
-	          /*break*/
 	          , 5];
-	          if (!config.screen.sourceId) return [3
-	          /*break*/
-	          , 2];
-	          return [4
-	          /*yield*/
-	          , getElectronScreenStream(config.screen.sourceId, config.screen)];
-
-	        case 1:
-	          stream_1 = _a.sent();
-	          replaceMediaStream(mediaStream, stream_1);
-	          return [3
-	          /*break*/
-	          , 4];
-
-	        case 2:
-	          return [4
-	          /*yield*/
-	          , getElectronScreenStreamByUserSelect(config.screen)];
-
-	        case 3:
-	          stream_2 = _a.sent();
-	          replaceMediaStream(mediaStream, stream_2);
-	          _a.label = 4;
-
-	        case 4:
-	          return [3
-	          /*break*/
-	          , 13];
-
-	        case 5:
-	          if (!(isChrome() && config.screen.extensionId && config.screen.mandatory)) return [3
-	          /*break*/
-	          , 8];
-
-	          if (!compatibility.getStreamFromExtension) {
-	            throw new AgoraRTCError(AgoraRTCErrorCode.NOT_SUPPORTED, "This browser does not support screen sharing");
-	          }
-
-	          logger.debug("[" + trackId + "] Screen access on chrome stable, looking for extension\"");
-	          return [4
-	          /*yield*/
-	          , getSourceIdFromExtension(config.screen.extensionId, trackId)];
-
-	        case 6:
-	          sourceId = _a.sent();
-	          config.screen.mandatory.chromeMediaSourceId = sourceId;
-	          return [4
-	          /*yield*/
-	          , navigator.mediaDevices.getUserMedia({
+	          constraint_1 = {
 	            video: {
-	              mandatory: config.screen.mandatory
-	            }
-	          })];
-
-	        case 7:
-	          stream_3 = _a.sent();
-	          replaceMediaStream(mediaStream, stream_3);
-	          return [3
-	          /*break*/
-	          , 13];
-
-	        case 8:
-	          if (!compatibility.getDisplayMedia) return [3
-	          /*break*/
-	          , 10];
-	          config.screen.mediaSource && isScreenSourceType(config.screen.mediaSource);
-	          videoConstraints = {
-	            width: config.screen.width,
-	            height: config.screen.height,
-	            frameRate: config.screen.frameRate,
-	            displaySurface: config.screen.mediaSource === "screen" ? "monitor" : config.screen.mediaSource
-	          };
-	          logger.debug("[" + trackId + "] getDisplayMedia:", stringify$2({
-	            video: videoConstraints,
-	            audio: !!config.screenAudio
-	          }));
-	          return [4
-	          /*yield*/
-	          , navigator.mediaDevices.getDisplayMedia({
-	            video: videoConstraints,
-	            audio: !!config.screenAudio
-	          })];
-
-	        case 9:
-	          stream_4 = _a.sent();
-	          replaceMediaStream(mediaStream, stream_4);
-	          return [3
-	          /*break*/
-	          , 13];
-
-	        case 10:
-	          if (!isFirefox()) return [3
-	          /*break*/
-	          , 12];
-	          config.screen.mediaSource && isScreenSourceType(config.screen.mediaSource);
-	          options = {
-	            video: {
-	              mediaSource: config.screen.mediaSource,
+	              deviceId: "screen",
 	              width: config.screen.width,
 	              height: config.screen.height,
 	              frameRate: config.screen.frameRate
 	            }
 	          };
-	          logger.debug("[" + trackId + "] getUserMedia: " + stringify$2(options));
+	          logger.debug("[" + trackId + "] Screen access on chrome stable, looking for extension\"", constraint_1);
+	          _a.label = 1;
+
+	        case 1:
+	          _a.trys.push([1, 3,, 4]);
+
+	          logger.debug("[" + trackId + "] GetUserMedia", constraint_1);
 	          return [4
 	          /*yield*/
-	          , navigator.mediaDevices.getUserMedia(options)];
+	          , navigator.mediaDevices.getUserMedia(constraint_1)];
 
-	        case 11:
-	          stream_5 = _a.sent();
-	          replaceMediaStream(mediaStream, stream_5);
+	        case 2:
+	          stream_1 = _a.sent();
 	          return [3
 	          /*break*/
-	          , 13];
+	          , 4];
 
-	        case 12:
-	          logger.error("[" + trackId + "] This browser does not support screenSharing");
-	          throw new AgoraRTCError(AgoraRTCErrorCode.NOT_SUPPORTED, "This browser does not support screen sharing");
+	        case 3:
+	          e_2 = _a.sent();
+	          throw e_2;
 
-	        case 13:
+	        case 4:
+	          replaceMediaStream(mediaStream, stream_1);
+	          _a.label = 5;
+
+	        case 5:
 	          /**
 	           * 处理 screen sharing only 的情况
 	           */
@@ -20530,36 +20045,36 @@
 	          unlock = null;
 	          if (!(browserInfo.name === BrowserName.SAFARI || browserInfo.os === BrowserOS.IOS)) return [3
 	          /*break*/
-	          , 15];
+	          , 7];
 	          return [4
 	          /*yield*/
 	          , SAFARI_GLOBAL_GUM_LOCK.lock()];
 
-	        case 14:
+	        case 6:
 	          unlock = _a.sent();
-	          _a.label = 15;
+	          _a.label = 7;
 
-	        case 15:
-	          _a.trys.push([15, 17,, 18]);
+	        case 7:
+	          _a.trys.push([7, 9,, 10]);
 
 	          logger.debug("[" + trackId + "] GetUserMedia", constraint);
 	          return [4
 	          /*yield*/
 	          , navigator.mediaDevices.getUserMedia(constraint)];
 
-	        case 16:
+	        case 8:
 	          stream = _a.sent();
 	          logger.debug("[" + trackId + "] GetUserMedia.done ", constraint);
 	          return [3
 	          /*break*/
-	          , 18];
+	          , 10];
 
-	        case 17:
-	          e_2 = _a.sent();
+	        case 9:
+	          e_3 = _a.sent();
 	          unlock && unlock();
-	          throw e_2;
+	          throw e_3;
 
-	        case 18:
+	        case 10:
 	          if (!!constraint.audio) {
 	            HAS_GUM_AUDIO = true;
 	          }
@@ -20662,32 +20177,6 @@
 	    oldStream.addTrack(newVideoTrack);
 	  }
 	}
-	/**
-	 * 通过 chrome 插件获取屏幕共享流的 sourceId
-	 */
-
-
-	function getSourceIdFromExtension(extensionId, streamId) {
-	  return new promise$3(function (resolve, reject) {
-	    try {
-	      // @ts-ignore
-	      chrome.runtime.sendMessage(extensionId, {
-	        getStream: true
-	      }, function (response) {
-	        if (!response || !response.streamId) {
-	          logger.error("[" + streamId + "] No response from Chrome Plugin. Plugin not installed properly", response);
-	          reject(new AgoraRTCError(AgoraRTCErrorCode.CHROME_PLUGIN_NO_RESPONSE, "No response from Chrome Plugin. Plugin not installed properly"));
-	          return;
-	        }
-
-	        resolve(response.streamId);
-	      });
-	    } catch (e) {
-	      logger.error("[" + streamId + "] AgoraRTC screensharing plugin is not accessible(" + extensionId + ")", e.toString());
-	      reject(new AgoraRTCError(AgoraRTCErrorCode.CHROME_PLUGIN_NOT_INSTALL));
-	    }
-	  });
-	}
 
 	var __extends$1 = undefined && undefined.__extends || function () {
 	  var extendStatics = function (d, b) {
@@ -20713,7 +20202,7 @@
 	  };
 	}();
 
-	var __awaiter$3 = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+	var __awaiter$2 = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
 	      resolve(value);
@@ -20745,7 +20234,7 @@
 	  });
 	};
 
-	var __generator$3 = undefined && undefined.__generator || function (thisArg, body) {
+	var __generator$2 = undefined && undefined.__generator || function (thisArg, body) {
 	  var _ = {
 	    label: 0,
 	    sent: function () {
@@ -20909,9 +20398,9 @@
 	      skipPermissionCheck = false;
 	    }
 
-	    return __awaiter$3(this, void 0, void 0, function () {
+	    return __awaiter$2(this, void 0, void 0, function () {
 	      var err, info, deviceIsOk, checkAudio, checkVideo, audioStream, videoStream, avStream, unlock, e_1, err, e_2, err, e_3, err, info_1, e_4, err;
-	      return __generator$3(this, function (_a) {
+	      return __generator$2(this, function (_a) {
 	        var _context3, _context4, _context5;
 
 	        switch (_a.label) {
@@ -21134,9 +20623,9 @@
 	      skipPermissionCheck = false;
 	    }
 
-	    return __awaiter$3(this, void 0, void 0, function () {
+	    return __awaiter$2(this, void 0, void 0, function () {
 	      var devices;
-	      return __generator$3(this, function (_a) {
+	      return __generator$2(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            return [4
@@ -21160,9 +20649,9 @@
 	      skipPermissionCheck = false;
 	    }
 
-	    return __awaiter$3(this, void 0, void 0, function () {
+	    return __awaiter$2(this, void 0, void 0, function () {
 	      var devices;
-	      return __generator$3(this, function (_a) {
+	      return __generator$2(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            return [4
@@ -21186,9 +20675,9 @@
 	      skipPermissionCheck = false;
 	    }
 
-	    return __awaiter$3(this, void 0, void 0, function () {
+	    return __awaiter$2(this, void 0, void 0, function () {
 	      var devices;
-	      return __generator$3(this, function (_a) {
+	      return __generator$2(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            return [4
@@ -21230,9 +20719,9 @@
 	  };
 
 	  DeviceManager.prototype.getDeviceById = function (deviceId) {
-	    return __awaiter$3(this, void 0, void 0, function () {
+	    return __awaiter$2(this, void 0, void 0, function () {
 	      var devices, device;
-	      return __generator$3(this, function (_a) {
+	      return __generator$2(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            return [4
@@ -21258,9 +20747,9 @@
 	  };
 
 	  DeviceManager.prototype.init = function () {
-	    return __awaiter$3(this, void 0, void 0, function () {
+	    return __awaiter$2(this, void 0, void 0, function () {
 	      var e_5, err;
-	      return __generator$3(this, function (_a) {
+	      return __generator$2(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            this.state = DeviceManagerState.INITING;
@@ -21304,12 +20793,12 @@
 	  };
 
 	  DeviceManager.prototype.updateDevicesInfo = function () {
-	    return __awaiter$3(this, void 0, void 0, function () {
+	    return __awaiter$2(this, void 0, void 0, function () {
 	      var devices, now, stateChangedDevices;
 
 	      var _this = this;
 
-	      return __generator$3(this, function (_a) {
+	      return __generator$2(this, function (_a) {
 	        var _context7;
 
 	        switch (_a.label) {
@@ -21493,7 +20982,7 @@
 	  return __assign$2.apply(this, arguments);
 	};
 
-	var __awaiter$4 = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+	var __awaiter$3 = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
 	      resolve(value);
@@ -21525,7 +21014,7 @@
 	  });
 	};
 
-	var __generator$4 = undefined && undefined.__generator || function (thisArg, body) {
+	var __generator$3 = undefined && undefined.__generator || function (thisArg, body) {
 	  var _ = {
 	    label: 0,
 	    sent: function () {
@@ -21689,9 +21178,9 @@
 	 */
 
 	function postProtobuf(url, options) {
-	  return __awaiter$4(this, void 0, void 0, function () {
+	  return __awaiter$3(this, void 0, void 0, function () {
 	    var blob, response, e_1;
-	    return __generator$4(this, function (_a) {
+	    return __generator$3(this, function (_a) {
 	      switch (_a.label) {
 	        case 0:
 	          blob = new Blob([options.data], {
@@ -21750,7 +21239,7 @@
 	  return __assign$3.apply(this, arguments);
 	};
 
-	var __awaiter$5 = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+	var __awaiter$4 = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
 	      resolve(value);
@@ -21782,7 +21271,7 @@
 	  });
 	};
 
-	var __generator$5 = undefined && undefined.__generator || function (thisArg, body) {
+	var __generator$4 = undefined && undefined.__generator || function (thisArg, body) {
 	  var _ = {
 	    label: 0,
 	    sent: function () {
@@ -22452,12 +21941,12 @@
 	  };
 
 	  AgoraRTCEventReport.prototype.sendCustomReportMessage = function (sessionId, params) {
-	    return __awaiter$5(this, void 0, void 0, function () {
+	    return __awaiter$4(this, void 0, void 0, function () {
 	      var items, body, e_1;
 
 	      var _this = this;
 
-	      return __generator$5(this, function (_a) {
+	      return __generator$4(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            this.customReportCount += params.length;
@@ -22714,10 +22203,10 @@
 	      isProtobuf = false;
 	    }
 
-	    return __awaiter$5(this, void 0, void 0, function () {
+	    return __awaiter$4(this, void 0, void 0, function () {
 	      var eventUploadUrlTail, url, i, _a, e_2;
 
-	      return __generator$5(this, function (_b) {
+	      return __generator$4(this, function (_b) {
 	        switch (_b.label) {
 	          case 0:
 	            eventUploadUrlTail = isProtobuf ? "/events/proto-raws" : "/events/messages";
@@ -23137,7 +22626,7 @@
 	  return detail;
 	}
 
-	var __awaiter$6 = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+	var __awaiter$5 = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
 	      resolve(value);
@@ -23169,7 +22658,7 @@
 	  });
 	};
 
-	var __generator$6 = undefined && undefined.__generator || function (thisArg, body) {
+	var __generator$5 = undefined && undefined.__generator || function (thisArg, body) {
 	  var _ = {
 	    label: 0,
 	    sent: function () {
@@ -23301,8 +22790,8 @@
 	  var currentTimeout = retryConfig.timeout;
 
 	  var waitNextTry = function () {
-	    return __awaiter$6(_this, void 0, void 0, function () {
-	      return __generator$6(this, function (_a) {
+	    return __awaiter$5(_this, void 0, void 0, function () {
+	      return __generator$5(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            return [4
@@ -23329,9 +22818,9 @@
 	  };
 
 	  var promise = new promise$3(function (resolve, reject) {
-	    return __awaiter$6(_this, void 0, void 0, function () {
+	    return __awaiter$5(_this, void 0, void 0, function () {
 	      var i, res, e_1;
-	      return __generator$6(this, function (_a) {
+	      return __generator$5(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            handleResult = handleResult || function () {
@@ -23474,7 +22963,7 @@
 	  };
 	}();
 
-	var __awaiter$7 = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+	var __awaiter$6 = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
 	      resolve(value);
@@ -23506,7 +22995,7 @@
 	  });
 	};
 
-	var __generator$7 = undefined && undefined.__generator || function (thisArg, body) {
+	var __generator$6 = undefined && undefined.__generator || function (thisArg, body) {
 	  var _ = {
 	    label: 0,
 	    sent: function () {
@@ -23756,12 +23245,12 @@
 	  };
 
 	  AgoraWebSocketManager.prototype.createWebSocketConnection = function (url) {
-	    return __awaiter$7(this, void 0, void 0, function () {
+	    return __awaiter$6(this, void 0, void 0, function () {
 	      var connectionID;
 
 	      var _this = this;
 
-	      return __generator$7(this, function (_a) {
+	      return __generator$6(this, function (_a) {
 	        this.connectionID += 1;
 	        connectionID = this.connectionID;
 	        return [2
@@ -23818,9 +23307,9 @@
 	          };
 
 	          _this.websocket.onclose = function (e) {
-	            return __awaiter$7(_this, void 0, void 0, function () {
+	            return __awaiter$6(_this, void 0, void 0, function () {
 	              var reconnectMode, result;
-	              return __generator$7(this, function (_a) {
+	              return __generator$6(this, function (_a) {
 	                switch (_a.label) {
 	                  case 0:
 	                    logger.debug("[" + this.name + "] websocket close " + (this.websocket && this.websocket.url) + ", code: " + e.code + ", reason: " + e.reason + ", current mode: " + this.reconnectMode);
@@ -23889,12 +23378,12 @@
 
 
 	  AgoraWebSocketManager.prototype.reconnectWithAction = function (action, notCheckCount) {
-	    return __awaiter$7(this, void 0, void 0, function () {
+	    return __awaiter$6(this, void 0, void 0, function () {
 	      var timeout, url, url, _a, url, e_1;
 
 	      var _this = this;
 
-	      return __generator$7(this, function (_b) {
+	      return __generator$6(this, function (_b) {
 	        switch (_b.label) {
 	          case 0:
 	            if (!notCheckCount && this.reconnectCount >= this.retryConfig.maxRetryCount) {
@@ -24107,7 +23596,7 @@
 	  };
 	}();
 
-	var __awaiter$8 = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+	var __awaiter$7 = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
 	      resolve(value);
@@ -24139,7 +23628,7 @@
 	  });
 	};
 
-	var __generator$8 = undefined && undefined.__generator || function (thisArg, body) {
+	var __generator$7 = undefined && undefined.__generator || function (thisArg, body) {
 	  var _ = {
 	    label: 0,
 	    sent: function () {
@@ -24374,12 +23863,12 @@
 
 
 	  AgoraRTCSignal.prototype.request = function (type, payload, noNeedToReSend) {
-	    return __awaiter$8(this, void 0, void 0, function () {
+	    return __awaiter$7(this, void 0, void 0, function () {
 	      var requestId, message, connectionID, newWsOpenPromise, responsePromise, response, e_1, errorCode, errorDetail, err;
 
 	      var _this = this;
 
-	      return __generator$8(this, function (_a) {
+	      return __generator$7(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            requestId = getRandomString(6, "");
@@ -24716,9 +24205,9 @@
 	  };
 
 	  AgoraRTCSignal.prototype.join = function () {
-	    return __awaiter$8(this, void 0, void 0, function () {
+	    return __awaiter$7(this, void 0, void 0, function () {
 	      var joinMessage, joinResponse;
-	      return __generator$8(this, function (_a) {
+	      return __generator$7(this, function (_a) {
 	        var _context3;
 
 	        switch (_a.label) {
@@ -24766,12 +24255,12 @@
 	  };
 
 	  AgoraRTCSignal.prototype.rejoin = function () {
-	    return __awaiter$8(this, void 0, void 0, function () {
+	    return __awaiter$7(this, void 0, void 0, function () {
 	      var joinMessage, rejoinResponse;
 
 	      var _this = this;
 
-	      return __generator$8(this, function (_a) {
+	      return __generator$7(this, function (_a) {
 	        var _context4, _context5;
 
 	        switch (_a.label) {
@@ -25132,7 +24621,7 @@
 	  };
 	}();
 
-	var __awaiter$9 = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+	var __awaiter$8 = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
 	      resolve(value);
@@ -25164,7 +24653,7 @@
 	  });
 	};
 
-	var __generator$9 = undefined && undefined.__generator || function (thisArg, body) {
+	var __generator$8 = undefined && undefined.__generator || function (thisArg, body) {
 	  var _ = {
 	    label: 0,
 	    sent: function () {
@@ -25325,12 +24814,12 @@
 	  };
 
 	  LocalTrack.prototype._registerTrackProcessor = function (processor) {
-	    return __awaiter$9(this, void 0, void 0, function () {
+	    return __awaiter$8(this, void 0, void 0, function () {
 	      var lastProcessor;
 
 	      var _this = this;
 
-	      return __generator$9(this, function (_a) {
+	      return __generator$8(this, function (_a) {
 	        var _context2;
 
 	        switch (_a.label) {
@@ -25343,9 +24832,9 @@
 	            this._trackProcessors.push(processor);
 
 	            processor.onOutputChange = function () {
-	              return __awaiter$9(_this, void 0, void 0, function () {
+	              return __awaiter$8(_this, void 0, void 0, function () {
 	                var newTrack;
-	                return __generator$9(this, function (_a) {
+	                return __generator$8(this, function (_a) {
 	                  switch (_a.label) {
 	                    case 0:
 	                      newTrack = processor.output || this._originMediaStreamTrack;
@@ -25373,8 +24862,8 @@
 	            , 2];
 
 	            lastProcessor.onOutputChange = function () {
-	              return __awaiter$9(_this, void 0, void 0, function () {
-	                return __generator$9(this, function (_a) {
+	              return __awaiter$8(_this, void 0, void 0, function () {
+	                return __generator$8(this, function (_a) {
 	                  switch (_a.label) {
 	                    case 0:
 	                      if (!lastProcessor.output) return [2
@@ -25433,9 +24922,9 @@
 
 
 	  LocalTrack.prototype._updateOriginMediaStreamTrack = function (track, stopOldTrack) {
-	    return __awaiter$9(this, void 0, void 0, function () {
+	    return __awaiter$8(this, void 0, void 0, function () {
 	      var output;
-	      return __generator$9(this, function (_a) {
+	      return __generator$8(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            if (track === this._originMediaStreamTrack) return [2
@@ -25495,7 +24984,7 @@
 	  return LocalTrack;
 	}(Track);
 
-	var __awaiter$a = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+	var __awaiter$9 = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
 	      resolve(value);
@@ -25527,7 +25016,7 @@
 	  });
 	};
 
-	var __generator$a = undefined && undefined.__generator || function (thisArg, body) {
+	var __generator$9 = undefined && undefined.__generator || function (thisArg, body) {
 	  var _ = {
 	    label: 0,
 	    sent: function () {
@@ -25655,9 +25144,9 @@
 	  }
 
 	  AudioElementPlayCenter.prototype.setSinkID = function (trackId, deviceID) {
-	    return __awaiter$a(this, void 0, void 0, function () {
+	    return __awaiter$9(this, void 0, void 0, function () {
 	      var element, e_1;
-	      return __generator$a(this, function (_a) {
+	      return __generator$9(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            element = this.elementMap.get(trackId);
@@ -25831,7 +25320,7 @@
 	  };
 	}();
 
-	var __awaiter$b = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+	var __awaiter$a = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
 	      resolve(value);
@@ -25863,7 +25352,7 @@
 	  });
 	};
 
-	var __generator$b = undefined && undefined.__generator || function (thisArg, body) {
+	var __generator$a = undefined && undefined.__generator || function (thisArg, body) {
 	  var _ = {
 	    label: 0,
 	    sent: function () {
@@ -26039,8 +25528,8 @@
 	  };
 
 	  NativeAudioTrack.prototype.setSinkID = function (trackId, deviceId) {
-	    return __awaiter$b(this, void 0, void 0, function () {
-	      return __generator$b(this, function (_a) {
+	    return __awaiter$a(this, void 0, void 0, function () {
+	      return __generator$a(this, function (_a) {
 	        return [2
 	        /*return*/
 	        , this.audioPlayer.setSinkID(trackId, deviceId)];
@@ -26125,7 +25614,7 @@
 	  return __assign$4.apply(this, arguments);
 	};
 
-	var __awaiter$c = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+	var __awaiter$b = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
 	      resolve(value);
@@ -26157,7 +25646,7 @@
 	  });
 	};
 
-	var __generator$c = undefined && undefined.__generator || function (thisArg, body) {
+	var __generator$b = undefined && undefined.__generator || function (thisArg, body) {
 	  var _ = {
 	    label: 0,
 	    sent: function () {
@@ -26327,9 +25816,9 @@
 	  };
 
 	  LocalAudioTrack.prototype.setPlaybackDevice = function (deviceId) {
-	    return __awaiter$c(this, void 0, void 0, function () {
+	    return __awaiter$b(this, void 0, void 0, function () {
 	      var executor, e_1;
-	      return __generator$c(this, function (_a) {
+	      return __generator$b(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            executor = report.reportApiInvoke(null, {
@@ -26369,9 +25858,9 @@
 	  };
 
 	  LocalAudioTrack.prototype.setEnabled = function (enabled) {
-	    return __awaiter$c(this, void 0, void 0, function () {
+	    return __awaiter$b(this, void 0, void 0, function () {
 	      var unlock, e_2, e_3;
-	      return __generator$c(this, function (_a) {
+	      return __generator$b(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            if (enabled === this._enabled) return [2
@@ -26535,8 +26024,8 @@
 	  };
 
 	  LocalAudioTrack.prototype._updateOriginMediaStreamTrack = function (track, stopOldTrack) {
-	    return __awaiter$c(this, void 0, void 0, function () {
-	      return __generator$c(this, function (_a) {
+	    return __awaiter$b(this, void 0, void 0, function () {
+	      return __generator$b(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            if (this._originMediaStreamTrack === track) return [2
@@ -26600,9 +26089,9 @@
 	  }
 
 	  MicrophoneAudioTrack.prototype.setDevice = function (deviceId) {
-	    return __awaiter$c(this, void 0, void 0, function () {
+	    return __awaiter$b(this, void 0, void 0, function () {
 	      var executor, constraints, ms, e_4, e_5;
-	      return __generator$c(this, function (_a) {
+	      return __generator$b(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            executor = report.reportApiInvoke(null, {
@@ -26703,9 +26192,9 @@
 	  };
 
 	  MicrophoneAudioTrack.prototype.setEnabled = function (enabled, notCloseDevice) {
-	    return __awaiter$c(this, void 0, void 0, function () {
+	    return __awaiter$b(this, void 0, void 0, function () {
 	      var unlock, e_6, constraints, deviceId, ms, e_7;
-	      return __generator$c(this, function (_a) {
+	      return __generator$b(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            if (!notCloseDevice) return [3
@@ -27098,7 +26587,7 @@
 	  return __assign$5.apply(this, arguments);
 	};
 
-	var __awaiter$d = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+	var __awaiter$c = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
 	      resolve(value);
@@ -27130,7 +26619,7 @@
 	  });
 	};
 
-	var __generator$d = undefined && undefined.__generator || function (thisArg, body) {
+	var __generator$c = undefined && undefined.__generator || function (thisArg, body) {
 	  var _ = {
 	    label: 0,
 	    sent: function () {
@@ -27304,12 +26793,12 @@
 	  });
 
 	  AgoraRTCGateway.prototype.join = function (joinInfo, key) {
-	    return __awaiter$d(this, void 0, void 0, function () {
+	    return __awaiter$c(this, void 0, void 0, function () {
 	      var now, registeredUIDList, err, urls, uid, message, e_1;
 
 	      var _this = this;
 
-	      return __generator$d(this, function (_a) {
+	      return __generator$c(this, function (_a) {
 	        var _context;
 
 	        switch (_a.label) {
@@ -27430,9 +26919,9 @@
 	      noLeaveMessage = false;
 	    }
 
-	    return __awaiter$d(this, void 0, void 0, function () {
+	    return __awaiter$c(this, void 0, void 0, function () {
 	      var e_2;
-	      return __generator$d(this, function (_a) {
+	      return __generator$c(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            // 允许重复离开
@@ -27488,12 +26977,12 @@
 	  };
 
 	  AgoraRTCGateway.prototype.publish = function (sc, streamType) {
-	    return __awaiter$d(this, void 0, void 0, function () {
+	    return __awaiter$c(this, void 0, void 0, function () {
 	      var uid, attr, err;
 
 	      var _this = this;
 
-	      return __generator$d(this, function (_a) {
+	      return __generator$c(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            if (!this.joinInfo) {
@@ -27629,12 +27118,12 @@
 	  };
 
 	  AgoraRTCGateway.prototype.subscribe = function (sc) {
-	    return __awaiter$d(this, void 0, void 0, function () {
+	    return __awaiter$c(this, void 0, void 0, function () {
 	      var uid, err;
 
 	      var _this = this;
 
-	      return __generator$d(this, function (_a) {
+	      return __generator$c(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            if (!this.joinInfo) {
@@ -27737,9 +27226,9 @@
 	  };
 
 	  AgoraRTCGateway.prototype.subscribeChange = function (sc, subOptions) {
-	    return __awaiter$d(this, void 0, void 0, function () {
+	    return __awaiter$c(this, void 0, void 0, function () {
 	      var err;
-	      return __generator$d(this, function (_a) {
+	      return __generator$c(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            if (!this.joinInfo) {
@@ -27785,8 +27274,8 @@
 	  };
 
 	  AgoraRTCGateway.prototype.unsubscribe = function (sc) {
-	    return __awaiter$d(this, void 0, void 0, function () {
-	      return __generator$d(this, function (_a) {
+	    return __awaiter$c(this, void 0, void 0, function () {
+	      return __generator$c(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            return [4
@@ -27815,8 +27304,8 @@
 	  };
 
 	  AgoraRTCGateway.prototype.setClientRole = function (role) {
-	    return __awaiter$d(this, void 0, void 0, function () {
-	      return __generator$d(this, function (_a) {
+	    return __awaiter$c(this, void 0, void 0, function () {
+	      return __generator$c(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            if (role === this.role) return [2
@@ -27849,8 +27338,8 @@
 	  };
 
 	  AgoraRTCGateway.prototype.setRemoteVideoStreamType = function (uid, streamType) {
-	    return __awaiter$d(this, void 0, void 0, function () {
-	      return __generator$d(this, function (_a) {
+	    return __awaiter$c(this, void 0, void 0, function () {
+	      return __generator$c(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            return [4
@@ -27872,8 +27361,8 @@
 	  };
 
 	  AgoraRTCGateway.prototype.setStreamFallbackOption = function (uid, fallbackType) {
-	    return __awaiter$d(this, void 0, void 0, function () {
-	      return __generator$d(this, function (_a) {
+	    return __awaiter$c(this, void 0, void 0, function () {
+	      return __generator$c(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            return [4
@@ -27903,9 +27392,9 @@
 	  };
 
 	  AgoraRTCGateway.prototype.getGatewayVersion = function () {
-	    return __awaiter$d(this, void 0, void 0, function () {
+	    return __awaiter$c(this, void 0, void 0, function () {
 	      var res;
-	      return __generator$d(this, function (_a) {
+	      return __generator$c(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            return [4
@@ -27962,12 +27451,12 @@
 	  };
 
 	  AgoraRTCGateway.prototype.updateTrafficStats = function () {
-	    return __awaiter$d(this, void 0, void 0, function () {
+	    return __awaiter$c(this, void 0, void 0, function () {
 	      var res;
 
 	      var _this = this;
 
-	      return __generator$d(this, function (_a) {
+	      return __generator$c(this, function (_a) {
 	        var _context3;
 
 	        switch (_a.label) {
@@ -28252,7 +27741,7 @@
 	  return __assign$6.apply(this, arguments);
 	};
 
-	var __awaiter$e = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+	var __awaiter$d = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
 	      resolve(value);
@@ -28284,7 +27773,7 @@
 	  });
 	};
 
-	var __generator$e = undefined && undefined.__generator || function (thisArg, body) {
+	var __generator$d = undefined && undefined.__generator || function (thisArg, body) {
 	  var _ = {
 	    label: 0,
 	    sent: function () {
@@ -28398,9 +27887,9 @@
 	 */
 
 	function requestUserAccount(urlList, stringUID, info, cancelToken, retryConfig) {
-	  return __awaiter$e(this, void 0, void 0, function () {
+	  return __awaiter$d(this, void 0, void 0, function () {
 	    var now, req, url, ajaxPromise, handleError, handleResult, res, detail;
-	    return __generator$e(this, function (_a) {
+	    return __generator$d(this, function (_a) {
 	      switch (_a.label) {
 	        case 0:
 	          now = now$2();
@@ -28533,9 +28022,9 @@
 	  };
 
 	  var ajaxPromise = function () {
-	    return __awaiter$e(_this, void 0, void 0, function () {
+	    return __awaiter$d(_this, void 0, void 0, function () {
 	      var res;
-	      return __generator$e(this, function (_a) {
+	      return __generator$d(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            return [4
@@ -28638,9 +28127,9 @@
 	  };
 
 	  var ajaxPromise = function () {
-	    return __awaiter$e(_this, void 0, void 0, function () {
+	    return __awaiter$d(_this, void 0, void 0, function () {
 	      var res;
-	      return __generator$e(this, function (_a) {
+	      return __generator$d(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            return [4
@@ -28717,9 +28206,9 @@
 	  var responseTime;
 
 	  var ajaxPromise = function () {
-	    return __awaiter$e(_this, void 0, void 0, function () {
+	    return __awaiter$d(_this, void 0, void 0, function () {
 	      var res, err, resBody, err, err, result;
-	      return __generator$e(this, function (_a) {
+	      return __generator$d(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            requestStartTime = now$2();
@@ -28840,9 +28329,9 @@
 	  };
 
 	  var ajaxPromise = function () {
-	    return __awaiter$e(_this, void 0, void 0, function () {
+	    return __awaiter$d(_this, void 0, void 0, function () {
 	      var res, err, resBody, err, err;
-	      return __generator$e(this, function (_a) {
+	      return __generator$d(this, function (_a) {
 	        var _context;
 
 	        switch (_a.label) {
@@ -28939,9 +28428,9 @@
 	  }
 
 	  var ajaxPromise = function () {
-	    return __awaiter$e(_this, void 0, void 0, function () {
+	    return __awaiter$d(_this, void 0, void 0, function () {
 	      var res, newAddresses;
-	      return __generator$e(this, function (_a) {
+	      return __generator$d(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            return [4
@@ -29127,6 +28616,566 @@
 	  logger.debug("set area success:", areaCodes.join(","));
 	}
 
+	var __awaiter$e = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+	  function adopt(value) {
+	    return value instanceof P ? value : new P(function (resolve) {
+	      resolve(value);
+	    });
+	  }
+
+	  return new (P || (P = promise$3))(function (resolve, reject) {
+	    function fulfilled(value) {
+	      try {
+	        step(generator.next(value));
+	      } catch (e) {
+	        reject(e);
+	      }
+	    }
+
+	    function rejected(value) {
+	      try {
+	        step(generator["throw"](value));
+	      } catch (e) {
+	        reject(e);
+	      }
+	    }
+
+	    function step(result) {
+	      result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected);
+	    }
+
+	    step((generator = generator.apply(thisArg, _arguments || [])).next());
+	  });
+	};
+
+	var __generator$e = undefined && undefined.__generator || function (thisArg, body) {
+	  var _ = {
+	    label: 0,
+	    sent: function () {
+	      if (t[0] & 1) throw t[1];
+	      return t[1];
+	    },
+	    trys: [],
+	    ops: []
+	  },
+	      f,
+	      y,
+	      t,
+	      g;
+	  return g = {
+	    next: verb(0),
+	    "throw": verb(1),
+	    "return": verb(2)
+	  }, typeof symbol$2 === "function" && (g[iterator$2] = function () {
+	    return this;
+	  }), g;
+
+	  function verb(n) {
+	    return function (v) {
+	      return step([n, v]);
+	    };
+	  }
+
+	  function step(op) {
+	    if (f) throw new TypeError("Generator is already executing.");
+
+	    while (_) try {
+	      if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+	      if (y = 0, t) op = [op[0] & 2, t.value];
+
+	      switch (op[0]) {
+	        case 0:
+	        case 1:
+	          t = op;
+	          break;
+
+	        case 4:
+	          _.label++;
+	          return {
+	            value: op[1],
+	            done: false
+	          };
+
+	        case 5:
+	          _.label++;
+	          y = op[1];
+	          op = [0];
+	          continue;
+
+	        case 7:
+	          op = _.ops.pop();
+
+	          _.trys.pop();
+
+	          continue;
+
+	        default:
+	          if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) {
+	            _ = 0;
+	            continue;
+	          }
+
+	          if (op[0] === 3 && (!t || op[1] > t[0] && op[1] < t[3])) {
+	            _.label = op[1];
+	            break;
+	          }
+
+	          if (op[0] === 6 && _.label < t[1]) {
+	            _.label = t[1];
+	            t = op;
+	            break;
+	          }
+
+	          if (t && _.label < t[2]) {
+	            _.label = t[2];
+
+	            _.ops.push(op);
+
+	            break;
+	          }
+
+	          if (t[2]) _.ops.pop();
+
+	          _.trys.pop();
+
+	          continue;
+	      }
+
+	      op = body.call(thisArg, _);
+	    } catch (e) {
+	      op = [6, e];
+	      y = 0;
+	    } finally {
+	      f = t = 0;
+	    }
+
+	    if (op[0] & 5) throw op[1];
+	    return {
+	      value: op[0] ? op[1] : void 0,
+	      done: true
+	    };
+	  }
+	};
+	function getJoinChannelServerInfo(joinInfo, cancelToken, retryConfig) {
+	  return __awaiter$e(this, void 0, void 0, function () {
+	    var getGatewayInfoPromise, res;
+	    return __generator$e(this, function (_a) {
+	      switch (_a.label) {
+	        case 0:
+	          getGatewayInfoPromise = getGatewayInfo(joinInfo, cancelToken, retryConfig);
+	          return [4
+	          /*yield*/
+	          , getGatewayInfoPromise];
+
+	        case 1:
+	          res = _a.sent();
+	          return [2
+	          /*return*/
+	          , {
+	            gatewayInfo: res
+	          }];
+	      }
+	    });
+	  });
+	}
+	function setCloudProxyServer(joinInfo, cancelToken, retryConfig) {
+	  return __awaiter$e(this, void 0, void 0, function () {
+	    var proxyInfo;
+	    return __generator$e(this, function (_a) {
+	      switch (_a.label) {
+	        case 0:
+	          if (joinInfo.cloudProxyServer === "disabled") return [2
+	          /*return*/
+	          ];
+	          return [4
+	          /*yield*/
+	          , getBestProxyServer(joinInfo, cancelToken, retryConfig)];
+
+	        case 1:
+	          proxyInfo = _a.sent();
+
+	          if (joinInfo.cloudProxyServer === "443only") {
+	            joinInfo.proxyServer = getParameter("PROXY_SERVER_TYPE2");
+	          } else {
+	            joinInfo.proxyServer = proxyInfo.address;
+	          }
+
+	          joinInfo.turnServer = {
+	            mode: "manual",
+	            servers: [{
+	              turnServerURL: proxyInfo.address,
+	              tcpport: proxyInfo.serverResponse.tcpport ? proxyInfo.serverResponse.tcpport : DEFAULT_TURN_CONFIG.tcpport,
+	              udpport: proxyInfo.serverResponse.udpport ? proxyInfo.serverResponse.udpport : DEFAULT_TURN_CONFIG.udpport,
+	              username: proxyInfo.serverResponse.username || DEFAULT_TURN_CONFIG.username,
+	              password: proxyInfo.serverResponse.password || DEFAULT_TURN_CONFIG.password,
+
+	              /** liaojun: 所有云代理需要设置 forceturn */
+	              forceturn: true
+	            }]
+	          };
+	          logger.debug("[" + joinInfo.clientId + "] set proxy server: " + joinInfo.proxyServer + ", mode: " + joinInfo.cloudProxyServer);
+	          report.setProxyServer(joinInfo.proxyServer);
+	          logger.setProxyServer(joinInfo.proxyServer);
+	          return [2
+	          /*return*/
+	          ];
+	      }
+	    });
+	  });
+	}
+	/**
+	 * 通过读取 joinInfo 的 stringUID 转成相应的 uintUID
+	 */
+
+	function getUserAccount(stringUID, joinInfo, cancelToken, retryConfig) {
+	  return __awaiter$e(this, void 0, void 0, function () {
+	    var serverList, urls, res;
+	    return __generator$e(this, function (_a) {
+	      switch (_a.label) {
+	        case 0:
+	          serverList = getParameter("ACCOUNT_REGISTER");
+	          urls = [];
+
+	          if (joinInfo.proxyServer) {
+	            urls = map$5(serverList).call(serverList, function (server) {
+	              return "https://" + joinInfo.proxyServer + "/ap/?url=" + (server + "/api/v1");
+	            });
+	          } else {
+	            urls = map$5(serverList).call(serverList, function (server) {
+	              return "https://" + server + "/api/v1";
+	            });
+	          }
+
+	          return [4
+	          /*yield*/
+	          , requestUserAccount(urls, stringUID, joinInfo, cancelToken, retryConfig)];
+
+	        case 1:
+	          res = _a.sent();
+	          return [2
+	          /*return*/
+	          , res.uid];
+	      }
+	    });
+	  });
+	}
+	/**
+	 * 返回一个最快响应的云代理地址和 turn 配置
+	 */
+
+	function getBestProxyServer(joinInfo, cancelToken, retryConfig) {
+	  return __awaiter$e(this, void 0, void 0, function () {
+	    var now, urls, getProxyServerPromises, res, errors_1, body, addresses, getWorkerManagerPromises, workerManagerRes, errors_2;
+	    return __generator$e(this, function (_a) {
+	      var _context, _context2;
+
+	      switch (_a.label) {
+	        case 0:
+	          now = now$2();
+	          urls = map$5(_context = getParameter("PROXY_CS")).call(_context, function (url) {
+	            return "https://" + url + "/api/v1";
+	          });
+	          getProxyServerPromises = map$5(urls).call(urls, function (url) {
+	            return requestProxyServerList(url, joinInfo, cancelToken, retryConfig);
+	          });
+	          res = null;
+	          _a.label = 1;
+
+	        case 1:
+	          _a.trys.push([1, 3,, 4]);
+
+	          return [4
+	          /*yield*/
+	          , PromiseAny(getProxyServerPromises)];
+
+	        case 2:
+	          res = _a.sent();
+	          return [3
+	          /*break*/
+	          , 4];
+
+	        case 3:
+	          errors_1 = _a.sent();
+	          /** 如果这里出错，说明全部的 url 都失败了 */
+
+	          logger.error("[" + joinInfo.clientId + "] can not get proxy server after trying several times");
+	          throw new AgoraRTCError(AgoraRTCErrorCode.CAN_NOT_GET_PROXY_SERVER);
+
+	        case 4:
+	          /** 当有一个成功返回后，立刻取消其他的 promise，防止他们无意义的错误重试 */
+	          forEach$3(getProxyServerPromises).call(getProxyServerPromises, function (p) {
+	            return p.cancel();
+	          });
+
+	          body = JSON.parse(res.res.json_body);
+	          addresses = map$5(_context2 = body.servers).call(_context2, proxyServerInfoToProxyServerAddress);
+	          /**
+	           * 如果开启了这个，就不去请求 workerManager (因为不是 443 端口)，默认使用 hardcode 的 443 turn 配置
+	           */
+
+	          if (joinInfo.cloudProxyServer === "443only") {
+	            return [2
+	            /*return*/
+	            , {
+	              address: addresses[0],
+	              serverResponse: {
+	                tcpport: 443,
+	                udpport: DEFAULT_TURN_CONFIG.udpport,
+	                username: DEFAULT_TURN_CONFIG.username,
+	                password: DEFAULT_TURN_CONFIG.password
+	              }
+	            }];
+	          }
+
+	          report.requestProxyAppCenter(joinInfo.sid, {
+	            lts: now,
+	            succ: true,
+	            APAddr: res.url,
+	            workerManagerList: stringify$2(addresses),
+	            ec: null,
+	            response: stringify$2(res.res)
+	          });
+	          /** 同时向多个 worker manager 请求, 操作同上 */
+
+	          now = now$2();
+	          getWorkerManagerPromises = map$5(addresses).call(addresses, function (url) {
+	            return requestProxyWorkerManager(url, joinInfo, cancelToken, retryConfig);
+	          });
+	          workerManagerRes = null;
+	          _a.label = 5;
+
+	        case 5:
+	          _a.trys.push([5, 7,, 8]);
+
+	          return [4
+	          /*yield*/
+	          , PromiseAny(getWorkerManagerPromises)];
+
+	        case 6:
+	          workerManagerRes = _a.sent();
+	          return [3
+	          /*break*/
+	          , 8];
+
+	        case 7:
+	          errors_2 = _a.sent();
+	          logger.error("[" + joinInfo.clientId + "] can not get worker manager after trying several times");
+	          throw new AgoraRTCError(AgoraRTCErrorCode.CAN_NOT_GET_PROXY_SERVER);
+
+	        case 8:
+	          /** 当有一个成功返回后，立刻取消其他的 promise，防止他们无意义的错误重试 */
+	          forEach$3(getWorkerManagerPromises).call(getWorkerManagerPromises, function (p) {
+	            return p.cancel();
+	          });
+
+	          report.requestProxyWorkerManager(joinInfo.sid, {
+	            lts: now,
+	            succ: true,
+	            workerManagerAddr: workerManagerRes.url,
+	            ec: null,
+	            response: stringify$2(workerManagerRes.res)
+	          });
+	          return [2
+	          /*return*/
+	          , {
+	            address: workerManagerRes.url,
+	            serverResponse: workerManagerRes.res.serverResponse
+	          }];
+	      }
+	    });
+	  });
+	}
+
+	function getGatewayInfo(joinInfo, cancelToken, retryConfig) {
+	  return __awaiter$e(this, void 0, void 0, function () {
+	    var reqMessages, res, getChooseServerPromises, backupChooseServerPromise, e_2;
+
+	    var _this = this;
+
+	    return __generator$e(this, function (_a) {
+	      var _context4, _context6;
+
+	      switch (_a.label) {
+	        case 0:
+	          reqMessages = map$5(_context4 = getParameter("WEBCS_DOMAIN")).call(_context4, function (host) {
+	            return {
+	              url: joinInfo.proxyServer ? "https://" + joinInfo.proxyServer + "/ap/?url=" + (host + "/api/v1") : "https://" + host + "/api/v1",
+	              areaCode: getAreaCodeByWebCS(host)
+	            };
+	          });
+	          res = null;
+	          getChooseServerPromises = map$5(reqMessages).call(reqMessages, function (reqMessage) {
+	            logger.debug("[" + joinInfo.clientId + "] Connect to choose_server:", reqMessage.url);
+	            return requestChooseServer(reqMessage, joinInfo, cancelToken, retryConfig);
+	          });
+
+	          backupChooseServerPromise = function () {
+	            return new promise$3(function (resolve, reject) {
+	              return __awaiter$e(_this, void 0, void 0, function () {
+	                var backupReqMessages, getBackupChooseServerPromises;
+	                return __generator$e(this, function (_a) {
+	                  var _context5;
+
+	                  switch (_a.label) {
+	                    case 0:
+	                      return [4
+	                      /*yield*/
+	                      , wait(1000)];
+
+	                    case 1:
+	                      _a.sent(); // 如果 1s 后已经有了结果，就什么也不做
+
+
+	                      if (res !== null) return [2
+	                      /*return*/
+	                      ];
+	                      backupReqMessages = map$5(_context5 = getParameter("WEBCS_DOMAIN_BACKUP_LIST")).call(_context5, function (host) {
+	                        return {
+	                          url: joinInfo.proxyServer ? "https://" + joinInfo.proxyServer + "/ap/?url=" + (host + "/api/v1") : "https://" + host + "/api/v1",
+	                          areaCode: getAreaCodeByWebCS(host)
+	                        };
+	                      });
+	                      getBackupChooseServerPromises = map$5(backupReqMessages).call(backupReqMessages, function (reqMessage) {
+	                        logger.debug("[" + joinInfo.clientId + "] Connect to backup choose_server:", reqMessage.url);
+	                        return requestChooseServer(reqMessage, joinInfo, cancelToken, retryConfig);
+	                      });
+	                      PromiseAny(getBackupChooseServerPromises).then(function (res) {
+	                        forEach$3(getBackupChooseServerPromises).call(getBackupChooseServerPromises, function (p) {
+	                          return p.cancel();
+	                        });
+
+	                        resolve(res);
+	                      }).catch(function (e) {
+	                        return reject(e[0]);
+	                      });
+	                      return [2
+	                      /*return*/
+	                      ];
+	                  }
+	                });
+	              });
+	            });
+	          };
+
+	          _a.label = 1;
+
+	        case 1:
+	          _a.trys.push([1, 3,, 4]);
+
+	          return [4
+	          /*yield*/
+	          , PromiseAny(concat$2(_context6 = [backupChooseServerPromise()]).call(_context6, getChooseServerPromises))];
+
+	        case 2:
+	          res = _a.sent();
+	          return [3
+	          /*break*/
+	          , 4];
+
+	        case 3:
+	          e_2 = _a.sent();
+	          /** 如果走到这里，说明所有节点的请求都重试失败或是遇到不可重试的错误 */
+
+	          throw e_2[0];
+
+	        case 4:
+	          forEach$3(getChooseServerPromises).call(getChooseServerPromises, function (p) {
+	            return p.cancel();
+	          });
+
+	          return [2
+	          /*return*/
+	          , res];
+	      }
+	    });
+	  });
+	}
+
+	function getLiveStreamingWorkerMangerResult(mode, joinInfo, cancelToken, retryConfig) {
+	  return __awaiter$e(this, void 0, void 0, function () {
+	    var urls, result, e_3;
+	    return __generator$e(this, function (_a) {
+	      var _context7;
+
+	      switch (_a.label) {
+	        case 0:
+	          urls = map$5(_context7 = getParameter("UAP_AP")).call(_context7, function (url) {
+	            return joinInfo.proxyServer ? "https://" + joinInfo.proxyServer + "/ap/?url=" + (url + "/api/v1?action=uap") : "https://" + url + "/api/v1?action=uap";
+	          });
+	          _a.label = 1;
+
+	        case 1:
+	          _a.trys.push([1, 3,, 4]);
+
+	          return [4
+	          /*yield*/
+	          , requestLiveStreamingWorkerManager(urls, mode, joinInfo, cancelToken, retryConfig)];
+
+	        case 2:
+	          result = _a.sent();
+	          return [2
+	          /*return*/
+	          , result];
+
+	        case 3:
+	          e_3 = _a.sent();
+	          throw e_3;
+
+	        case 4:
+	          return [2
+	          /*return*/
+	          ];
+	      }
+	    });
+	  });
+	}
+	function getCrossChannelWorkerManagerResult(joinInfo, cancelToken, retryConfig) {
+	  return __awaiter$e(this, void 0, void 0, function () {
+	    var urls, promiseList, res, e_4;
+	    return __generator$e(this, function (_a) {
+	      var _context8;
+
+	      switch (_a.label) {
+	        case 0:
+	          urls = map$5(_context8 = getParameter("UAP_AP")).call(_context8, function (url) {
+	            return joinInfo.proxyServer ? "https://" + joinInfo.proxyServer + "/ap/?url=" + (url + "/api/v1?action=uap") : "https://" + url + "/api/v1?action=uap";
+	          });
+	          promiseList = map$5(urls).call(urls, function (url) {
+	            return requestChannelMediaRelayWorkerManager(url, joinInfo, cancelToken, retryConfig);
+	          });
+	          _a.label = 1;
+
+	        case 1:
+	          _a.trys.push([1, 3,, 4]);
+
+	          return [4
+	          /*yield*/
+	          , PromiseAny(promiseList)];
+
+	        case 2:
+	          res = _a.sent();
+
+	          forEach$3(promiseList).call(promiseList, function (p) {
+	            return p.cancel();
+	          });
+
+	          return [2
+	          /*return*/
+	          , res];
+
+	        case 3:
+	          e_4 = _a.sent();
+	          throw e_4[0];
+
+	        case 4:
+	          return [2
+	          /*return*/
+	          ];
+	      }
+	    });
+	  });
+	}
+
 	var __awaiter$f = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
@@ -29267,570 +29316,10 @@
 	    };
 	  }
 	};
-	function getJoinChannelServerInfo(joinInfo, cancelToken, retryConfig) {
-	  return __awaiter$f(this, void 0, void 0, function () {
-	    var getGatewayInfoPromise, res;
-	    return __generator$f(this, function (_a) {
-	      switch (_a.label) {
-	        case 0:
-	          getGatewayInfoPromise = getGatewayInfo(joinInfo, cancelToken, retryConfig);
-	          return [4
-	          /*yield*/
-	          , getGatewayInfoPromise];
-
-	        case 1:
-	          res = _a.sent();
-	          return [2
-	          /*return*/
-	          , {
-	            gatewayInfo: res
-	          }];
-	      }
-	    });
-	  });
-	}
-	function setCloudProxyServer(joinInfo, cancelToken, retryConfig) {
-	  return __awaiter$f(this, void 0, void 0, function () {
-	    var proxyInfo;
-	    return __generator$f(this, function (_a) {
-	      switch (_a.label) {
-	        case 0:
-	          if (joinInfo.cloudProxyServer === "disabled") return [2
-	          /*return*/
-	          ];
-	          return [4
-	          /*yield*/
-	          , getBestProxyServer(joinInfo, cancelToken, retryConfig)];
-
-	        case 1:
-	          proxyInfo = _a.sent();
-
-	          if (joinInfo.cloudProxyServer === "443only") {
-	            joinInfo.proxyServer = getParameter("PROXY_SERVER_TYPE2");
-	          } else {
-	            joinInfo.proxyServer = proxyInfo.address;
-	          }
-
-	          joinInfo.turnServer = {
-	            mode: "manual",
-	            servers: [{
-	              turnServerURL: proxyInfo.address,
-	              tcpport: proxyInfo.serverResponse.tcpport ? proxyInfo.serverResponse.tcpport : DEFAULT_TURN_CONFIG.tcpport,
-	              udpport: proxyInfo.serverResponse.udpport ? proxyInfo.serverResponse.udpport : DEFAULT_TURN_CONFIG.udpport,
-	              username: proxyInfo.serverResponse.username || DEFAULT_TURN_CONFIG.username,
-	              password: proxyInfo.serverResponse.password || DEFAULT_TURN_CONFIG.password,
-
-	              /** liaojun: 所有云代理需要设置 forceturn */
-	              forceturn: true
-	            }]
-	          };
-	          logger.debug("[" + joinInfo.clientId + "] set proxy server: " + joinInfo.proxyServer + ", mode: " + joinInfo.cloudProxyServer);
-	          report.setProxyServer(joinInfo.proxyServer);
-	          logger.setProxyServer(joinInfo.proxyServer);
-	          return [2
-	          /*return*/
-	          ];
-	      }
-	    });
-	  });
-	}
-	/**
-	 * 通过读取 joinInfo 的 stringUID 转成相应的 uintUID
-	 */
-
-	function getUserAccount(stringUID, joinInfo, cancelToken, retryConfig) {
-	  return __awaiter$f(this, void 0, void 0, function () {
-	    var serverList, urls, res;
-	    return __generator$f(this, function (_a) {
-	      switch (_a.label) {
-	        case 0:
-	          serverList = getParameter("ACCOUNT_REGISTER");
-	          urls = [];
-
-	          if (joinInfo.proxyServer) {
-	            urls = map$5(serverList).call(serverList, function (server) {
-	              return "https://" + joinInfo.proxyServer + "/ap/?url=" + (server + "/api/v1");
-	            });
-	          } else {
-	            urls = map$5(serverList).call(serverList, function (server) {
-	              return "https://" + server + "/api/v1";
-	            });
-	          }
-
-	          return [4
-	          /*yield*/
-	          , requestUserAccount(urls, stringUID, joinInfo, cancelToken, retryConfig)];
-
-	        case 1:
-	          res = _a.sent();
-	          return [2
-	          /*return*/
-	          , res.uid];
-	      }
-	    });
-	  });
-	}
-	/**
-	 * 返回一个最快响应的云代理地址和 turn 配置
-	 */
-
-	function getBestProxyServer(joinInfo, cancelToken, retryConfig) {
-	  return __awaiter$f(this, void 0, void 0, function () {
-	    var now, urls, getProxyServerPromises, res, errors_1, body, addresses, getWorkerManagerPromises, workerManagerRes, errors_2;
-	    return __generator$f(this, function (_a) {
-	      var _context, _context2;
-
-	      switch (_a.label) {
-	        case 0:
-	          now = now$2();
-	          urls = map$5(_context = getParameter("PROXY_CS")).call(_context, function (url) {
-	            return "https://" + url + "/api/v1";
-	          });
-	          getProxyServerPromises = map$5(urls).call(urls, function (url) {
-	            return requestProxyServerList(url, joinInfo, cancelToken, retryConfig);
-	          });
-	          res = null;
-	          _a.label = 1;
-
-	        case 1:
-	          _a.trys.push([1, 3,, 4]);
-
-	          return [4
-	          /*yield*/
-	          , PromiseAny(getProxyServerPromises)];
-
-	        case 2:
-	          res = _a.sent();
-	          return [3
-	          /*break*/
-	          , 4];
-
-	        case 3:
-	          errors_1 = _a.sent();
-	          /** 如果这里出错，说明全部的 url 都失败了 */
-
-	          logger.error("[" + joinInfo.clientId + "] can not get proxy server after trying several times");
-	          throw new AgoraRTCError(AgoraRTCErrorCode.CAN_NOT_GET_PROXY_SERVER);
-
-	        case 4:
-	          /** 当有一个成功返回后，立刻取消其他的 promise，防止他们无意义的错误重试 */
-	          forEach$3(getProxyServerPromises).call(getProxyServerPromises, function (p) {
-	            return p.cancel();
-	          });
-
-	          body = JSON.parse(res.res.json_body);
-	          addresses = map$5(_context2 = body.servers).call(_context2, proxyServerInfoToProxyServerAddress);
-	          /**
-	           * 如果开启了这个，就不去请求 workerManager (因为不是 443 端口)，默认使用 hardcode 的 443 turn 配置
-	           */
-
-	          if (joinInfo.cloudProxyServer === "443only") {
-	            return [2
-	            /*return*/
-	            , {
-	              address: addresses[0],
-	              serverResponse: {
-	                tcpport: 443,
-	                udpport: DEFAULT_TURN_CONFIG.udpport,
-	                username: DEFAULT_TURN_CONFIG.username,
-	                password: DEFAULT_TURN_CONFIG.password
-	              }
-	            }];
-	          }
-
-	          report.requestProxyAppCenter(joinInfo.sid, {
-	            lts: now,
-	            succ: true,
-	            APAddr: res.url,
-	            workerManagerList: stringify$2(addresses),
-	            ec: null,
-	            response: stringify$2(res.res)
-	          });
-	          /** 同时向多个 worker manager 请求, 操作同上 */
-
-	          now = now$2();
-	          getWorkerManagerPromises = map$5(addresses).call(addresses, function (url) {
-	            return requestProxyWorkerManager(url, joinInfo, cancelToken, retryConfig);
-	          });
-	          workerManagerRes = null;
-	          _a.label = 5;
-
-	        case 5:
-	          _a.trys.push([5, 7,, 8]);
-
-	          return [4
-	          /*yield*/
-	          , PromiseAny(getWorkerManagerPromises)];
-
-	        case 6:
-	          workerManagerRes = _a.sent();
-	          return [3
-	          /*break*/
-	          , 8];
-
-	        case 7:
-	          errors_2 = _a.sent();
-	          logger.error("[" + joinInfo.clientId + "] can not get worker manager after trying several times");
-	          throw new AgoraRTCError(AgoraRTCErrorCode.CAN_NOT_GET_PROXY_SERVER);
-
-	        case 8:
-	          /** 当有一个成功返回后，立刻取消其他的 promise，防止他们无意义的错误重试 */
-	          forEach$3(getWorkerManagerPromises).call(getWorkerManagerPromises, function (p) {
-	            return p.cancel();
-	          });
-
-	          report.requestProxyWorkerManager(joinInfo.sid, {
-	            lts: now,
-	            succ: true,
-	            workerManagerAddr: workerManagerRes.url,
-	            ec: null,
-	            response: stringify$2(workerManagerRes.res)
-	          });
-	          return [2
-	          /*return*/
-	          , {
-	            address: workerManagerRes.url,
-	            serverResponse: workerManagerRes.res.serverResponse
-	          }];
-	      }
-	    });
-	  });
-	}
-
-	function getGatewayInfo(joinInfo, cancelToken, retryConfig) {
-	  return __awaiter$f(this, void 0, void 0, function () {
-	    var reqMessages, res, getChooseServerPromises, backupChooseServerPromise, e_2;
-
-	    var _this = this;
-
-	    return __generator$f(this, function (_a) {
-	      var _context4, _context6;
-
-	      switch (_a.label) {
-	        case 0:
-	          reqMessages = map$5(_context4 = getParameter("WEBCS_DOMAIN")).call(_context4, function (host) {
-	            return {
-	              url: joinInfo.proxyServer ? "https://" + joinInfo.proxyServer + "/ap/?url=" + (host + "/api/v1") : "https://" + host + "/api/v1",
-	              areaCode: getAreaCodeByWebCS(host)
-	            };
-	          });
-	          res = null;
-	          getChooseServerPromises = map$5(reqMessages).call(reqMessages, function (reqMessage) {
-	            logger.debug("[" + joinInfo.clientId + "] Connect to choose_server:", reqMessage.url);
-	            return requestChooseServer(reqMessage, joinInfo, cancelToken, retryConfig);
-	          });
-
-	          backupChooseServerPromise = function () {
-	            return new promise$3(function (resolve, reject) {
-	              return __awaiter$f(_this, void 0, void 0, function () {
-	                var backupReqMessages, getBackupChooseServerPromises;
-	                return __generator$f(this, function (_a) {
-	                  var _context5;
-
-	                  switch (_a.label) {
-	                    case 0:
-	                      return [4
-	                      /*yield*/
-	                      , wait(1000)];
-
-	                    case 1:
-	                      _a.sent(); // 如果 1s 后已经有了结果，就什么也不做
-
-
-	                      if (res !== null) return [2
-	                      /*return*/
-	                      ];
-	                      backupReqMessages = map$5(_context5 = getParameter("WEBCS_DOMAIN_BACKUP_LIST")).call(_context5, function (host) {
-	                        return {
-	                          url: joinInfo.proxyServer ? "https://" + joinInfo.proxyServer + "/ap/?url=" + (host + "/api/v1") : "https://" + host + "/api/v1",
-	                          areaCode: getAreaCodeByWebCS(host)
-	                        };
-	                      });
-	                      getBackupChooseServerPromises = map$5(backupReqMessages).call(backupReqMessages, function (reqMessage) {
-	                        logger.debug("[" + joinInfo.clientId + "] Connect to backup choose_server:", reqMessage.url);
-	                        return requestChooseServer(reqMessage, joinInfo, cancelToken, retryConfig);
-	                      });
-	                      PromiseAny(getBackupChooseServerPromises).then(function (res) {
-	                        forEach$3(getBackupChooseServerPromises).call(getBackupChooseServerPromises, function (p) {
-	                          return p.cancel();
-	                        });
-
-	                        resolve(res);
-	                      }).catch(function (e) {
-	                        return reject(e[0]);
-	                      });
-	                      return [2
-	                      /*return*/
-	                      ];
-	                  }
-	                });
-	              });
-	            });
-	          };
-
-	          _a.label = 1;
-
-	        case 1:
-	          _a.trys.push([1, 3,, 4]);
-
-	          return [4
-	          /*yield*/
-	          , PromiseAny(concat$2(_context6 = [backupChooseServerPromise()]).call(_context6, getChooseServerPromises))];
-
-	        case 2:
-	          res = _a.sent();
-	          return [3
-	          /*break*/
-	          , 4];
-
-	        case 3:
-	          e_2 = _a.sent();
-	          /** 如果走到这里，说明所有节点的请求都重试失败或是遇到不可重试的错误 */
-
-	          throw e_2[0];
-
-	        case 4:
-	          forEach$3(getChooseServerPromises).call(getChooseServerPromises, function (p) {
-	            return p.cancel();
-	          });
-
-	          return [2
-	          /*return*/
-	          , res];
-	      }
-	    });
-	  });
-	}
-
-	function getLiveStreamingWorkerMangerResult(mode, joinInfo, cancelToken, retryConfig) {
-	  return __awaiter$f(this, void 0, void 0, function () {
-	    var urls, result, e_3;
-	    return __generator$f(this, function (_a) {
-	      var _context7;
-
-	      switch (_a.label) {
-	        case 0:
-	          urls = map$5(_context7 = getParameter("UAP_AP")).call(_context7, function (url) {
-	            return joinInfo.proxyServer ? "https://" + joinInfo.proxyServer + "/ap/?url=" + (url + "/api/v1?action=uap") : "https://" + url + "/api/v1?action=uap";
-	          });
-	          _a.label = 1;
-
-	        case 1:
-	          _a.trys.push([1, 3,, 4]);
-
-	          return [4
-	          /*yield*/
-	          , requestLiveStreamingWorkerManager(urls, mode, joinInfo, cancelToken, retryConfig)];
-
-	        case 2:
-	          result = _a.sent();
-	          return [2
-	          /*return*/
-	          , result];
-
-	        case 3:
-	          e_3 = _a.sent();
-	          throw e_3;
-
-	        case 4:
-	          return [2
-	          /*return*/
-	          ];
-	      }
-	    });
-	  });
-	}
-	function getCrossChannelWorkerManagerResult(joinInfo, cancelToken, retryConfig) {
-	  return __awaiter$f(this, void 0, void 0, function () {
-	    var urls, promiseList, res, e_4;
-	    return __generator$f(this, function (_a) {
-	      var _context8;
-
-	      switch (_a.label) {
-	        case 0:
-	          urls = map$5(_context8 = getParameter("UAP_AP")).call(_context8, function (url) {
-	            return joinInfo.proxyServer ? "https://" + joinInfo.proxyServer + "/ap/?url=" + (url + "/api/v1?action=uap") : "https://" + url + "/api/v1?action=uap";
-	          });
-	          promiseList = map$5(urls).call(urls, function (url) {
-	            return requestChannelMediaRelayWorkerManager(url, joinInfo, cancelToken, retryConfig);
-	          });
-	          _a.label = 1;
-
-	        case 1:
-	          _a.trys.push([1, 3,, 4]);
-
-	          return [4
-	          /*yield*/
-	          , PromiseAny(promiseList)];
-
-	        case 2:
-	          res = _a.sent();
-
-	          forEach$3(promiseList).call(promiseList, function (p) {
-	            return p.cancel();
-	          });
-
-	          return [2
-	          /*return*/
-	          , res];
-
-	        case 3:
-	          e_4 = _a.sent();
-	          throw e_4[0];
-
-	        case 4:
-	          return [2
-	          /*return*/
-	          ];
-	      }
-	    });
-	  });
-	}
-
-	var __awaiter$g = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
-	  function adopt(value) {
-	    return value instanceof P ? value : new P(function (resolve) {
-	      resolve(value);
-	    });
-	  }
-
-	  return new (P || (P = promise$3))(function (resolve, reject) {
-	    function fulfilled(value) {
-	      try {
-	        step(generator.next(value));
-	      } catch (e) {
-	        reject(e);
-	      }
-	    }
-
-	    function rejected(value) {
-	      try {
-	        step(generator["throw"](value));
-	      } catch (e) {
-	        reject(e);
-	      }
-	    }
-
-	    function step(result) {
-	      result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected);
-	    }
-
-	    step((generator = generator.apply(thisArg, _arguments || [])).next());
-	  });
-	};
-
-	var __generator$g = undefined && undefined.__generator || function (thisArg, body) {
-	  var _ = {
-	    label: 0,
-	    sent: function () {
-	      if (t[0] & 1) throw t[1];
-	      return t[1];
-	    },
-	    trys: [],
-	    ops: []
-	  },
-	      f,
-	      y,
-	      t,
-	      g;
-	  return g = {
-	    next: verb(0),
-	    "throw": verb(1),
-	    "return": verb(2)
-	  }, typeof symbol$2 === "function" && (g[iterator$2] = function () {
-	    return this;
-	  }), g;
-
-	  function verb(n) {
-	    return function (v) {
-	      return step([n, v]);
-	    };
-	  }
-
-	  function step(op) {
-	    if (f) throw new TypeError("Generator is already executing.");
-
-	    while (_) try {
-	      if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-	      if (y = 0, t) op = [op[0] & 2, t.value];
-
-	      switch (op[0]) {
-	        case 0:
-	        case 1:
-	          t = op;
-	          break;
-
-	        case 4:
-	          _.label++;
-	          return {
-	            value: op[1],
-	            done: false
-	          };
-
-	        case 5:
-	          _.label++;
-	          y = op[1];
-	          op = [0];
-	          continue;
-
-	        case 7:
-	          op = _.ops.pop();
-
-	          _.trys.pop();
-
-	          continue;
-
-	        default:
-	          if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) {
-	            _ = 0;
-	            continue;
-	          }
-
-	          if (op[0] === 3 && (!t || op[1] > t[0] && op[1] < t[3])) {
-	            _.label = op[1];
-	            break;
-	          }
-
-	          if (op[0] === 6 && _.label < t[1]) {
-	            _.label = t[1];
-	            t = op;
-	            break;
-	          }
-
-	          if (t && _.label < t[2]) {
-	            _.label = t[2];
-
-	            _.ops.push(op);
-
-	            break;
-	          }
-
-	          if (t[2]) _.ops.pop();
-
-	          _.trys.pop();
-
-	          continue;
-	      }
-
-	      op = body.call(thisArg, _);
-	    } catch (e) {
-	      op = [6, e];
-	      y = 0;
-	    } finally {
-	      f = t = 0;
-	    }
-
-	    if (op[0] & 5) throw op[1];
-	    return {
-	      value: op[0] ? op[1] : void 0,
-	      done: true
-	    };
-	  }
-	};
 	function getSendTransceiver(pc, track) {
-	  return __awaiter$g(this, void 0, void 0, function () {
+	  return __awaiter$f(this, void 0, void 0, function () {
 	    var transceiver;
-	    return __generator$g(this, function (_a) {
+	    return __generator$f(this, function (_a) {
 	      var _context;
 
 	      switch (_a.label) {
@@ -29908,7 +29397,7 @@
 	    return __assign$7.apply(this, arguments);
 	};
 
-	function __awaiter$h(thisArg, _arguments, P, generator) {
+	function __awaiter$g(thisArg, _arguments, P, generator) {
 	    return new (P || (P = Promise))(function (resolve, reject) {
 	        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
 	        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
@@ -29917,7 +29406,7 @@
 	    });
 	}
 
-	function __generator$h(thisArg, body) {
+	function __generator$g(thisArg, body) {
 	    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
 	    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
 	    function verb(n) { return function (v) { return step([n, v]); }; }
@@ -30060,8 +29549,8 @@
 	        this.lossRateWindowStats = [];
 	        this.pc = pc;
 	        this.options = options;
-	        this.intervalTimer = window.setInterval(function () { return __awaiter$h(_this, void 0, void 0, function () {
-	            return __generator$h(this, function (_a) {
+	        this.intervalTimer = window.setInterval(function () { return __awaiter$g(_this, void 0, void 0, function () {
+	            return __generator$g(this, function (_a) {
 	                this.updateStats();
 	                return [2 /*return*/];
 	            });
@@ -30176,10 +29665,10 @@
 	        return _this;
 	    }
 	    AgoraSpecStatsFilter.prototype.updateStats = function () {
-	        return __awaiter$h(this, void 0, void 0, function () {
+	        return __awaiter$g(this, void 0, void 0, function () {
 	            var _a;
 	            var _this = this;
-	            return __generator$h(this, function (_b) {
+	            return __generator$g(this, function (_b) {
 	                switch (_b.label) {
 	                    case 0:
 	                        _a = this;
@@ -30694,7 +30183,7 @@
 	  };
 	}();
 
-	var __awaiter$i = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+	var __awaiter$h = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
 	      resolve(value);
@@ -30726,7 +30215,7 @@
 	  });
 	};
 
-	var __generator$i = undefined && undefined.__generator || function (thisArg, body) {
+	var __generator$h = undefined && undefined.__generator || function (thisArg, body) {
 	  var _ = {
 	    label: 0,
 	    sent: function () {
@@ -30856,9 +30345,9 @@
 	  };
 
 	  AgoraRTCPeerConnection.prototype.createOfferSDP = function () {
-	    return __awaiter$i(this, void 0, void 0, function () {
+	    return __awaiter$h(this, void 0, void 0, function () {
 	      var offer, e_1;
-	      return __generator$i(this, function (_a) {
+	      return __generator$h(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            _a.trys.push([0, 2,, 3]);
@@ -30893,9 +30382,9 @@
 	  };
 
 	  AgoraRTCPeerConnection.prototype.setOfferSDP = function (sdp) {
-	    return __awaiter$i(this, void 0, void 0, function () {
+	    return __awaiter$h(this, void 0, void 0, function () {
 	      var e_2;
-	      return __generator$i(this, function (_a) {
+	      return __generator$h(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            _a.trys.push([0, 2,, 3]);
@@ -30929,9 +30418,9 @@
 	  };
 
 	  AgoraRTCPeerConnection.prototype.setAnswerSDP = function (sdp) {
-	    return __awaiter$i(this, void 0, void 0, function () {
+	    return __awaiter$h(this, void 0, void 0, function () {
 	      var e_3;
-	      return __generator$i(this, function (_a) {
+	      return __generator$h(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            _a.trys.push([0, 2,, 3]);
@@ -31080,10 +30569,10 @@
 	  }
 
 	  PubRTCPeerConnection.prototype.addStream = function (stream) {
-	    return __awaiter$i(this, void 0, void 0, function () {
+	    return __awaiter$h(this, void 0, void 0, function () {
 	      var tracks, _i, tracks_1, track;
 
-	      return __generator$i(this, function (_a) {
+	      return __generator$h(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            tracks = stream.getTracks();
@@ -31124,9 +30613,9 @@
 
 
 	  PubRTCPeerConnection.prototype.replaceTrack = function (track) {
-	    return __awaiter$i(this, void 0, void 0, function () {
+	    return __awaiter$h(this, void 0, void 0, function () {
 	      var compat, replacedTrack, sender, oldTrack, e_4;
-	      return __generator$i(this, function (_a) {
+	      return __generator$h(this, function (_a) {
 	        var _context2;
 
 	        switch (_a.label) {
@@ -31227,9 +30716,9 @@
 	  };
 
 	  PubRTCPeerConnection.prototype.addTrack = function (track) {
-	    return __awaiter$i(this, void 0, void 0, function () {
+	    return __awaiter$h(this, void 0, void 0, function () {
 	      var compat, transceiver, sender;
-	      return __generator$i(this, function (_a) {
+	      return __generator$h(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            compat = getCompatibility();
@@ -31277,9 +30766,9 @@
 	  };
 
 	  PubRTCPeerConnection.prototype.setRtpSenderParameters = function (encoder, degradation, isLowTrack) {
-	    return __awaiter$i(this, void 0, void 0, function () {
+	    return __awaiter$h(this, void 0, void 0, function () {
 	      var videoSender, parameters, e_5;
-	      return __generator$i(this, function (_a) {
+	      return __generator$h(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            videoSender = this.videoSender || (this.videoTransceiver ? this.videoTransceiver.sender : undefined);
@@ -31449,7 +30938,7 @@
 	  };
 	}();
 
-	var __awaiter$j = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+	var __awaiter$i = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
 	      resolve(value);
@@ -31481,7 +30970,7 @@
 	  });
 	};
 
-	var __generator$j = undefined && undefined.__generator || function (thisArg, body) {
+	var __generator$i = undefined && undefined.__generator || function (thisArg, body) {
 	  var _ = {
 	    label: 0,
 	    sent: function () {
@@ -31713,9 +31202,9 @@
 
 
 	  StreamConnection.prototype.reconnectPC = function (reason) {
-	    return __awaiter$j(this, void 0, void 0, function () {
+	    return __awaiter$i(this, void 0, void 0, function () {
 	      var isAbort;
-	      return __generator$j(this, function (_a) {
+	      return __generator$i(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            this.readyToReconnect = false;
@@ -31842,7 +31331,7 @@
 	  return StreamConnection;
 	}(EventEmitter$1);
 
-	var __awaiter$k = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+	var __awaiter$j = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
 	      resolve(value);
@@ -31874,7 +31363,7 @@
 	  });
 	};
 
-	var __generator$k = undefined && undefined.__generator || function (thisArg, body) {
+	var __generator$j = undefined && undefined.__generator || function (thisArg, body) {
 	  var _ = {
 	    label: 0,
 	    sent: function () {
@@ -32001,8 +31490,8 @@
 	  });
 
 	  TrackProcessor.prototype.setInput = function (track) {
-	    return __awaiter$k(this, void 0, void 0, function () {
-	      return __generator$k(this, function (_a) {
+	    return __awaiter$j(this, void 0, void 0, function () {
+	      return __generator$j(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            if (track === this.input) return [2
@@ -32044,10 +31533,10 @@
 	  };
 
 	  TrackProcessor.prototype.updateOutput = function (track) {
-	    return __awaiter$k(this, void 0, void 0, function () {
+	    return __awaiter$j(this, void 0, void 0, function () {
 	      var _a;
 
-	      return __generator$k(this, function (_b) {
+	      return __generator$j(this, function (_b) {
 	        switch (_b.label) {
 	          case 0:
 	            if (this.output === track) return [2
@@ -33018,6 +32507,249 @@
 	  return VideoEffectManager;
 	}();
 
+	var __awaiter$k = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+	  function adopt(value) {
+	    return value instanceof P ? value : new P(function (resolve) {
+	      resolve(value);
+	    });
+	  }
+
+	  return new (P || (P = promise$3))(function (resolve, reject) {
+	    function fulfilled(value) {
+	      try {
+	        step(generator.next(value));
+	      } catch (e) {
+	        reject(e);
+	      }
+	    }
+
+	    function rejected(value) {
+	      try {
+	        step(generator["throw"](value));
+	      } catch (e) {
+	        reject(e);
+	      }
+	    }
+
+	    function step(result) {
+	      result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected);
+	    }
+
+	    step((generator = generator.apply(thisArg, _arguments || [])).next());
+	  });
+	};
+
+	var __generator$k = undefined && undefined.__generator || function (thisArg, body) {
+	  var _ = {
+	    label: 0,
+	    sent: function () {
+	      if (t[0] & 1) throw t[1];
+	      return t[1];
+	    },
+	    trys: [],
+	    ops: []
+	  },
+	      f,
+	      y,
+	      t,
+	      g;
+	  return g = {
+	    next: verb(0),
+	    "throw": verb(1),
+	    "return": verb(2)
+	  }, typeof symbol$2 === "function" && (g[iterator$2] = function () {
+	    return this;
+	  }), g;
+
+	  function verb(n) {
+	    return function (v) {
+	      return step([n, v]);
+	    };
+	  }
+
+	  function step(op) {
+	    if (f) throw new TypeError("Generator is already executing.");
+
+	    while (_) try {
+	      if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+	      if (y = 0, t) op = [op[0] & 2, t.value];
+
+	      switch (op[0]) {
+	        case 0:
+	        case 1:
+	          t = op;
+	          break;
+
+	        case 4:
+	          _.label++;
+	          return {
+	            value: op[1],
+	            done: false
+	          };
+
+	        case 5:
+	          _.label++;
+	          y = op[1];
+	          op = [0];
+	          continue;
+
+	        case 7:
+	          op = _.ops.pop();
+
+	          _.trys.pop();
+
+	          continue;
+
+	        default:
+	          if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) {
+	            _ = 0;
+	            continue;
+	          }
+
+	          if (op[0] === 3 && (!t || op[1] > t[0] && op[1] < t[3])) {
+	            _.label = op[1];
+	            break;
+	          }
+
+	          if (op[0] === 6 && _.label < t[1]) {
+	            _.label = t[1];
+	            t = op;
+	            break;
+	          }
+
+	          if (t && _.label < t[2]) {
+	            _.label = t[2];
+
+	            _.ops.push(op);
+
+	            break;
+	          }
+
+	          if (t[2]) _.ops.pop();
+
+	          _.trys.pop();
+
+	          continue;
+	      }
+
+	      op = body.call(thisArg, _);
+	    } catch (e) {
+	      op = [6, e];
+	      y = 0;
+	    } finally {
+	      f = t = 0;
+	    }
+
+	    if (op[0] & 5) throw op[1];
+	    return {
+	      value: op[0] ? op[1] : void 0,
+	      done: true
+	    };
+	  }
+	};
+
+	var BeautyEffectOverloadDetector =
+	/** @class */
+	function () {
+	  function BeautyEffectOverloadDetector() {
+	    this.targetFrameRate = 0;
+	    this.recordedFrameCount = 0;
+	    this.recordingTime = 2;
+	  }
+
+	  BeautyEffectOverloadDetector.prototype.startRecordBeautyEffectOutput = function (targetFrameRate, recordingTime) {
+	    if (recordingTime === void 0) {
+	      recordingTime = 4;
+	    }
+
+	    return __awaiter$k(this, void 0, void 0, function () {
+	      var recordID;
+	      return __generator$k(this, function (_a) {
+	        switch (_a.label) {
+	          case 0:
+	            if (this.recordID) {
+	              throw new AgoraRTCError(AgoraRTCErrorCode.UNEXPECTED_ERROR, "another beauty effect recording is in progress");
+	            }
+
+	            recordID = getRandomString(6, "");
+	            this.recordID = recordID;
+	            this.targetFrameRate = targetFrameRate;
+	            this.recordedFrameCount = 0;
+	            this.recordingTime = recordingTime;
+	            return [4
+	            /*yield*/
+	            , wait(1000 * this.recordingTime)];
+
+	          case 1:
+	            _a.sent(); // record aborted
+
+
+	            if (this.recordID !== recordID) {
+	              this.recordID = undefined;
+	              return [2
+	              /*return*/
+	              , true];
+	            }
+
+	            this.recordID = undefined; // 如果实际输出的帧率小于目标帧率的一半，认为美颜 overload
+
+	            if (this.recordedFrameCount < this.targetFrameRate * this.recordingTime / 2) {
+	              logger.warning("detect beauty effect overload, current framerate", this.recordedFrameCount / 2);
+	              return [2
+	              /*return*/
+	              , false];
+	            }
+
+	            logger.debug("beauty effect current framerate", this.recordedFrameCount / 2);
+	            return [2
+	            /*return*/
+	            , true];
+	        }
+	      });
+	    });
+	  };
+
+	  BeautyEffectOverloadDetector.prototype.stopRecordBeautyEffectOutput = function () {
+	    this.targetFrameRate = 0;
+	    this.recordedFrameCount = 0;
+	    this.recordID = undefined;
+	  };
+
+	  BeautyEffectOverloadDetector.prototype.addFrame = function () {
+	    if (!this.recordID) {
+	      return;
+	    }
+
+	    this.recordedFrameCount += 1;
+	  };
+
+	  return BeautyEffectOverloadDetector;
+	}();
+
+	var __extends$h = undefined && undefined.__extends || function () {
+	  var extendStatics = function (d, b) {
+	    extendStatics = setPrototypeOf$2 || {
+	      __proto__: []
+	    } instanceof Array && function (d, b) {
+	      d.__proto__ = b;
+	    } || function (d, b) {
+	      for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+	    };
+
+	    return extendStatics(d, b);
+	  };
+
+	  return function (d, b) {
+	    extendStatics(d, b);
+
+	    function __() {
+	      this.constructor = d;
+	    }
+
+	    d.prototype = b === null ? create$4(b) : (__.prototype = b.prototype, new __());
+	  };
+	}();
+
 	var __awaiter$l = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
@@ -33158,249 +32890,6 @@
 	    };
 	  }
 	};
-
-	var BeautyEffectOverloadDetector =
-	/** @class */
-	function () {
-	  function BeautyEffectOverloadDetector() {
-	    this.targetFrameRate = 0;
-	    this.recordedFrameCount = 0;
-	    this.recordingTime = 2;
-	  }
-
-	  BeautyEffectOverloadDetector.prototype.startRecordBeautyEffectOutput = function (targetFrameRate, recordingTime) {
-	    if (recordingTime === void 0) {
-	      recordingTime = 4;
-	    }
-
-	    return __awaiter$l(this, void 0, void 0, function () {
-	      var recordID;
-	      return __generator$l(this, function (_a) {
-	        switch (_a.label) {
-	          case 0:
-	            if (this.recordID) {
-	              throw new AgoraRTCError(AgoraRTCErrorCode.UNEXPECTED_ERROR, "another beauty effect recording is in progress");
-	            }
-
-	            recordID = getRandomString(6, "");
-	            this.recordID = recordID;
-	            this.targetFrameRate = targetFrameRate;
-	            this.recordedFrameCount = 0;
-	            this.recordingTime = recordingTime;
-	            return [4
-	            /*yield*/
-	            , wait(1000 * this.recordingTime)];
-
-	          case 1:
-	            _a.sent(); // record aborted
-
-
-	            if (this.recordID !== recordID) {
-	              this.recordID = undefined;
-	              return [2
-	              /*return*/
-	              , true];
-	            }
-
-	            this.recordID = undefined; // 如果实际输出的帧率小于目标帧率的一半，认为美颜 overload
-
-	            if (this.recordedFrameCount < this.targetFrameRate * this.recordingTime / 2) {
-	              logger.warning("detect beauty effect overload, current framerate", this.recordedFrameCount / 2);
-	              return [2
-	              /*return*/
-	              , false];
-	            }
-
-	            logger.debug("beauty effect current framerate", this.recordedFrameCount / 2);
-	            return [2
-	            /*return*/
-	            , true];
-	        }
-	      });
-	    });
-	  };
-
-	  BeautyEffectOverloadDetector.prototype.stopRecordBeautyEffectOutput = function () {
-	    this.targetFrameRate = 0;
-	    this.recordedFrameCount = 0;
-	    this.recordID = undefined;
-	  };
-
-	  BeautyEffectOverloadDetector.prototype.addFrame = function () {
-	    if (!this.recordID) {
-	      return;
-	    }
-
-	    this.recordedFrameCount += 1;
-	  };
-
-	  return BeautyEffectOverloadDetector;
-	}();
-
-	var __extends$h = undefined && undefined.__extends || function () {
-	  var extendStatics = function (d, b) {
-	    extendStatics = setPrototypeOf$2 || {
-	      __proto__: []
-	    } instanceof Array && function (d, b) {
-	      d.__proto__ = b;
-	    } || function (d, b) {
-	      for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    };
-
-	    return extendStatics(d, b);
-	  };
-
-	  return function (d, b) {
-	    extendStatics(d, b);
-
-	    function __() {
-	      this.constructor = d;
-	    }
-
-	    d.prototype = b === null ? create$4(b) : (__.prototype = b.prototype, new __());
-	  };
-	}();
-
-	var __awaiter$m = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
-	  function adopt(value) {
-	    return value instanceof P ? value : new P(function (resolve) {
-	      resolve(value);
-	    });
-	  }
-
-	  return new (P || (P = promise$3))(function (resolve, reject) {
-	    function fulfilled(value) {
-	      try {
-	        step(generator.next(value));
-	      } catch (e) {
-	        reject(e);
-	      }
-	    }
-
-	    function rejected(value) {
-	      try {
-	        step(generator["throw"](value));
-	      } catch (e) {
-	        reject(e);
-	      }
-	    }
-
-	    function step(result) {
-	      result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected);
-	    }
-
-	    step((generator = generator.apply(thisArg, _arguments || [])).next());
-	  });
-	};
-
-	var __generator$m = undefined && undefined.__generator || function (thisArg, body) {
-	  var _ = {
-	    label: 0,
-	    sent: function () {
-	      if (t[0] & 1) throw t[1];
-	      return t[1];
-	    },
-	    trys: [],
-	    ops: []
-	  },
-	      f,
-	      y,
-	      t,
-	      g;
-	  return g = {
-	    next: verb(0),
-	    "throw": verb(1),
-	    "return": verb(2)
-	  }, typeof symbol$2 === "function" && (g[iterator$2] = function () {
-	    return this;
-	  }), g;
-
-	  function verb(n) {
-	    return function (v) {
-	      return step([n, v]);
-	    };
-	  }
-
-	  function step(op) {
-	    if (f) throw new TypeError("Generator is already executing.");
-
-	    while (_) try {
-	      if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-	      if (y = 0, t) op = [op[0] & 2, t.value];
-
-	      switch (op[0]) {
-	        case 0:
-	        case 1:
-	          t = op;
-	          break;
-
-	        case 4:
-	          _.label++;
-	          return {
-	            value: op[1],
-	            done: false
-	          };
-
-	        case 5:
-	          _.label++;
-	          y = op[1];
-	          op = [0];
-	          continue;
-
-	        case 7:
-	          op = _.ops.pop();
-
-	          _.trys.pop();
-
-	          continue;
-
-	        default:
-	          if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) {
-	            _ = 0;
-	            continue;
-	          }
-
-	          if (op[0] === 3 && (!t || op[1] > t[0] && op[1] < t[3])) {
-	            _.label = op[1];
-	            break;
-	          }
-
-	          if (op[0] === 6 && _.label < t[1]) {
-	            _.label = t[1];
-	            t = op;
-	            break;
-	          }
-
-	          if (t && _.label < t[2]) {
-	            _.label = t[2];
-
-	            _.ops.push(op);
-
-	            break;
-	          }
-
-	          if (t[2]) _.ops.pop();
-
-	          _.trys.pop();
-
-	          continue;
-	      }
-
-	      op = body.call(thisArg, _);
-	    } catch (e) {
-	      op = [6, e];
-	      y = 0;
-	    } finally {
-	      f = t = 0;
-	    }
-
-	    if (op[0] & 5) throw op[1];
-	    return {
-	      value: op[0] ? op[1] : void 0,
-	      done: true
-	    };
-	  }
-	};
 	/**
 	 * @internal
 	 */
@@ -33429,10 +32918,10 @@
 	  }
 
 	  BeautyVideoProcessor.prototype.setBeautyEffectOptions = function (enabled, options) {
-	    return __awaiter$m(this, void 0, void 0, function () {
+	    return __awaiter$l(this, void 0, void 0, function () {
 	      var denoiseLevel, lightLevel, rednessLevel, lighteningContrastLevel, _a;
 
-	      return __generator$m(this, function (_b) {
+	      return __generator$l(this, function (_b) {
 	        switch (_b.label) {
 	          case 0:
 	            isBeautyEffectOptions(options);
@@ -33508,12 +32997,12 @@
 	  };
 
 	  BeautyVideoProcessor.prototype.startEffect = function () {
-	    return __awaiter$m(this, void 0, void 0, function () {
+	    return __awaiter$l(this, void 0, void 0, function () {
 	      var browserInfo, output, updateEffect;
 
 	      var _this = this;
 
-	      return __generator$m(this, function (_a) {
+	      return __generator$l(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            browserInfo = getBrowserInfo();
@@ -33617,8 +33106,8 @@
 	  };
 
 	  BeautyVideoProcessor.prototype.stopEffect = function () {
-	    return __awaiter$m(this, void 0, void 0, function () {
-	      return __generator$m(this, function (_a) {
+	    return __awaiter$l(this, void 0, void 0, function () {
+	      return __generator$l(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            logger.info("stop video effect");
@@ -33644,8 +33133,8 @@
 	  };
 
 	  BeautyVideoProcessor.prototype._setInput = function (videoTrack) {
-	    return __awaiter$m(this, void 0, void 0, function () {
-	      return __generator$m(this, function (_a) {
+	    return __awaiter$l(this, void 0, void 0, function () {
+	      return __generator$l(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            if (!(this.enabled && !this.video)) return [3
@@ -33674,12 +33163,12 @@
 	  };
 
 	  BeautyVideoProcessor.prototype.renderWithWebGL = function () {
-	    return __awaiter$m(this, void 0, void 0, function () {
+	    return __awaiter$l(this, void 0, void 0, function () {
 	      var videoPlayingPromise, trackSettings, width, height, compatibility;
 
 	      var _this = this;
 
-	      return __generator$m(this, function (_a) {
+	      return __generator$l(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            if (!this.input) {
@@ -34027,7 +33516,7 @@
 	  return __assign$8.apply(this, arguments);
 	};
 
-	var __awaiter$n = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+	var __awaiter$m = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
 	      resolve(value);
@@ -34059,7 +33548,7 @@
 	  });
 	};
 
-	var __generator$n = undefined && undefined.__generator || function (thisArg, body) {
+	var __generator$m = undefined && undefined.__generator || function (thisArg, body) {
 	  var _ = {
 	    label: 0,
 	    sent: function () {
@@ -34255,9 +33744,9 @@
 	  };
 
 	  LocalVideoTrack.prototype.setEnabled = function (enabled) {
-	    return __awaiter$n(this, void 0, void 0, function () {
+	    return __awaiter$m(this, void 0, void 0, function () {
 	      var unlock, e_1, e_2;
-	      return __generator$n(this, function (_a) {
+	      return __generator$m(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            if (enabled === this._enabled) return [2
@@ -34353,12 +33842,12 @@
 	      options = {};
 	    }
 
-	    return __awaiter$n(this, void 0, void 0, function () {
+	    return __awaiter$m(this, void 0, void 0, function () {
 	      var executor, err, e_3;
 
 	      var _this = this;
 
-	      return __generator$n(this, function (_a) {
+	      return __generator$m(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            executor = report.reportApiInvoke(null, {
@@ -34488,9 +33977,9 @@
 	  }
 
 	  CameraVideoTrack.prototype.setDevice = function (deviceId) {
-	    return __awaiter$n(this, void 0, void 0, function () {
+	    return __awaiter$m(this, void 0, void 0, function () {
 	      var executor, err, info, constraints, ms, e_4, e_5;
-	      return __generator$n(this, function (_a) {
+	      return __generator$m(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            executor = report.reportApiInvoke(null, {
@@ -34607,12 +34096,12 @@
 	  };
 
 	  CameraVideoTrack.prototype.setEnabled = function (enabled) {
-	    return __awaiter$n(this, void 0, void 0, function () {
+	    return __awaiter$m(this, void 0, void 0, function () {
 	      var unlock, e_6, constraints, deviceId, ms, e_7;
 
 	      var _this = this;
 
-	      return __generator$n(this, function (_a) {
+	      return __generator$m(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            if (enabled === this._enabled) return [2
@@ -34727,12 +34216,12 @@
 	  };
 
 	  CameraVideoTrack.prototype.setEncoderConfiguration = function (config) {
-	    return __awaiter$n(this, void 0, void 0, function () {
+	    return __awaiter$m(this, void 0, void 0, function () {
 	      var executor, err, newConfig, newConstraints, e_8, error, e_9;
 
 	      var _this = this;
 
-	      return __generator$n(this, function (_a) {
+	      return __generator$m(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            executor = report.reportApiInvoke(null, {
@@ -35025,7 +34514,7 @@
 	  return __assign$9.apply(this, arguments);
 	};
 
-	var __awaiter$o = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+	var __awaiter$n = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
 	      resolve(value);
@@ -35057,7 +34546,7 @@
 	  });
 	};
 
-	var __generator$o = undefined && undefined.__generator || function (thisArg, body) {
+	var __generator$n = undefined && undefined.__generator || function (thisArg, body) {
 	  var _ = {
 	    label: 0,
 	    sent: function () {
@@ -35182,20 +34671,20 @@
 	    _this.detecting = false;
 
 	    _this.renegotiateWithGateway = function () {
-	      return __awaiter$o(_this, void 0, void 0, function () {
+	      return __awaiter$n(_this, void 0, void 0, function () {
 	        var _this = this;
 
-	        return __generator$o(this, function (_a) {
+	        return __generator$n(this, function (_a) {
 	          logger.debug("[pc-" + this.pc.ID + "] renegotiate start");
 	          return [2
 	          /*return*/
 	          , new promise$3(function (resolve, reject) {
-	            return __awaiter$o(_this, void 0, void 0, function () {
+	            return __awaiter$n(_this, void 0, void 0, function () {
 	              var connectionChangeHandler, sdp, response, answer;
 
 	              var _this = this;
 
-	              return __generator$o(this, function (_a) {
+	              return __generator$n(this, function (_a) {
 	                switch (_a.label) {
 	                  case 0:
 	                    this.connectionState = "connecting";
@@ -35336,12 +34825,12 @@
 	  };
 
 	  PubStreamConnection.prototype.addTracks = function (tracks) {
-	    return __awaiter$o(this, void 0, void 0, function () {
+	    return __awaiter$n(this, void 0, void 0, function () {
 	      var compatibility, e_1, needRenegotiate, currentPublishedTracks, i, track, err, error, error, mixingTrack, streamParameter, lowMediaStreamTrack, lowVideoTrack;
 
 	      var _this = this;
 
-	      return __generator$o(this, function (_a) {
+	      return __generator$n(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            compatibility = getCompatibility();
@@ -35530,12 +35019,12 @@
 	  };
 
 	  PubStreamConnection.prototype.removeTracks = function (tracks, isUserAction) {
-	    return __awaiter$o(this, void 0, void 0, function () {
+	    return __awaiter$n(this, void 0, void 0, function () {
 	      var currentPublishedTracks, needToRemovedTracksInPC, i, track, e_2, _i, needToRemovedTracksInPC_1, track;
 
 	      var _this = this;
 
-	      return __generator$o(this, function (_a) {
+	      return __generator$n(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            currentPublishedTracks = this.getAllTracks(); // 去掉没有发布的 tracks
@@ -35681,12 +35170,12 @@
 	    var _this = this;
 
 	    return new promise$3(function (resolve, reject) {
-	      return __awaiter$o(_this, void 0, void 0, function () {
+	      return __awaiter$n(_this, void 0, void 0, function () {
 	        var connectionChangeHandler, sdp, message, response, answer, e_3;
 
 	        var _this = this;
 
-	        return __generator$o(this, function (_a) {
+	        return __generator$n(this, function (_a) {
 	          var _context2;
 
 	          switch (_a.label) {
@@ -35854,12 +35343,12 @@
 	  };
 
 	  PubStreamConnection.prototype.closeP2PConnection = function (force) {
-	    return __awaiter$o(this, void 0, void 0, function () {
+	    return __awaiter$n(this, void 0, void 0, function () {
 	      var tracks;
 
 	      var _this = this;
 
-	      return __generator$o(this, function (_a) {
+	      return __generator$n(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            tracks = this.getAllTracks(); // 如果还有没清完的 track，走 removeTracks 的流程
@@ -36024,9 +35513,9 @@
 
 
 	  PubStreamConnection.prototype.addTrackWithPC = function (track) {
-	    return __awaiter$o(this, void 0, void 0, function () {
+	    return __awaiter$n(this, void 0, void 0, function () {
 	      var error, lastVideoTrack, needRenegotiate, compat, encoderParams, mode;
-	      return __generator$o(this, function (_a) {
+	      return __generator$n(this, function (_a) {
 	        var _context5, _context6;
 
 	        switch (_a.label) {
@@ -36170,8 +35659,8 @@
 	  };
 
 	  PubStreamConnection.prototype.closePC = function (force) {
-	    return __awaiter$o(this, void 0, void 0, function () {
-	      return __generator$o(this, function (_a) {
+	    return __awaiter$n(this, void 0, void 0, function () {
+	      return __generator$n(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            this.pc.onICEConnectionStateChange = undefined;
@@ -36255,7 +35744,7 @@
 	  return __assign$a.apply(this, arguments);
 	};
 
-	var __awaiter$p = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+	var __awaiter$o = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
 	      resolve(value);
@@ -36287,7 +35776,7 @@
 	  });
 	};
 
-	var __generator$p = undefined && undefined.__generator || function (thisArg, body) {
+	var __generator$o = undefined && undefined.__generator || function (thisArg, body) {
 	  var _ = {
 	    label: 0,
 	    sent: function () {
@@ -36617,9 +36106,9 @@
 	  };
 
 	  RemoteAudioTrack.prototype.setPlaybackDevice = function (deviceId) {
-	    return __awaiter$p(this, void 0, void 0, function () {
+	    return __awaiter$o(this, void 0, void 0, function () {
 	      var executor, e_1;
-	      return __generator$p(this, function (_a) {
+	      return __generator$o(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            executor = report.reportApiInvoke(null, {
@@ -36754,7 +36243,7 @@
 	  };
 	}();
 
-	var __awaiter$q = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+	var __awaiter$p = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
 	      resolve(value);
@@ -36786,7 +36275,7 @@
 	  });
 	};
 
-	var __generator$q = undefined && undefined.__generator || function (thisArg, body) {
+	var __generator$p = undefined && undefined.__generator || function (thisArg, body) {
 	  var _ = {
 	    label: 0,
 	    sent: function () {
@@ -36963,19 +36452,19 @@
 	  }
 
 	  SubStreamConnection.prototype.startP2PConnection = function () {
-	    return __awaiter$q(this, void 0, void 0, function () {
+	    return __awaiter$p(this, void 0, void 0, function () {
 	      var _this = this;
 
-	      return __generator$q(this, function (_a) {
+	      return __generator$p(this, function (_a) {
 	        return [2
 	        /*return*/
 	        , new promise$3(function (resolve, reject) {
-	          return __awaiter$q(_this, void 0, void 0, function () {
+	          return __awaiter$p(_this, void 0, void 0, function () {
 	            var connectionChangeHandler, remoteMediaStream, onStreamPromise, sdp, _a, message, response, res, audioMediaTrack, videoMediaTrack, e_1;
 
 	            var _this = this;
 
-	            return __generator$q(this, function (_b) {
+	            return __generator$p(this, function (_b) {
 	              switch (_b.label) {
 	                case 0:
 	                  connectionChangeHandler = function (curr) {
@@ -37157,8 +36646,8 @@
 	  };
 
 	  SubStreamConnection.prototype.closeP2PConnection = function (force) {
-	    return __awaiter$q(this, void 0, void 0, function () {
-	      return __generator$q(this, function (_a) {
+	    return __awaiter$p(this, void 0, void 0, function () {
+	      return __generator$p(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            if (this.connectionState === "disconnected") return [2
@@ -37294,9 +36783,9 @@
 
 
 	  SubStreamConnection.prototype.setSubscribeOptions = function (subOptions) {
-	    return __awaiter$q(this, void 0, void 0, function () {
+	    return __awaiter$p(this, void 0, void 0, function () {
 	      var e_2;
-	      return __generator$q(this, function (_a) {
+	      return __generator$p(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            if (subOptions.audio === this.subscribeOptions.audio && subOptions.video === this.subscribeOptions.video) return [2
@@ -37408,9 +36897,9 @@
 	  };
 
 	  SubStreamConnection.prototype.closePC = function (force) {
-	    return __awaiter$q(this, void 0, void 0, function () {
+	    return __awaiter$p(this, void 0, void 0, function () {
 	      var needWait;
-	      return __generator$q(this, function (_a) {
+	      return __generator$p(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            this.pc.audioTrack && this.pc.audioTrack.stop();
@@ -37510,7 +36999,7 @@
 	  return __assign$b.apply(this, arguments);
 	};
 
-	var __awaiter$r = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+	var __awaiter$q = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
 	      resolve(value);
@@ -37542,7 +37031,7 @@
 	  });
 	};
 
-	var __generator$r = undefined && undefined.__generator || function (thisArg, body) {
+	var __generator$q = undefined && undefined.__generator || function (thisArg, body) {
 	  var _ = {
 	    label: 0,
 	    sent: function () {
@@ -37724,12 +37213,12 @@
 	  };
 
 	  AgoraLiveStreamingUapSignal.prototype.request = function (command, data, allocate, reportData) {
-	    return __awaiter$r(this, void 0, void 0, function () {
+	    return __awaiter$q(this, void 0, void 0, function () {
 	      var commandReqId, reqId, sdkVersion, req, waitWsOpenPromise, waitResponsePromise, startTime, res, e_1;
 
 	      var _this = this;
 
-	      return __generator$r(this, function (_a) {
+	      return __generator$q(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            this.reqId += 1;
@@ -38083,7 +37572,7 @@
 	  return __assign$c.apply(this, arguments);
 	};
 
-	var __awaiter$s = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+	var __awaiter$r = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
 	      resolve(value);
@@ -38115,7 +37604,7 @@
 	  });
 	};
 
-	var __generator$s = undefined && undefined.__generator || function (thisArg, body) {
+	var __generator$r = undefined && undefined.__generator || function (thisArg, body) {
 	  var _ = {
 	    label: 0,
 	    sent: function () {
@@ -38265,12 +37754,12 @@
 	  }
 
 	  AgoraRTCLiveStreamingClient.prototype.setTranscodingConfig = function (transcodingConfig) {
-	    return __awaiter$s(this, void 0, void 0, function () {
+	    return __awaiter$r(this, void 0, void 0, function () {
 	      var config, images, stringUidPromiseList, uidList, res, e_1;
 
 	      var _this = this;
 
-	      return __generator$s(this, function (_a) {
+	      return __generator$r(this, function (_a) {
 	        var _context4, _context5, _context6, _context7;
 
 	        switch (_a.label) {
@@ -38425,12 +37914,12 @@
 
 
 	  AgoraRTCLiveStreamingClient.prototype.startLiveStreamingTask = function (rtmp, mode, retryError) {
-	    return __awaiter$s(this, void 0, void 0, function () {
+	    return __awaiter$r(this, void 0, void 0, function () {
 	      var injectTask, clientRequest, unlock, streamingTask, _a, e_2, taskId, startTimeoutPromise, res, e_3;
 
 	      var _this = this;
 
-	      return __generator$s(this, function (_b) {
+	      return __generator$r(this, function (_b) {
 	        var _context8, _context9;
 
 	        switch (_b.label) {
@@ -38694,9 +38183,9 @@
 	  };
 
 	  AgoraRTCLiveStreamingClient.prototype.controlInjectStream = function (url, control, volume, position) {
-	    return __awaiter$s(this, void 0, void 0, function () {
+	    return __awaiter$r(this, void 0, void 0, function () {
 	      var injectStreamTask, response;
-	      return __generator$s(this, function (_a) {
+	      return __generator$r(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            injectStreamTask = this.streamingTasks.get(url);
@@ -38769,12 +38258,12 @@
 	  };
 
 	  AgoraRTCLiveStreamingClient.prototype.connect = function (mode) {
-	    return __awaiter$s(this, void 0, void 0, function () {
+	    return __awaiter$r(this, void 0, void 0, function () {
 	      var result;
 
 	      var _this = this;
 
-	      return __generator$s(this, function (_a) {
+	      return __generator$r(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            /** 如果已经开始连接了，报错 */
@@ -39037,7 +38526,7 @@
 	  };
 	}();
 
-	var __awaiter$t = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+	var __awaiter$s = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
 	      resolve(value);
@@ -39069,7 +38558,7 @@
 	  });
 	};
 
-	var __generator$t = undefined && undefined.__generator || function (thisArg, body) {
+	var __generator$s = undefined && undefined.__generator || function (thisArg, body) {
 	  var _ = {
 	    label: 0,
 	    sent: function () {
@@ -39284,12 +38773,12 @@
 	  };
 
 	  AgoraChannelMediaRelaySignal.prototype.request = function (message) {
-	    return __awaiter$t(this, void 0, void 0, function () {
+	    return __awaiter$s(this, void 0, void 0, function () {
 	      var waitWsOpenPromise, requestId, waitResponsePromise, response;
 
 	      var _this = this;
 
-	      return __generator$t(this, function (_a) {
+	      return __generator$s(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            if (this.ws.state === "closed") {
@@ -39361,8 +38850,8 @@
 	  };
 
 	  AgoraChannelMediaRelaySignal.prototype.connect = function (urls) {
-	    return __awaiter$t(this, void 0, void 0, function () {
-	      return __generator$t(this, function (_a) {
+	    return __awaiter$s(this, void 0, void 0, function () {
+	      return __generator$s(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            this.ws.removeAllListeners(WebSocketManagerEvents.REQUEST_NEW_URLS);
@@ -39446,7 +38935,7 @@
 	  };
 	}();
 
-	var __awaiter$u = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+	var __awaiter$t = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
 	      resolve(value);
@@ -39478,7 +38967,7 @@
 	  });
 	};
 
-	var __generator$u = undefined && undefined.__generator || function (thisArg, body) {
+	var __generator$t = undefined && undefined.__generator || function (thisArg, body) {
 	  var _ = {
 	    label: 0,
 	    sent: function () {
@@ -39641,10 +39130,10 @@
 	    };
 
 	    _this.onReconnect = function () {
-	      return __awaiter$u(_this, void 0, void 0, function () {
+	      return __awaiter$t(_this, void 0, void 0, function () {
 	        var _this = this;
 
-	        return __generator$u(this, function (_a) {
+	        return __generator$t(this, function (_a) {
 	          logger.debug("[" + this.clientId + "] ChannelMediaSocket disconnect, reconnecting");
 	          this.emit("event", "NETWORK_DISCONNECTED"
 	          /* NETWORK_DISCONNECTED */
@@ -39705,9 +39194,9 @@
 	  });
 
 	  AgoraChannelMediaRelayClient.prototype.startChannelMediaRelay = function (configuration) {
-	    return __awaiter$u(this, void 0, void 0, function () {
+	    return __awaiter$t(this, void 0, void 0, function () {
 	      var e_1;
-	      return __generator$u(this, function (_a) {
+	      return __generator$t(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            if (this.state !== "RELAY_STATE_IDLE"
@@ -39767,8 +39256,8 @@
 	  };
 
 	  AgoraChannelMediaRelayClient.prototype.updateChannelMediaRelay = function (configuration) {
-	    return __awaiter$u(this, void 0, void 0, function () {
-	      return __generator$u(this, function (_a) {
+	    return __awaiter$t(this, void 0, void 0, function () {
+	      return __generator$t(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            if (this.state !== "RELAY_STATE_RUNNING"
@@ -39794,8 +39283,8 @@
 	  };
 
 	  AgoraChannelMediaRelayClient.prototype.stopChannelMediaRelay = function () {
-	    return __awaiter$u(this, void 0, void 0, function () {
-	      return __generator$u(this, function (_a) {
+	    return __awaiter$t(this, void 0, void 0, function () {
+	      return __generator$t(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            return [4
@@ -39831,9 +39320,9 @@
 	  };
 
 	  AgoraChannelMediaRelayClient.prototype.connect = function () {
-	    return __awaiter$u(this, void 0, void 0, function () {
+	    return __awaiter$t(this, void 0, void 0, function () {
 	      var result;
-	      return __generator$u(this, function (_a) {
+	      return __generator$t(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            return [4
@@ -39864,9 +39353,9 @@
 	  };
 
 	  AgoraChannelMediaRelayClient.prototype.sendStartRelayMessage = function (configuration) {
-	    return __awaiter$u(this, void 0, void 0, function () {
+	    return __awaiter$t(this, void 0, void 0, function () {
 	      var stopPacketMsg, setSdkProfileMsg, setSourceChannelMsg, setSourceUserIdMsg, setDestChannelMsg, startPacketTransferMsg;
-	      return __generator$u(this, function (_a) {
+	      return __generator$t(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            stopPacketMsg = this.genMessage(CHANNEL_MEDIA_RELAY_MESSAGE_TYPE.StopPacketTransfer);
@@ -39965,9 +39454,9 @@
 	  };
 
 	  AgoraChannelMediaRelayClient.prototype.sendUpdateMessage = function (configuration) {
-	    return __awaiter$u(this, void 0, void 0, function () {
+	    return __awaiter$t(this, void 0, void 0, function () {
 	      var updateMsg;
-	      return __generator$u(this, function (_a) {
+	      return __generator$t(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            updateMsg = this.genMessage(CHANNEL_MEDIA_RELAY_MESSAGE_TYPE.UpdateDestChannel, configuration);
@@ -39991,9 +39480,9 @@
 	  };
 
 	  AgoraChannelMediaRelayClient.prototype.sendStopRelayMessage = function () {
-	    return __awaiter$u(this, void 0, void 0, function () {
+	    return __awaiter$t(this, void 0, void 0, function () {
 	      var stopPacketMsg;
-	      return __generator$u(this, function (_a) {
+	      return __generator$t(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            stopPacketMsg = this.genMessage(CHANNEL_MEDIA_RELAY_MESSAGE_TYPE.StopPacketTransfer);
@@ -40248,7 +39737,7 @@
 	  return __assign$d.apply(this, arguments);
 	};
 
-	var __awaiter$v = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+	var __awaiter$u = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
 	      resolve(value);
@@ -40280,7 +39769,7 @@
 	  });
 	};
 
-	var __generator$v = undefined && undefined.__generator || function (thisArg, body) {
+	var __generator$u = undefined && undefined.__generator || function (thisArg, body) {
 	  var _ = {
 	    label: 0,
 	    sent: function () {
@@ -40946,12 +40435,12 @@
 	  });
 
 	  AgoraRTCClient.prototype.join = function (appId, channel, token, uid, optionalInfo) {
-	    return __awaiter$v(this, void 0, void 0, function () {
+	    return __awaiter$u(this, void 0, void 0, function () {
 	      var executor, unlock, err, joinInfo, uid_1, serverInfo, gatewayUID, e_1;
 
 	      var _this = this;
 
-	      return __generator$v(this, function (_a) {
+	      return __generator$u(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            executor = report.reportApiInvoke(this._sessionId, {
@@ -41140,9 +40629,9 @@
 	  };
 
 	  AgoraRTCClient.prototype.leave = function () {
-	    return __awaiter$v(this, void 0, void 0, function () {
+	    return __awaiter$u(this, void 0, void 0, function () {
 	      var executor, unlock;
-	      return __generator$v(this, function (_a) {
+	      return __generator$u(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            executor = report.reportApiInvoke(this._sessionId, {
@@ -41200,12 +40689,12 @@
 	      isUserAction = true;
 	    }
 
-	    return __awaiter$v(this, void 0, void 0, function () {
+	    return __awaiter$u(this, void 0, void 0, function () {
 	      var executor, err, _i, tracks_1, track, err, unlock, highConnection, aTrack, vTrack, e_2;
 
 	      var _this = this;
 
-	      return __generator$v(this, function (_a) {
+	      return __generator$u(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            if (!isArray$3(tracks)) tracks = [tracks];
@@ -41316,12 +40805,12 @@
 	      isUserAction = true;
 	    }
 
-	    return __awaiter$v(this, void 0, void 0, function () {
+	    return __awaiter$u(this, void 0, void 0, function () {
 	      var allTracks, isClosePC, executor, unlock, _a, e_3;
 
 	      var _this = this;
 
-	      return __generator$v(this, function (_b) {
+	      return __generator$u(this, function (_b) {
 	        switch (_b.label) {
 	          case 0:
 	            if (!this._highStream) {
@@ -41478,12 +40967,12 @@
 	  };
 
 	  AgoraRTCClient.prototype.subscribe = function (user, mediaType) {
-	    return __awaiter$v(this, void 0, void 0, function () {
+	    return __awaiter$u(this, void 0, void 0, function () {
 	      var executor, err, err, userInChannel, err, err, subscribeOptions, err, mutex, unlock, subStreamConnection, e_4, e_5, remoteTrack, err;
 
 	      var _this = this;
 
-	      return __generator$v(this, function (_a) {
+	      return __generator$u(this, function (_a) {
 	        var _context14;
 
 	        switch (_a.label) {
@@ -41652,9 +41141,9 @@
 	  };
 
 	  AgoraRTCClient.prototype.unsubscribe = function (user, mediaType) {
-	    return __awaiter$v(this, void 0, void 0, function () {
+	    return __awaiter$u(this, void 0, void 0, function () {
 	      var executor, userInChannel, err, mutex, unlock, sc, subscribeOptions, e_6;
-	      return __generator$v(this, function (_a) {
+	      return __generator$u(this, function (_a) {
 	        var _context15;
 
 	        switch (_a.label) {
@@ -41797,9 +41286,9 @@
 	  };
 
 	  AgoraRTCClient.prototype.enableDualStream = function () {
-	    return __awaiter$v(this, void 0, void 0, function () {
+	    return __awaiter$u(this, void 0, void 0, function () {
 	      var executor, compat, err, err, e_7;
-	      return __generator$v(this, function (_a) {
+	      return __generator$u(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            executor = report.reportApiInvoke(this._sessionId, {
@@ -41874,9 +41363,9 @@
 	  };
 
 	  AgoraRTCClient.prototype.disableDualStream = function () {
-	    return __awaiter$v(this, void 0, void 0, function () {
+	    return __awaiter$u(this, void 0, void 0, function () {
 	      var executor, e_8;
-	      return __generator$v(this, function (_a) {
+	      return __generator$u(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            executor = report.reportApiInvoke(this._sessionId, {
@@ -41937,9 +41426,9 @@
 	  };
 
 	  AgoraRTCClient.prototype.setClientRole = function (role) {
-	    return __awaiter$v(this, void 0, void 0, function () {
+	    return __awaiter$u(this, void 0, void 0, function () {
 	      var executor, err, e_9;
-	      return __generator$v(this, function (_a) {
+	      return __generator$u(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            isClientRole(role);
@@ -42091,9 +41580,9 @@
 	  };
 
 	  AgoraRTCClient.prototype.setRemoteVideoStreamType = function (uid, streamType) {
-	    return __awaiter$v(this, void 0, void 0, function () {
+	    return __awaiter$u(this, void 0, void 0, function () {
 	      var executor, e_10;
-	      return __generator$v(this, function (_a) {
+	      return __generator$u(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            checkValidEnum(streamType, "streamType", [0, 1]);
@@ -42139,9 +41628,9 @@
 	  };
 
 	  AgoraRTCClient.prototype.setStreamFallbackOption = function (uid, fallbackType) {
-	    return __awaiter$v(this, void 0, void 0, function () {
+	    return __awaiter$u(this, void 0, void 0, function () {
 	      var executor, e_11;
-	      return __generator$v(this, function (_a) {
+	      return __generator$u(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            checkValidEnum(fallbackType, "fallbackType", [0, 1, 2]);
@@ -42200,9 +41689,9 @@
 	  };
 
 	  AgoraRTCClient.prototype.renewToken = function (token) {
-	    return __awaiter$v(this, void 0, void 0, function () {
+	    return __awaiter$u(this, void 0, void 0, function () {
 	      var executor, err, e_12;
-	      return __generator$v(this, function (_a) {
+	      return __generator$u(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            checkValidString(token, "token", 1, 2047);
@@ -42391,9 +41880,9 @@
 	  };
 
 	  AgoraRTCClient.prototype.addInjectStreamUrl = function (url, config) {
-	    return __awaiter$v(this, void 0, void 0, function () {
+	    return __awaiter$u(this, void 0, void 0, function () {
 	      var executor, client, e_13;
-	      return __generator$v(this, function (_a) {
+	      return __generator$u(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            executor = report.reportApiInvoke(this._sessionId, {
@@ -42439,9 +41928,9 @@
 	  };
 
 	  AgoraRTCClient.prototype.removeInjectStreamUrl = function () {
-	    return __awaiter$v(this, void 0, void 0, function () {
+	    return __awaiter$u(this, void 0, void 0, function () {
 	      var executor, client, streamTask, e_14;
-	      return __generator$v(this, function (_a) {
+	      return __generator$u(this, function (_a) {
 	        var _context20, _context21;
 
 	        switch (_a.label) {
@@ -42492,9 +41981,9 @@
 	  };
 
 	  AgoraRTCClient.prototype.startChannelMediaRelay = function (config) {
-	    return __awaiter$v(this, void 0, void 0, function () {
+	    return __awaiter$u(this, void 0, void 0, function () {
 	      var executor, client, e_15;
-	      return __generator$v(this, function (_a) {
+	      return __generator$u(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            executor = report.reportApiInvoke(this._sessionId, {
@@ -42538,9 +42027,9 @@
 	  };
 
 	  AgoraRTCClient.prototype.updateChannelMediaRelay = function (config) {
-	    return __awaiter$v(this, void 0, void 0, function () {
+	    return __awaiter$u(this, void 0, void 0, function () {
 	      var executor, client, e_16;
-	      return __generator$v(this, function (_a) {
+	      return __generator$u(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            executor = report.reportApiInvoke(this._sessionId, {
@@ -42584,9 +42073,9 @@
 	  };
 
 	  AgoraRTCClient.prototype.stopChannelMediaRelay = function () {
-	    return __awaiter$v(this, void 0, void 0, function () {
+	    return __awaiter$u(this, void 0, void 0, function () {
 	      var executor, client, e_17;
-	      return __generator$v(this, function (_a) {
+	      return __generator$u(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            executor = report.reportApiInvoke(this._sessionId, {
@@ -42667,9 +42156,9 @@
 	  };
 
 	  AgoraRTCClient.prototype.sendCustomReportMessage = function (params) {
-	    return __awaiter$v(this, void 0, void 0, function () {
+	    return __awaiter$u(this, void 0, void 0, function () {
 	      var executor, err;
-	      return __generator$v(this, function (_a) {
+	      return __generator$u(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            if (!isArray$3(params)) params = [params];
@@ -42888,12 +42377,12 @@
 	  };
 
 	  AgoraRTCClient.prototype._publishHighStream = function (tracks) {
-	    return __awaiter$v(this, void 0, void 0, function () {
+	    return __awaiter$u(this, void 0, void 0, function () {
 	      var e_18;
 
 	      var _this = this;
 
-	      return __generator$v(this, function (_a) {
+	      return __generator$u(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            if (!this._joinInfo) {
@@ -42973,9 +42462,9 @@
 	  };
 
 	  AgoraRTCClient.prototype._publishLowStream = function (track) {
-	    return __awaiter$v(this, void 0, void 0, function () {
+	    return __awaiter$u(this, void 0, void 0, function () {
 	      var err, e_19;
-	      return __generator$v(this, function (_a) {
+	      return __generator$u(this, function (_a) {
 	        switch (_a.label) {
 	          case 0:
 	            if (!this._joinInfo) {
@@ -43580,6 +43069,222 @@
 	  }));
 	}
 
+	var __awaiter$v = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+	  function adopt(value) {
+	    return value instanceof P ? value : new P(function (resolve) {
+	      resolve(value);
+	    });
+	  }
+
+	  return new (P || (P = promise$3))(function (resolve, reject) {
+	    function fulfilled(value) {
+	      try {
+	        step(generator.next(value));
+	      } catch (e) {
+	        reject(e);
+	      }
+	    }
+
+	    function rejected(value) {
+	      try {
+	        step(generator["throw"](value));
+	      } catch (e) {
+	        reject(e);
+	      }
+	    }
+
+	    function step(result) {
+	      result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected);
+	    }
+
+	    step((generator = generator.apply(thisArg, _arguments || [])).next());
+	  });
+	};
+
+	var __generator$v = undefined && undefined.__generator || function (thisArg, body) {
+	  var _ = {
+	    label: 0,
+	    sent: function () {
+	      if (t[0] & 1) throw t[1];
+	      return t[1];
+	    },
+	    trys: [],
+	    ops: []
+	  },
+	      f,
+	      y,
+	      t,
+	      g;
+	  return g = {
+	    next: verb(0),
+	    "throw": verb(1),
+	    "return": verb(2)
+	  }, typeof symbol$2 === "function" && (g[iterator$2] = function () {
+	    return this;
+	  }), g;
+
+	  function verb(n) {
+	    return function (v) {
+	      return step([n, v]);
+	    };
+	  }
+
+	  function step(op) {
+	    if (f) throw new TypeError("Generator is already executing.");
+
+	    while (_) try {
+	      if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+	      if (y = 0, t) op = [op[0] & 2, t.value];
+
+	      switch (op[0]) {
+	        case 0:
+	        case 1:
+	          t = op;
+	          break;
+
+	        case 4:
+	          _.label++;
+	          return {
+	            value: op[1],
+	            done: false
+	          };
+
+	        case 5:
+	          _.label++;
+	          y = op[1];
+	          op = [0];
+	          continue;
+
+	        case 7:
+	          op = _.ops.pop();
+
+	          _.trys.pop();
+
+	          continue;
+
+	        default:
+	          if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) {
+	            _ = 0;
+	            continue;
+	          }
+
+	          if (op[0] === 3 && (!t || op[1] > t[0] && op[1] < t[3])) {
+	            _.label = op[1];
+	            break;
+	          }
+
+	          if (op[0] === 6 && _.label < t[1]) {
+	            _.label = t[1];
+	            t = op;
+	            break;
+	          }
+
+	          if (t && _.label < t[2]) {
+	            _.label = t[2];
+
+	            _.ops.push(op);
+
+	            break;
+	          }
+
+	          if (t[2]) _.ops.pop();
+
+	          _.trys.pop();
+
+	          continue;
+	      }
+
+	      op = body.call(thisArg, _);
+	    } catch (e) {
+	      op = [6, e];
+	      y = 0;
+	    } finally {
+	      f = t = 0;
+	    }
+
+	    if (op[0] & 5) throw op[1];
+	    return {
+	      value: op[0] ? op[1] : void 0,
+	      done: true
+	    };
+	  }
+	};
+	function getSupportedCodec(stream) {
+	  return __awaiter$v(this, void 0, void 0, function () {
+	    var connection, offer, result;
+	    return __generator$v(this, function (_a) {
+	      switch (_a.label) {
+	        case 0:
+	          connection = null;
+
+	          if (stream) {
+	            connection = new PubRTCPeerConnection({});
+	            connection.addStream(stream);
+	          } else {
+	            connection = new SubRTCPeerConnection({});
+	          }
+
+	          return [4
+	          /*yield*/
+	          , connection.createOfferSDP()];
+
+	        case 1:
+	          offer = _a.sent();
+	          result = getSupportedCodecFromSDP(offer);
+	          connection.close();
+	          return [2
+	          /*return*/
+	          , result];
+	      }
+	    });
+	  });
+	}
+	function checkSystemRequirements() {
+	  var executor = report.reportApiInvoke(null, {
+	    name: AgoraAPIName.CHECK_SYSTEM_REQUIREMENTS,
+	    options: [],
+	    tag: AgoraAPITag.TRACER
+	  });
+	  /**
+	   * 代码运行到这里的时候 webrtc-adapter 肯定该替换的都替换了
+	   * 所以直接检查标准写法
+	   */
+
+	  var PC = window.RTCPeerConnection;
+	  var getUserMedia = navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
+	  var websocket = window.WebSocket;
+	  var isAPISupport = PC && getUserMedia && websocket;
+	  var isBrowserSupport = false;
+	  var browserInfo = getBrowserInfo();
+
+	  if (browserInfo.name === BrowserName.CHROME && Number(browserInfo.version) >= 58 && browserInfo.os !== BrowserOS.IOS) {
+	    isBrowserSupport = true;
+	  }
+
+	  if (browserInfo.name === BrowserName.FIREFOX && Number(browserInfo.version) >= 56) {
+	    isBrowserSupport = true;
+	  }
+
+	  if (browserInfo.name === BrowserName.OPERA && Number(browserInfo.version) >= 45) {
+	    isBrowserSupport = true;
+	  }
+
+	  if (browserInfo.name === BrowserName.SAFARI && Number(browserInfo.version) >= 11) {
+	    isBrowserSupport = true;
+	  }
+
+	  if (isWechatBrowser() || isQQBrowser()) {
+	    if (browserInfo.os !== BrowserOS.IOS) {
+	      isBrowserSupport = true;
+	    }
+	  }
+
+	  logger.debug("checkSystemRequirements, api:", isAPISupport, "browser", isBrowserSupport);
+	  var result = isAPISupport && isBrowserSupport;
+	  executor.onSuccess(result);
+	  return result;
+	}
+
 	var __awaiter$w = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
 	  function adopt(value) {
 	    return value instanceof P ? value : new P(function (resolve) {
@@ -43720,80 +43425,98 @@
 	    };
 	  }
 	};
-	function getSupportedCodec(stream) {
+	function getElectronScreenSources(type) {
 	  return __awaiter$w(this, void 0, void 0, function () {
-	    var connection, offer, result;
+	    var sourceTypes, electron, getSourcesPromise, err_1;
 	    return __generator$w(this, function (_a) {
 	      switch (_a.label) {
 	        case 0:
-	          connection = null;
+	          sourceTypes = ["window", "screen"];
 
-	          if (stream) {
-	            connection = new PubRTCPeerConnection({});
-	            connection.addStream(stream);
-	          } else {
-	            connection = new SubRTCPeerConnection({});
+	          if (type === "application" || type === "window") {
+	            sourceTypes = ["window"];
 	          }
+
+	          if (type === "screen") {
+	            sourceTypes = ["screen"];
+	          }
+
+	          electron = getElectronInstance();
+
+	          if (!electron) {
+	            throw new AgoraRTCError(AgoraRTCErrorCode.ELECTRON_IS_NULL);
+	          }
+
+	          getSourcesPromise = null;
+
+	          try {
+	            getSourcesPromise = electron.desktopCapturer.getSources({
+	              types: sourceTypes
+	            }); // @ts-ignore
+	          } catch (e) {
+	            /**
+	             * 如果这里发生来错误，说明不支持 promise api
+	             */
+	            getSourcesPromise = null;
+	          } // @ts-ignore
+
+
+	          if (!getSourcesPromise || !getSourcesPromise.then) {
+	            getSourcesPromise = new promise$3(function (resolve, reject) {
+	              electron.desktopCapturer.getSources({
+	                types: sourceTypes
+	              }, function (err, sources) {
+	                if (err) {
+	                  reject(err);
+	                  return;
+	                }
+
+	                resolve(sources);
+	              });
+	            });
+	          }
+
+	          _a.label = 1;
+
+	        case 1:
+	          _a.trys.push([1, 3,, 4]);
 
 	          return [4
 	          /*yield*/
-	          , connection.createOfferSDP()];
+	          , getSourcesPromise];
 
-	        case 1:
-	          offer = _a.sent();
-	          result = getSupportedCodecFromSDP(offer);
-	          connection.close();
+	        case 2:
 	          return [2
 	          /*return*/
-	          , result];
+	          , _a.sent()];
+
+	        case 3:
+	          err_1 = _a.sent();
+	          throw new AgoraRTCError(AgoraRTCErrorCode.ELECTRON_DESKTOP_CAPTURER_GET_SOURCES_ERROR, err_1.toString());
+
+	        case 4:
+	          return [2
+	          /*return*/
+	          ];
 	      }
 	    });
 	  });
 	}
-	function checkSystemRequirements() {
-	  var executor = report.reportApiInvoke(null, {
-	    name: AgoraAPIName.CHECK_SYSTEM_REQUIREMENTS,
-	    options: [],
-	    tag: AgoraAPITag.TRACER
-	  });
-	  /**
-	   * 代码运行到这里的时候 webrtc-adapter 肯定该替换的都替换了
-	   * 所以直接检查标准写法
-	   */
+	var electron = null;
 
-	  var PC = window.RTCPeerConnection;
-	  var getUserMedia = navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
-	  var websocket = window.WebSocket;
-	  var isAPISupport = PC && getUserMedia && websocket;
-	  var isBrowserSupport = false;
-	  var browserInfo = getBrowserInfo();
+	function getElectronInstance() {
+	  if (electron) return electron;
 
-	  if (browserInfo.name === BrowserName.CHROME && Number(browserInfo.version) >= 58 && browserInfo.os !== BrowserOS.IOS) {
-	    isBrowserSupport = true;
+	  try {
+	    /**
+	     * 这段代码只在运行环境在 Electron 下时才有效
+	     */
+	    // @ts-ignore
+	    electron = window.require("electron");
+	    return electron;
+	  } catch (e) {
+	    return null;
 	  }
-
-	  if (browserInfo.name === BrowserName.FIREFOX && Number(browserInfo.version) >= 56) {
-	    isBrowserSupport = true;
-	  }
-
-	  if (browserInfo.name === BrowserName.OPERA && Number(browserInfo.version) >= 45) {
-	    isBrowserSupport = true;
-	  }
-
-	  if (browserInfo.name === BrowserName.SAFARI && Number(browserInfo.version) >= 11) {
-	    isBrowserSupport = true;
-	  }
-
-	  if (isWechatBrowser() || isQQBrowser()) {
-	    if (browserInfo.os !== BrowserOS.IOS) {
-	      isBrowserSupport = true;
-	    }
-	  }
-
-	  logger.debug("checkSystemRequirements, api:", isAPISupport, "browser", isBrowserSupport);
-	  var result = isAPISupport && isBrowserSupport;
-	  executor.onSuccess(result);
-	  return result;
 	}
 
 	var __extends$r = undefined && undefined.__extends || function () {

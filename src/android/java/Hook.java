@@ -1,9 +1,15 @@
 package com.agora.cordova.plugin.webrtc;
 
 import android.Manifest;
+import android.annotation.TargetApi;
+import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.projection.MediaProjectionManager;
+import android.os.Build;
 import android.util.Log;
 
+import com.agora.cordova.plugin.webrtc.models.MediaStreamTrackWrapper;
 import com.agora.cordova.plugin.webrtc.services.MediaDevice;
 
 import org.apache.cordova.CallbackContext;
@@ -12,6 +18,10 @@ import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CordovaWebView;
 import org.json.JSONArray;
 import org.json.JSONException;
+
+import java.io.Serializable;
+
+import static android.app.Activity.RESULT_OK;
 
 public class Hook extends CordovaPlugin {
     static final String TAG = Hook.class.getCanonicalName();
@@ -26,6 +36,7 @@ public class Hook extends CordovaPlugin {
     public static final String ALERT_WINDOW = Manifest.permission.SYSTEM_ALERT_WINDOW;
 
     public static final int NECESSARY_PERM_CODE = 900;
+    public static final int SCREEN_CAPTURE_PERM_CODE = 888;
     private static final String PERMISSION_DENIED_ERROR = "Permission_Denied";
 
     WebRTCService service;
@@ -103,7 +114,7 @@ public class Hook extends CordovaPlugin {
                     return false;
             }
         } catch (Exception e) {
-            Log.e(TAG, "continueWithPermissions exception:" + e.toString());
+            Log.e(TAG, "continueWithPermissions exception:" + action + " " + e.toString());
             return false;
         }
     }
@@ -118,6 +129,32 @@ public class Hook extends CordovaPlugin {
                         RECORD_AUDIO,
                         WAKE_LOCK,
                 });
+
+        MediaProjectionManager mediaProjectionManager =
+                (MediaProjectionManager) cordova.getActivity().getSystemService(Context.MEDIA_PROJECTION_SERVICE);
+        //Returns an Intent that must passed to startActivityForResult() in order to start screen capture.
+        Intent permissionIntent = mediaProjectionManager.createScreenCaptureIntent();
+
+        cordova.setActivityResultCallback(this);
+        cordova.getActivity().startActivityForResult(permissionIntent, 888);
+    }
+
+    @TargetApi(Build.VERSION_CODES.O)
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        super.onActivityResult(requestCode, resultCode, intent);
+        if (SCREEN_CAPTURE_PERM_CODE == requestCode) {
+            if (resultCode == RESULT_OK) {
+                Log.v(TAG, "request screen capture success");
+                MediaDevice.setScreenCaptureIntent(intent);
+
+                Intent service = new Intent(cordova.getContext(), ScreenCapture.class);
+                service.putExtra("code", resultCode);
+                service.putExtra("data", intent);
+//                ScreenCapture.serviceIntent = intent;
+                cordova.getActivity().startForegroundService(service);
+            }
+        }
     }
 
     @Override
