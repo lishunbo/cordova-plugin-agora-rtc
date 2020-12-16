@@ -8523,7 +8523,7 @@
 	 * Agora Web SDK 的编译信息。
 	 * @public
 	 */
-	var BUILD = "v4.2.0-22-g8d4bbc8-dirty(12/16/2020, 7:48:11 PM)";
+	var BUILD = "v4.2.0-22-g8d4bbc8-dirty(12/16/2020, 8:28:27 PM)";
 	var VERSION = transferVersion("4.2.0");
 	var IS_GLOBAL_VERSION = isGlobalVersion();
 	var DEFAULT_TURN_CONFIG = {
@@ -19904,6 +19904,8 @@
 	          /**
 	           * 这里假设有 adapter.js 的存在，所有的采集直接调用 navigator.mediaDevice.getUserMedia
 	           */
+	          logger.debug("ts getUserMedia ", navigator.mediaDevices, navigator.mediaDevices.getUserMedia);
+
 	          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
 	            throw new AgoraRTCError(AgoraRTCErrorCode.NOT_SUPPORTED, "can not find getUserMedia");
 	          }
@@ -19919,7 +19921,11 @@
 	              delete config.screen.height;
 	            }
 	          }
+
+	          logger.debug("ts getUserMedia 2");
+	          logger.debug("ts getUserMedia 0", MediaStream);
 	          mediaStream = new MediaStream();
+	          logger.debug("ts getUserMedia 3");
 
 	          if (config.audioSource) {
 	            mediaStream.addTrack(config.audioSource);
@@ -19927,8 +19933,9 @@
 
 	          if (config.videoSource) {
 	            mediaStream.addTrack(config.videoSource);
-	          } // 如果没有任何采集 constraints， 直接返回构造出来的 MediaStream
+	          }
 
+	          logger.debug("ts getUserMedia 4"); // 如果没有任何采集 constraints， 直接返回构造出来的 MediaStream
 
 	          if (!config.audio && !config.video && !config.screen) {
 	            logger.debug("Using Video Source/ Audio Source");
@@ -19937,6 +19944,7 @@
 	            , mediaStream];
 	          }
 
+	          logger.debug("ts getUserMedia 5");
 	          if (!config.screen) return [3
 	          /*break*/
 	          , 5];
@@ -19982,7 +19990,12 @@
 	            /*return*/
 	            , mediaStream];
 	          }
+	          /**
+	           * 处理 麦克风/摄像头
+	           */
 
+
+	          logger.debug("ts getUserMedia 6");
 	          constraint = {
 	            video: config.video,
 	            audio: config.audio
@@ -20002,26 +20015,30 @@
 	          _a.label = 7;
 
 	        case 7:
-	          _a.trys.push([7, 9,, 10]);
+	          logger.debug("ts getUserMedia 7");
+	          _a.label = 8;
+
+	        case 8:
+	          _a.trys.push([8, 10,, 11]);
 
 	          logger.debug("[" + trackId + "] GetUserMedia", constraint);
 	          return [4
 	          /*yield*/
 	          , navigator.mediaDevices.getUserMedia(constraint)];
 
-	        case 8:
+	        case 9:
 	          stream = _a.sent();
 	          logger.debug("[" + trackId + "] GetUserMedia.done ", constraint);
 	          return [3
 	          /*break*/
-	          , 10];
+	          , 11];
 
-	        case 9:
+	        case 10:
 	          e_3 = _a.sent();
 	          unlock && unlock();
 	          throw e_3;
 
-	        case 10:
+	        case 11:
 	          if (!!constraint.audio) {
 	            HAS_GUM_AUDIO = true;
 	          }
@@ -20031,6 +20048,7 @@
 	          }
 
 	          replaceMediaStream(mediaStream, stream);
+	          logger.debug("ts getUserMedia done");
 	          unlock && unlock();
 	          return [2
 	          /*return*/
@@ -20355,7 +20373,6 @@
 	        switch (_a.label) {
 	          case 0:
 	            if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
-	              logger.debug("check enumerateDevices", navigator, navigator.mediaDevices, navigator.mediaDevices.enumerateDevices);
 	              err = new AgoraRTCError(AgoraRTCErrorCode.NOT_SUPPORTED, "enumerateDevices() not supported.");
 	              return [2
 	              /*return*/

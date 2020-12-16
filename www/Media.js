@@ -2,6 +2,8 @@
 
 console.log("mediaDevice.js onloading");
 
+var { uuidv4 } = require('./util');
+
 var mediaDevice = {}
 
 var MediaService = "Media";
@@ -110,7 +112,8 @@ class MediaStreamTrack {
 
 
 // first class
-mediaDevice.getUserMedia = function (config) {
+mediaDevice.getUserMedia = getUserMedia
+function getUserMedia(config) {
     return new Promise((resolve, reject) => {
         var args = {}
         if (config.video !== undefined) {
@@ -129,10 +132,10 @@ mediaDevice.getUserMedia = function (config) {
         }
 
         cordova.exec(function (ev) {
+            if (ev === "OK"){
+                return
+            }
             var tracks = JSON.parse(ev);
-            console.log("Got one stream object with id: " + ev);
-            // pc.id = ev
-            // console.log("check this.id done:" + pc.id)
             var stm = new stream.MediaStream();
 
             tracks.forEach(track => {
@@ -161,7 +164,9 @@ class MediaDeviceInfo {
 mediaDevice.enumerateDevices = function () {
     return new Promise((resolve, reject) => {
         cordova.exec(function (ev) {
-            console.log("enumerateDevices response ", ev)
+            if (ev === "OK") {
+                return
+            }
             var infos = JSON.parse(ev);
 
             let avdevices = [];
@@ -205,6 +210,7 @@ cordova.addConstructor(function () {
     window.MediaDeviceInfo = MediaDeviceInfo;
     window.MediaStream = MediaStream;
     window.MediaStreamTrack = MediaStreamTrack;
+    mediaDevice.getUserMedia = getUserMedia
 });
 
 mediaDevice.MediaDeviceInfo = MediaDeviceInfo
