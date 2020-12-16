@@ -2,13 +2,6 @@
 console.log("player.js onloading");
 
 var { uuidv4 } = require('./util');
-var Stream = require('./Stream');
-
-let VideoPlayStatus = {
-    NONE: "none",
-    PLAYING: "playing",
-    PAUSE: "pause",
-}
 
 var EventType = {
     onFirstFrameDecoded: "onFirstFrameDecoded",
@@ -17,7 +10,7 @@ var EventType = {
     dispose: "dispose",
 }
 
-var PlayerService = "NativePlayerHook";
+var PlayerService = "Player";
 
 class PlayEvent {
     constructor(resolve, reject, call, args) {
@@ -47,7 +40,7 @@ class VideoPlayer {
             self.cordovaEventHandler(ev);
         }, function (ev) {
             console.log("Failed create VideoPlayer object");
-        }, PlayerService, 'createInstance', [this.id, this.config]);
+        }, PlayerService, 'createVideoPlayer', [this.id, this.config]);
     }
 
     udpateConfig(config) {
@@ -69,7 +62,7 @@ class VideoPlayer {
                 }, function (ev) {
                     reject(ev)
                     console.log("Failed VideoPlayer play");
-                }, PlayerService, 'play', [id]);
+                }, PlayerService, 'playVideoPlayer', [id]);
             }
             if (!this.isViewCreated) {
                 this.playEvent = new PlayEvent(resolve, reject, playFunc, this.id)
@@ -85,7 +78,7 @@ class VideoPlayer {
         }, function (ev) {
             // reject(ev)
             console.log("Failed VideoPlayer pause");
-        }, PlayerService, 'pause', [this.id]);
+        }, PlayerService, 'pauseVideoPlayer', [this.id]);
     }
     destroy() {
         console.log("destory interface in plugin VideoControl")
@@ -95,7 +88,7 @@ class VideoPlayer {
         }, function (ev) {
             // reject(ev)
             console.log("Failed VideoPlayer destory");
-        }, PlayerService, 'destroy', [this.id]);
+        }, PlayerService, 'destroyVideoPlayer', [this.id]);
     }
 
     getCurrentFrame() {
@@ -248,7 +241,7 @@ class AudioPlayer {
                 if (reject != null) {
                     reject(ev)
                 }
-            }, PlayerService, 'AudioPlayer_setVolume', [this.id, volume]);
+            }, PlayerService, 'setVolume', [this.id, volume]);
         })
     }
     setSinkID(trackId, deviceId) {
@@ -260,7 +253,7 @@ class AudioPlayer {
                 if (reject != null) {
                     reject(ev)
                 }
-            }, PlayerService, 'AudioPlayer_setSinkId', [this.id, trackId, deviceId]);
+            }, PlayerService, 'setSinkId', [this.id, trackId, deviceId]);
         })
     }
 
@@ -288,30 +281,12 @@ class AudioPlayer {
     }
 }
 
-function getNativeLowResolutionVideoTrack(track, width, heigth, framerate) {
-    return new Promise((resolve, reject) => {
-        var args = {}
-        args.video = {
-            width: width,
-            height: heigth,
-            frameRate: framerate,
-        }
-        cordova.exec(function (ev) {
-            var tracks = JSON.parse(ev);
-            resolve(new Stream.MediaStreamTrack(tracks.kind, tracks.id))
-        }, function (ev) {
-            console.log("Failed to getNativeLowResolutionVideoTrack");
-        }, 'Hook', 'getNativeLowResolutionVideoTrack', [args, track.id]);
-    })
-}
 
 /**
- * @module NativeVideoPlayer
+ * @module NativePlayer
  */
 module.exports = {
-    VideoPlayStatus,
     VideoPlayer,
     AudioPlayer,
-    getNativeLowResolutionVideoTrack,
 }
 console.log("player.js onloaded");

@@ -1,42 +1,42 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
         xmlns:android="http://schemas.android.com/apk/res/android"
-        id="cordova-plugin-agora-rtc" version="0.0.1">
-    <name>Agora-RTC</name>
-    <description>sample from Cordova Device Plugin</description>
+        id="cordova-plugin-agora-rtcn" version="0.1.0">
+    <name>Agora-RTCN</name>
+    <description></description>
     <license>Apache 2.0</license>
     <keywords>cordova,webrtc,rtc</keywords>
     <js-module src="www/util.js" name="util">
         <clobbers target="util" />
     </js-module>
-    <js-module src="www/MediaConstants.js" name="Media">
-        <clobbers target="Media" />
-    </js-module>
     <js-module src="www/NativePlayer.js" name="NativePlayer">
-        <clobbers target="NativePlayer" />
+        <clobbers target="Player" />
     </js-module>
-    <js-module src="www/MediaStream.js" name="Stream">
-        <clobbers target="Stream" />
-    </js-module>
-    <js-module src="www/mediaDevice.js" name="mediaDevices">
+    <js-module src="www/Media.js" name="Media">
         <clobbers target="navigator.mediaDevices" />
     </js-module>
-    <js-module src="www/RTCPeerConnection.js" name="RTCPeerConnection">
-        <clobbers target="RTCPeer" />
+    <js-module src="www/RTCPeerConnection.js" name="WebRTCService">
+        <clobbers target="WebRTC" />
     </js-module>
-    <js-module src="www/sdk-ng/AgoraRTC_N-production.js" name="AgoraRTC">
+    <js-module src="www/rtcn/AgoraRTCN.js" name="AgoraRTC">
         <clobbers target="AgoraRTC" />
     </js-module>
     <platform name="android">
         <config-file target="config.xml" parent="/*">
-            <feature name="Hook">
-                <param name="android-package" value="com.agora.cordova.plugin.webrtc.Hook"/>
+            <feature name="Media">
+                <param name="android-package" value="io.agora.rtcn.media.MediaHook"/>
                 <param name="onload" value="true" />
             </feature>
         </config-file>
         <config-file target="config.xml" parent="/*">
-            <feature name="NativePlayerHook">
-                <param name="android-package" value="com.agora.cordova.plugin.view.NativePlayerHook"/>
+            <feature name="Player">
+                <param name="android-package" value="io.agora.rtcn.player.PlayerHook"/>
+                <param name="onload" value="true" />
+            </feature>
+        </config-file>
+        <config-file target="config.xml" parent="/*">
+            <feature name="WebRTC">
+                <param name="android-package" value="io.agora.rtcn.webrtc.WebRTCHook"/>
                 <param name="onload" value="true" />
             </feature>
         </config-file>
@@ -55,83 +55,48 @@
             <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
         </config-file>
         <config-file target="AndroidManifest.xml" parent="/manifest/application">
-            <service android:name="com.agora.cordova.plugin.webrtc.ScreenCapture"
-                android:foregroundServiceType="mediaProjection"></service>
+            <service android:foregroundServiceType="mediaProjection"
+                android:name="io.agora.rtcn.media.services.ScreenCaptureService"/>
         </config-file>
-        <!-- VideoPlayer -->
-        <source-file src="src/android/java/view/NativePlayerHook.java" target-dir="src/com/agora/cordova/plugin/view"/>
-        <source-file src="src/android/java/view/interfaces/Player.java" target-dir="src/com/agora/cordova/plugin/view/interfaces"/>
-        <source-file src="src/android/java/view/interfaces/Supervisor.java" target-dir="src/com/agora/cordova/plugin/view/interfaces"/>
-        <source-file src="src/android/java/view/AudioPlayer.java" target-dir="src/com/agora/cordova/plugin/view"/>
-        <source-file src="src/android/java/view/VideoView.java" target-dir="src/com/agora/cordova/plugin/view"/>
-        <source-file src="src/android/java/view/VideoViewService.java" target-dir="src/com/agora/cordova/plugin/view"/>
-        <source-file src="src/android/java/view/enums/Action.java" target-dir="src/com/agora/cordova/plugin/view/enums"/>
-        <source-file src="src/android/java/view/enums/PlayConfigFit.java" target-dir="src/com/agora/cordova/plugin/view/enums"/>
-        <source-file src="src/android/java/view/model/PlayConfig.java" target-dir="src/com/agora/cordova/plugin/view/model"/>
-        <source-file src="src/android/java/view/model/ProxyVideoSink.java" target-dir="src/com/agora/cordova/plugin/view/model"/>
-
-        <!-- Medias -->
-        <source-file src="src/android/java/Action.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
-        <source-file src="src/android/java/Config.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
-        <source-file src="src/android/java/Hook.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
-        <source-file src="src/android/java/ScreenCapture.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
-        <source-file src="src/android/java/WebRTCService.java" target-dir="src/com/agora/cordova/plugin/webrtc"/>
-        <!-- utils -->
-        <source-file src="src/android/java/utils/MessageBus.java" target-dir="src/com/agora/cordova/plugin/webrtc/utils"/>
-        <!-- services -->
-        <source-file src="src/android/java/services/MediaDevice.java" target-dir="src/com/agora/cordova/plugin/webrtc/services"/>
-        <source-file src="src/android/java/services/PCFactory.java" target-dir="src/com/agora/cordova/plugin/webrtc/services"/>
-        <source-file src="src/android/java/services/RTCPeerConnection.java" target-dir="src/com/agora/cordova/plugin/webrtc/services"/>
-        <source-file src="src/android/java/services/SettingsContentObserver.java" target-dir="src/com/agora/cordova/plugin/webrtc/services"/>
-        <!-- interfaces -->
-        <source-file src="src/android/java/interfaces/CredentialDetail.java" target-dir="src/com/agora/cordova/plugin/webrtc/interfaces"/>
-        <!-- models -->
-        <source-file src="src/android/java/models/MediaDeviceInfo.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
-        <source-file src="src/android/java/models/MediaStream.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
-        <source-file src="src/android/java/models/MediaStreamConstraints.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
-        <!-- <source-file src="src/android/java/models/MediaStreamTrack.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/> -->
-        <source-file src="src/android/java/models/MediaStreamTrackWrapper.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
-        <source-file src="src/android/java/models/MediaTrackConstraints.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
-        <source-file src="src/android/java/models/MediaTrackConstraintSet.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
-        <source-file src="src/android/java/models/RTCCertificate.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
-        <source-file src="src/android/java/models/RTCConfiguration.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
-        <source-file src="src/android/java/models/RTCIceServer.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
-        <source-file src="src/android/java/models/RTCOAuthCredential.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
-        <source-file src="src/android/java/models/RTCOfferOptions.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
-        <source-file src="src/android/java/models/SessionDescription.java" target-dir="src/com/agora/cordova/plugin/webrtc/models"/>
-        <!-- enums -->
-        <source-file src="src/android/java/models/enums/RTCBundlePolicy.java" target-dir="src/com/agora/cordova/plugin/webrtc/models/enums"/>
-        <source-file src="src/android/java/models/enums/RTCIceCredentialType.java" target-dir="src/com/agora/cordova/plugin/webrtc/models/enums"/>
-        <source-file src="src/android/java/models/enums/RTCIceTransportPolicy.java" target-dir="src/com/agora/cordova/plugin/webrtc/models/enums"/>
-        <source-file src="src/android/java/models/enums/RTCRtcpMuxPolicy.java" target-dir="src/com/agora/cordova/plugin/webrtc/models/enums"/>
+        <!-- Media -->
+        <source-file src="src/android/java/media/enums/Action.java" target-dir="src/io/agora/rtcn/media/enums"/>
+        <source-file src="src/android/java/media/enums/EMessage.java" target-dir="src/io/agora/rtcn/media/enums"/>
+        <source-file src="src/android/java/media/models/MediaDeviceInfo.java" target-dir="src/io/agora/rtcn/media/models"/>
+        <source-file src="src/android/java/media/services/MediaDevice.java" target-dir="src/io/agora/rtcn/media/services"/>
+        <source-file src="src/android/java/media/services/MediaStreamTrackWrapper.java" target-dir="src/io/agora/rtcn/media/services"/>
+        <source-file src="src/android/java/media/services/ScreenCaptureService.java" target-dir="src/io/agora/rtcn/media/services"/>
+        <source-file src="src/android/java/media/MediaHook.java" target-dir="src/io/agora/rtcn/media"/>
+        <!-- Player -->
+        <source-file src="src/android/java/player/enums/Action.java" target-dir="src/io/agora/rtcn/player/enums"/>
+        <source-file src="src/android/java/player/enums/PlayConfigFit.java" target-dir="src/io/agora/rtcn/player/enums"/>
+        <source-file src="src/android/java/player/interfaces/Player.java" target-dir="src/io/agora/rtcn/player/interfaces"/>
+        <source-file src="src/android/java/player/interfaces/Supervisor.java" target-dir="src/io/agora/rtcn/player/interfaces"/>
+        <source-file src="src/android/java/player/models/PlayConfig.java" target-dir="src/io/agora/rtcn/player/models"/>
+        <source-file src="src/android/java/player/models/ProxyVideoSink.java" target-dir="src/io/agora/rtcn/player/models"/>
+        <source-file src="src/android/java/player/services/AudioPlayer.java" target-dir="src/io/agora/rtcn/player/services"/>
+        <source-file src="src/android/java/player/services/VideoView.java" target-dir="src/io/agora/rtcn/player/services"/>
+        <source-file src="src/android/java/player/PlayerHook.java" target-dir="src/io/agora/rtcn/player"/>
+        <!-- WebRTC -->
+        <source-file src="src/android/java/webrtc/enums/Action.java" target-dir="src/io/agora/rtcn/webrtc/enums"/>
+        <source-file src="src/android/java/webrtc/enums/RTCBundlePolicy.java" target-dir="src/io/agora/rtcn/webrtc/enums"/>
+        <source-file src="src/android/java/webrtc/enums/RTCIceCredentialType.java" target-dir="src/io/agora/rtcn/webrtc/enums"/>
+        <source-file src="src/android/java/webrtc/enums/RTCIceTransportPolicy.java" target-dir="src/io/agora/rtcn/webrtc/enums"/>
+        <source-file src="src/android/java/webrtc/enums/RTCRtcpMuxPolicy.java" target-dir="src/io/agora/rtcn/webrtc/enums"/>
+        <source-file src="src/android/java/webrtc/interfaces/CredentialDetail.java" target-dir="src/io/agora/rtcn/webrtc/interfaces"/>
+        <source-file src="src/android/java/webrtc/models/MediaStreamConstraints.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
+        <source-file src="src/android/java/webrtc/models/MediaTrackConstraints.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
+        <source-file src="src/android/java/webrtc/models/MediaTrackConstraintSet.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
+        <source-file src="src/android/java/webrtc/models/RTCCertificate.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
+        <source-file src="src/android/java/webrtc/models/RTCConfiguration.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
+        <source-file src="src/android/java/webrtc/models/RTCIceServer.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
+        <source-file src="src/android/java/webrtc/models/RTCOAuthCredential.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
+        <source-file src="src/android/java/webrtc/models/RTCOfferOptions.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
+        <source-file src="src/android/java/webrtc/models/SessionDescription.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
+        <source-file src="src/android/java/webrtc/services/PCFactory.java" target-dir="src/io/agora/rtcn/webrtc/services"/>
+        <source-file src="src/android/java/webrtc/services/RTCPeerConnection.java" target-dir="src/io/agora/rtcn/webrtc/services"/>
+        <source-file src="src/android/java/webrtc/Config.java" target-dir="src/io/agora/rtcn/webrtc"/>
+        <source-file src="src/android/java/webrtc/WebRTCHook.java" target-dir="src/io/agora/rtcn/webrtc"/>
         <!-- resources -->
-        <!-- resources->layout -->
-        <resource-file src="src/android/res/layout/local_view.xml" target="res/layout/local_view.xml" />
-        <!-- resources->values -->
-        <resource-file src="src/android/res/values/color.xml" target="res/values/color.xml" />
-        <resource-file src="src/android/res/values/dimens.xml" target="res/values/dimens.xml" />
-        <resource-file src="src/android/res/values/strings.xml" target="res/values/strings.xml" />
-        <resource-file src="src/android/res/values/style.xml" target="res/values/style.xml" />
-        <!-- resources->drawable -->
-        <resource-file src="src/android/res/drawable/btn_endcall.xml" target="res/drawable/btn_endcall.xml" />
-        <resource-file src="src/android/res/drawable/btn_mute.xml" target="res/drawable/btn_mute.xml" />
-        <resource-file src="src/android/res/drawable/btn_startcall.xml" target="res/drawable/btn_startcall.xml" />
-        <resource-file src="src/android/res/drawable/btn_switch_camera.xml" target="res/drawable/btn_switch_camera.xml" />
-        <resource-file src="src/android/res/drawable/btn_unmute.xml" target="res/drawable/btn_unmute.xml" />
-        <!-- resources->drawable-xxhdpi -->
-        <resource-file src="src/android/res/drawable-xxhdpi/btn_endcall_normal.png" target="res/drawable-xxhdpi/btn_endcall_normal.png" />
-        <resource-file src="src/android/res/drawable-xxhdpi/btn_endcall_pressed.png" target="res/drawable-xxhdpi/btn_endcall_pressed.png" />
-        <resource-file src="src/android/res/drawable-xxhdpi/btn_mute_normal.png" target="res/drawable-xxhdpi/btn_mute_normal.png" />
-        <resource-file src="src/android/res/drawable-xxhdpi/btn_mute_pressed.png" target="res/drawable-xxhdpi/btn_mute_pressed.png" />
-        <resource-file src="src/android/res/drawable-xxhdpi/btn_startcall_normal.png" target="res/drawable-xxhdpi/btn_startcall_normal.png" />
-        <resource-file src="src/android/res/drawable-xxhdpi/btn_startcall_pressed.png" target="res/drawable-xxhdpi/btn_startcall_pressed.png" />
-        <resource-file src="src/android/res/drawable-xxhdpi/btn_switch_camera_normal.png" target="res/drawable-xxhdpi/btn_switch_camera_normal.png" />
-        <resource-file src="src/android/res/drawable-xxhdpi/btn_switch_camera_pressed.png" target="res/drawable-xxhdpi/btn_switch_camera_pressed.png" />
-        <resource-file src="src/android/res/drawable-xxhdpi/btn_unmute_normal.png" target="res/drawable-xxhdpi/btn_unmute_normal.png" />
-        <resource-file src="src/android/res/drawable-xxhdpi/btn_unmute_pressed.png" target="res/drawable-xxhdpi/btn_unmute_pressed.png" />
-        <resource-file src="src/android/res/drawable-xxhdpi/icon_agora_large.png" target="res/drawable-xxhdpi/icon_agora_large.png" />
-        <resource-file src="src/android/res/drawable-xxhdpi/icon_agora_largest.png" target="res/drawable-xxhdpi/icon_agora_largest.png" />
-        <resource-file src="src/android/res/drawable-xxhdpi/icon_launcher.png" target="res/drawable-xxhdpi/icon_launcher.png" />
         <resource-file src="libs/libwebrtc.aar" target="libs/libwebrtc.aar" />
         <!-- framework -->
         <framework src="./src/android/build.gradle" custom="true" type="gradleReference" />

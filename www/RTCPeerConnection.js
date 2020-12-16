@@ -3,7 +3,7 @@
 console.log("RTCPeerConnection.js onloading");
 
 var { uuidv4 } = require('./util');
-var Stream = require('./Stream');
+var media = require('./Media');
 
 const EventType = {
     onIceCandidate: "onIceCandidate",
@@ -30,7 +30,7 @@ class RTCStatsReport {
     }
 }
 
-var MediaService = "Hook"
+var WebRTCService = "WebRTC"
 
 class RTCRtpSendParameters {
     constructor() {
@@ -55,13 +55,13 @@ class RTCRtpSender {
         } else {
             this.parameter = new RTCRtpSendParameters()
         }
-        this.track = new Stream.MediaStreamTrack(track)
+        this.track = new media.MediaStreamTrack(track)
         this.modified = false
     }
     replaceTrack(track) {
         cordova.exec(function (ev) {
         }, function (ev) {
-        }, MediaService, 'replaceTrack', [this.id, this.pcid, track.id, track.kind]);
+        }, WebRTCService, 'replaceTrack', [this.id, this.pcid, track.id, track.kind]);
     }
     getParameters() {
         return this.parameter;
@@ -104,7 +104,7 @@ class RTCPeerConnection {
             self.cordovaEventHandler(ev);
         }, function (ev) {
             console.log("Failed to create RTCPeerConnection object");
-        }, MediaService, 'createInstance', [this.id, this.config]);
+        }, WebRTCService, 'createPC', [this.id, this.config]);
 
     }
     getConfiguration() {
@@ -160,12 +160,12 @@ class RTCPeerConnection {
             case EventType.onAddTrack:
                 console.log("got event " + EventType.onAddTrack);
                 if (!this.remoteStream) {
-                    this.remoteStream = new Stream.MediaStream();
+                    this.remoteStream = new media.MediaStream();
                 }
                 if (this.ontrack != null) {
                     // this.onicecandidate(new RTCPeerConnectionIceEvent("icecandidate", { candidate: JSON.parse(ev.payload)}));
                     var summary = JSON.parse(ev.payload);
-                    var track = new Stream.MediaStreamTrack(summary.kind, summary.id);
+                    var track = new media.MediaStreamTrack(summary.kind, summary.id);
                     this.remoteStream.addTrack(track)
                     this.ontrack({ track: track, streams: [this.stream] });
                 } else {
@@ -189,7 +189,7 @@ class RTCPeerConnection {
             }, function (ev) {
                 console.log("Failed to create offer");
                 reject("failed to create offer");
-            }, MediaService, 'createOffer', [this.id, config]);
+            }, WebRTCService, 'createOffer', [this.id, config]);
         })
     }
 
@@ -223,7 +223,7 @@ class RTCPeerConnection {
                                     resolve(ev);
                                 }, function (ev) {
                                     reject(ev);
-                                }, MediaService, 'setSenderParameter', [that.id, that.senders[idx].track.kind, degradationPreference,
+                                }, WebRTCService, 'setSenderParameter', [that.id, that.senders[idx].track.kind, degradationPreference,
                                 maxBitrate == null ? 0 : maxBitrate, minBitrate == null ? 0 : minBitrate,
                                 scaleDown == null ? 1 : scaleDown]);
                             }
@@ -236,7 +236,7 @@ class RTCPeerConnection {
                 resolve();
             }, function (ev) {
                 reject(ev);
-            }, MediaService, 'setLocalDescription', [this.id, offer.type, offer.sdp]);
+            }, WebRTCService, 'setLocalDescription', [this.id, offer.type, offer.sdp]);
         })
     }
 
@@ -248,7 +248,7 @@ class RTCPeerConnection {
                 resolve(ev);
             }, function (ev) {
                 reject(ev);
-            }, MediaService, 'setRemoteDescription', [this.id, answer.type, answer.sdp]);
+            }, WebRTCService, 'setRemoteDescription', [this.id, answer.type, answer.sdp]);
         })
     }
 
@@ -259,14 +259,14 @@ class RTCPeerConnection {
                 resolve(ev);
             }, function (ev) {
                 reject(ev);
-            }, MediaService, 'addIceCandidate', [this.id, candidate]);
+            }, WebRTCService, 'addIceCandidate', [this.id, candidate]);
         })
     }
 
     //first class
     addTrack(track) {
         if (!this.localStream) {
-            this.localStream = new Stream.MediaStream();
+            this.localStream = new media.MediaStream();
         }
         this.localStream.addTrack(track);
         var sender = new RTCRtpSender(null, track.kind, this.id)
@@ -274,34 +274,34 @@ class RTCPeerConnection {
         console.log("peerconnection senders after addTrack", this.senders)
         cordova.exec(function (ev) {
         }, function (ev) {
-        }, MediaService, 'addTrack', [this.id, track.id, track.kind]);
+        }, WebRTCService, 'addTrack', [this.id, track.id, track.kind]);
         return sender;
     }
 
     close() {
         cordova.exec(function (ev) {
         }, function (ev) {
-        }, MediaService, 'close', [this.id]);
+        }, WebRTCService, 'close', [this.id]);
     }
 
     removeTrack(sender) {
         console.log("peerconnection  removeTrack", JSON.stringify(sender))
         cordova.exec(function (ev) {
         }, function (ev) {
-        }, MediaService, 'removeTrack', [this.id, sender.track.id, sender.track.kind]);
+        }, WebRTCService, 'removeTrack', [this.id, sender.track.id, sender.track.kind]);
     }
 
     getTransceivers() {
         cordova.exec(function (ev) {
         }, function (ev) {
-        }, MediaService, 'getTransceivers', [this.id]);
+        }, WebRTCService, 'getTransceivers', [this.id]);
     }
 
     addTransceiver() {
 
         cordova.exec(function (ev) {
         }, function (ev) {
-        }, MediaService, 'addTransceiver', [this.id]);
+        }, WebRTCService, 'addTransceiver', [this.id]);
     }
 
     getSenders() {
@@ -315,7 +315,7 @@ class RTCPeerConnection {
                 resolve(new RTCStatsReport(ev));
             }, function (ev) {
                 reject(ev);
-            }, MediaService, 'getStats', [this.id]);
+            }, WebRTCService, 'getStats', [this.id]);
         })
     }
 
