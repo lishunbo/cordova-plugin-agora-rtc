@@ -132,14 +132,14 @@ function getUserMedia(config) {
         }
 
         cordova.exec(function (ev) {
-            if (ev === "OK"){
+            if (ev === "OK") {
                 return
             }
             var tracks = JSON.parse(ev);
-            var stm = new stream.MediaStream();
+            var stm = new MediaStream();
 
             tracks.forEach(track => {
-                var newTrack = new stream.MediaStreamTrack(track.kind, track.id);
+                var newTrack = new MediaStreamTrack(track.kind, track.id);
                 newTrack.label = "mock track"
                 stm.addTrack(newTrack)
             });
@@ -186,7 +186,7 @@ mediaDevice.addEventListener = function (event, func) {
     console.log("mediaDevice.js addEventListener" + event);
 }
 
-function getSubVideoTrack(track, width, heigth, framerate) {
+mediaDevice.getSubVideoTrack = function (track, width, heigth, framerate) {
     return new Promise((resolve, reject) => {
         var args = {}
         args.video = {
@@ -202,7 +202,7 @@ function getSubVideoTrack(track, width, heigth, framerate) {
                 reject(ev)
             }
             console.log("Failed to getSubVideoTrack", ev);
-        }, 'Hook', 'getSubVideoTrack', [track.id, args]);
+        }, MediaService, 'getSubVideoTrack', [track.id, args]);
     })
 }
 

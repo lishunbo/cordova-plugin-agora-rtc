@@ -451,7 +451,7 @@ public class MediaDevice {
 
 //        createMusicFileAudioTrack();
 
-        return MediaStreamTrackWrapper.cacheMediaStreamTrackWrapper(true, audioTrack, audioSource);
+        return MediaStreamTrackWrapper.cacheMediaStreamTrackWrapper("", audioTrack, audioSource);
     }
 
     public static MediaStreamTrackWrapper createLocalScreenTrack(
@@ -479,7 +479,7 @@ public class MediaDevice {
         VideoTrack videoTrack = PCFactory.factory().createVideoTrack(UUID.randomUUID().toString(), videoSource);
 
         return MediaStreamTrackWrapper.cacheMediaStreamTrackWrapper(
-                true, videoTrack, videoCapturer, surfaceTextureHelper, videoSource, "back");
+                "", videoTrack, videoCapturer, surfaceTextureHelper, videoSource, "back");
     }
 
 
@@ -506,7 +506,7 @@ public class MediaDevice {
         VideoTrack videoTrack = PCFactory.factory().createVideoTrack(UUID.randomUUID().toString(), videoSource);
 
         return MediaStreamTrackWrapper.cacheMediaStreamTrackWrapper(
-                true, videoTrack, videoCapturer, surfaceTextureHelper, videoSource, deviceId);
+                "", videoTrack, videoCapturer, surfaceTextureHelper, videoSource, deviceId);
     }
 
     private static VideoCapturer createCameraCapturer(String deviceId, boolean isFront) {

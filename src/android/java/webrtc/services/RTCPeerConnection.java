@@ -266,18 +266,6 @@ public class RTCPeerConnection {
             peerConnection.removeTrack(sender);
         }
         if (remoteStream != null) {
-            for (VideoTrack videoTrack : remoteStream.videoTracks) {
-                MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.popMediaStreamTrackByTrack(videoTrack);
-                if (wrapper != null) {
-                    wrapper.close();
-                }
-            }
-            for (AudioTrack audioTrack : remoteStream.audioTracks) {
-                MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.popMediaStreamTrackByTrack(audioTrack);
-                if (wrapper != null) {
-                    wrapper.close();
-                }
-            }
             peerConnection.removeStream(remoteStream);
             remoteStream = null;
         }
@@ -288,7 +276,13 @@ public class RTCPeerConnection {
     }
 
     public void dispose() {
+        if (supervisor == null) {
+            return;
+        }
         supervisor = null;
+
+        MediaStreamTrackWrapper.removeMediaStreamTrackByPCId(pc_id);
+
         pc_id = null;
         closeStream();
         if (state == PeerConnection.PeerConnectionState.CONNECTED) {
@@ -390,21 +384,16 @@ public class RTCPeerConnection {
             Log.v(TAG, usage + " onConnectionChange " + newState.toString());
             Log.v(TAG, "DUALSTREAM pc_id" + pc_id + " " + newState.toString());
             state = newState;
+            if (supervisor != null) {
+                supervisor.onObserveEvent(pc_id, Action.onConnectionStateChange, newState.toString().toLowerCase(), usage);
+            }
             if (newState == PeerConnection.PeerConnectionState.CLOSED ||
-                    newState == PeerConnection.PeerConnectionState.FAILED) {// ||
-                //           newState == PeerConnection.PeerConnectionState.FAILED) {
-
-                for (RtpReceiver receiver : peerConnection.getReceivers()) {
-                    MediaStreamTrackWrapper.popMediaStreamTrackByObject(receiver);
-                }
+                    newState == PeerConnection.PeerConnectionState.FAILED) {
 
                 if (supervisor != null) {
                     supervisor.onDisconnect(pc);
                 }
                 dispose();
-            }
-            if (supervisor != null) {
-                supervisor.onObserveEvent(pc_id, Action.onConnectionStateChange, newState.toString().toLowerCase(), usage);
             }
         }
 
@@ -469,7 +458,7 @@ public class RTCPeerConnection {
         public void onAddTrack(RtpReceiver rtpReceiver, MediaStream[] mediaStreams) {
             Log.v(TAG, usage + " onAddTrack " + rtpReceiver.track().kind());
 
-            MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.cacheMediaStreamTrackWrapper(false, rtpReceiver);
+            MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.cacheMediaStreamTrackWrapper(pc_id, rtpReceiver);
 
             supervisor.onObserveEvent(pc_id, Action.onAddTrack, wrapper.toString(), usage);
         }

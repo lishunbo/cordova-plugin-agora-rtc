@@ -5,6 +5,7 @@ import android.util.Log;
 import org.json.JSONObject;
 import org.webrtc.AudioSource;
 import org.webrtc.MediaStreamTrack;
+import org.webrtc.RtpReceiver;
 import org.webrtc.SurfaceTextureHelper;
 import org.webrtc.VideoCapturer;
 import org.webrtc.VideoSource;
@@ -13,6 +14,7 @@ import org.webrtc.VideoTrack;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -28,18 +30,20 @@ public class MediaStreamTrackWrapper {
     static Map<String, MediaStreamTrackWrapper> allTracks = new HashMap<>();
 
     String id;
-    boolean isLocal;
+    String pcid;
     Object object;
     MediaStreamTrack track;
     ArrayList<Object> relatedObject;
     VideoView vv;
 
-    MediaStreamTrackWrapper(boolean isLocal, Object track, Object... relatedObject) {
+    MediaStreamTrackWrapper(String pcid, Object track, Object... relatedObject) {
         this.object = track;
         if (track instanceof MediaStreamTrack) {
             this.track = (MediaStreamTrack) track;
+        } else if (track instanceof RtpReceiver) {
+            this.track = ((RtpReceiver) track).track();
         }
-        this.isLocal = isLocal;
+        this.pcid = pcid;
         this.id = UUID.randomUUID().toString();
         this.relatedObject = new ArrayList<>();
         this.relatedObject.addAll(Arrays.asList(relatedObject));
@@ -50,7 +54,7 @@ public class MediaStreamTrackWrapper {
     }
 
     public boolean isLocal() {
-        return isLocal;
+        return pcid.length() == 0;
     }
 
     public void addVideoView(VideoView vv) {
@@ -67,7 +71,7 @@ public class MediaStreamTrackWrapper {
             obj.put("kind", this.track.kind());
             obj.put("id", this.id);
         } catch (Exception e) {
-//            Log.e(TAG, "MediaStreamTrackWrapper toString exception: " + e.toString());
+            Log.e(TAG, "MediaStreamTrackWrapper toString exception: " + e.toString());
         }
         return obj.toString();
     }
@@ -76,7 +80,7 @@ public class MediaStreamTrackWrapper {
         if (object == null) {
             return;
         }
-        if (track != null) {
+        if (object instanceof MediaStreamTrack) {
             if (track.kind().equals("audio") && relatedObject.size() != 0 &&
                     relatedObject.get(0) instanceof AudioSource) {
                 ((AudioSource) relatedObject.get(0)).dispose();
@@ -129,26 +133,6 @@ public class MediaStreamTrackWrapper {
 
         MediaStreamTrackWrapper wrapper = allTracks.get(id);
         allTracks.remove(id);
-
-        tracksLock.writeLock().unlock();
-        return wrapper;
-    }
-
-    // static method
-    public static MediaStreamTrackWrapper popMediaStreamTrackByObject(Object object) {
-        tracksLock.writeLock().lock();
-
-        MediaStreamTrackWrapper wrapper = null;
-        for (Map.Entry<String, MediaStreamTrackWrapper> ct :
-                allTracks.entrySet()) {
-            if (ct.getValue().object == object) {
-                wrapper = ct.getValue();
-                break;
-            }
-        }
-        if (wrapper != null) {
-            allTracks.remove(wrapper.id);
-        }
         Log.d(TAG, "allTrack sizes: " + allTracks.size());
 
         tracksLock.writeLock().unlock();
@@ -156,24 +140,24 @@ public class MediaStreamTrackWrapper {
     }
 
     // static method
-    public static MediaStreamTrackWrapper popMediaStreamTrackByTrack(MediaStreamTrack track) {
+    public static void removeMediaStreamTrackByPCId(String pcid) {
         tracksLock.writeLock().lock();
 
-        MediaStreamTrackWrapper wrapper = null;
+        List<String> toRemove = new LinkedList<>();
         for (Map.Entry<String, MediaStreamTrackWrapper> ct :
                 allTracks.entrySet()) {
-            if (ct.getValue().track == track) {
-                wrapper = ct.getValue();
-                break;
+            if (ct.getValue().pcid.equals(pcid)) {
+                toRemove.add(ct.getKey());
             }
         }
-        if (wrapper != null) {
-            allTracks.remove(wrapper.id);
+
+        for (String id : toRemove) {
+            allTracks.remove(id);
         }
+
         Log.d(TAG, "allTrack sizes: " + allTracks.size());
 
         tracksLock.writeLock().unlock();
-        return wrapper;
     }
 
     // static method
@@ -186,8 +170,8 @@ public class MediaStreamTrackWrapper {
         return wrapper;
     }
 
-    public static MediaStreamTrackWrapper cacheMediaStreamTrackWrapper(boolean isLocal, Object track, Object... relatedObject) {
-        MediaStreamTrackWrapper wrapper = new MediaStreamTrackWrapper(isLocal, track, relatedObject);
+    public static MediaStreamTrackWrapper cacheMediaStreamTrackWrapper(String pcid, Object track, Object... relatedObject) {
+        MediaStreamTrackWrapper wrapper = new MediaStreamTrackWrapper(pcid, track, relatedObject);
         tracksLock.writeLock().lock();
 
         allTracks.put(wrapper.id, wrapper);

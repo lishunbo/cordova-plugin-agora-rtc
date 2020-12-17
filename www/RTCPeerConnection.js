@@ -134,7 +134,7 @@ class RTCPeerConnection {
                     // this.onicecandidate(new RTCPeerConnectionIceEvent("icecandidate", { candidate: JSON.parse(ev.payload)}));
                     this.oniceconnectionstatechange();
                 } else {
-                    console.log("not found RTCPeerConnection.onICEConnectionStateChange function");
+                    console.log("not found RTCPeerConnection.oniceconnectionstatechange function");
                 }
                 break;
             case EventType.onConnectionStateChange:
@@ -154,7 +154,7 @@ class RTCPeerConnection {
                     // this.onicecandidate(new RTCPeerConnectionIceEvent("icecandidate", { candidate: JSON.parse(ev.payload)}));
                     this.onsignalingstatechange();
                 } else {
-                    console.log("not found RTCPeerConnection.onConnectionStateChange function");
+                    console.log("not found RTCPeerConnection.onsignalingstatechange function");
                 }
                 break;
             case EventType.onAddTrack:
@@ -167,9 +167,9 @@ class RTCPeerConnection {
                     var summary = JSON.parse(ev.payload);
                     var track = new media.MediaStreamTrack(summary.kind, summary.id);
                     this.remoteStream.addTrack(track)
-                    this.ontrack({ track: track, streams: [this.stream] });
+                    this.ontrack({ track: track, streams: [this.remoteStream] });
                 } else {
-                    console.log("not found RTCPeerConnection.onConnectionStateChange function");
+                    console.log("not found RTCPeerConnection.ontrack function");
                 }
                 break;
             default:
@@ -330,7 +330,7 @@ class RTCPeerConnection {
      */
     addStream(stream) {
         console.log("peerconnection addStream:", stream)
-        this.stream = stream
+        this.localStream = stream
         stream.getTracks().forEach(track => {
             this.addTrack(track)
         })

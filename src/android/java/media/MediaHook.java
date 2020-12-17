@@ -263,7 +263,7 @@ public class MediaHook extends CordovaPlugin {
             return false;
         }
 
-        MediaStreamTrackWrapper subTrackWrapper = MediaStreamTrackWrapper.cacheMediaStreamTrackWrapper(true,
+        MediaStreamTrackWrapper subTrackWrapper = MediaStreamTrackWrapper.cacheMediaStreamTrackWrapper("",
                 trackWrapper.getTrack());
 
         callbackContext.success(subTrackWrapper.toString());
