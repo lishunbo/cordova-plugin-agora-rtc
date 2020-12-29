@@ -409,11 +409,11 @@ public class RTCPeerConnection {
         public void onIceGatheringChange(PeerConnection.IceGatheringState iceGatheringState) {
 
             Log.v(TAG, usage + " onIceGatheringChange " + iceGatheringState.toString());
-            if (iceGatheringState == PeerConnection.IceGatheringState.COMPLETE) {
-                //send empty candidate if complete
-                supervisor.onObserveEvent(pc_id, Action.onIceCandidate, "", usage);
-            }
             if (supervisor != null) {
+                if (iceGatheringState == PeerConnection.IceGatheringState.COMPLETE) {
+                    //send empty candidate if complete
+                    supervisor.onObserveEvent(pc_id, Action.onIceCandidate, "", usage);
+                }
                 supervisor.onObserveEvent(pc_id, Action.onIceGatheringChange, iceGatheringState.toString().toLowerCase(), usage);
             }
         }

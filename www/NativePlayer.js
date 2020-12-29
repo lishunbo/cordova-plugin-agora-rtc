@@ -281,6 +281,11 @@ class AudioPlayer {
     }
 }
 
+cordova.addConstructor(function () {
+    window.VideoPlayer = VideoPlayer;
+    window.AudioPlayer = AudioPlayer;
+});
+
 
 /**
  * @module NativePlayer

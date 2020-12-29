@@ -2,7 +2,7 @@
 
 console.log("RTCPeerConnection.js onloading");
 
-var { uuidv4 } = require('./util');
+var { uuidv4, EventTarget } = require('./util');
 var media = require('./Media');
 
 const EventType = {
@@ -72,8 +72,9 @@ class RTCRtpSender {
     }
 }
 
-class RTCPeerConnection {
+class RTCPeerConnection extends EventTarget {
     constructor(config) {
+        super();
         this.id = uuidv4();
         this.config = config;
 
@@ -123,8 +124,11 @@ class RTCPeerConnection {
                     } else {
                         this.onicecandidate({ type: "icecandidate", candidate: null });
                     }
+                }
+                if (ev.payload != "") {
+                    this.dispatchEvent({ type: "icecandidate", candidate: JSON.parse(ev.payload) })
                 } else {
-                    console.log("not found RTCPeerConnection.onicecandidate function");
+                    this.dispatchEvent({ type: "icecandidate", candidate: null })
                 }
                 break;
             case EventType.onICEConnectionStateChange:
@@ -335,24 +339,6 @@ class RTCPeerConnection {
             this.addTrack(track)
         })
     }
-
-
-    addEventListener(eventType, func) {
-        var queue = this.jsEventHandle.get(eventType);
-        if (queue !== undefined) {
-            queue.push(func)
-            this.jsEventHandle.set(eventType, queue);
-        } else {
-            this.jsEventHandle.set(eventType, [func]);
-        }
-    }
-    removeEventListener(eventType, func) {
-        var queue = this.jsEventHandle.get(eventType);
-        if (queue !== undefined) {
-            queue.splice(queue.indexOf(func), 1)
-            this.jsEventHandle.set(eventType, queue);
-        }
-    }
 }
 
 cordova.addConstructor(function () {
@@ -360,6 +346,7 @@ cordova.addConstructor(function () {
     window.RTCRtpSender = RTCRtpSender;
     window.RTCPeerConnection = RTCPeerConnection;
     window.webkitRTCPeerConnection = RTCPeerConnection;
+
     return window.RTCPeerConnection;
 });
 
