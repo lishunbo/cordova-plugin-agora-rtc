@@ -15,3 +15,5 @@
 ## 使用时的注意事项
 
 - 插件平台正常工作之后才能调用WebRTC相关功能之前，即收到onDeviceReady事件
+- JavaScript部分事件生成的Event对象或子类对象仅包含核心数据
+- MediaStream简化为一个MediaStreamTrack的数组
