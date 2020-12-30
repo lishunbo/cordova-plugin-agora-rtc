@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
-  xmlns:android="http://schemas.android.com/apk/res/android" id="cordova-plugin-agora-rtcn" version="0.1.0">
-  <name>Agora-RTCN</name>
+  xmlns:android="http://schemas.android.com/apk/res/android" id="cordova-plugin-agora-android-rtc" version="0.1.0">
+  <name>Agora-Android-RTC</name>
   <description></description>
-  <license>Apache 2.0</license>
+  <license>Agora CopyRight</license>
   <keywords>webrtc,rtc,agora,android</keywords>
-  <js-module src="www/util.js" name="util">
-    <clobbers target="util" />
+  <js-module src="www/Util.js" name="Util">
+    <clobbers target="Util" />
+  </js-module>
+  <js-module src="www/EventTarget.js" name="EventTarget">
+    <clobbers target="EventTarget" />
   </js-module>
   <js-module src="www/NativePlayer.js" name="NativePlayer">
     <clobbers target="Player" />

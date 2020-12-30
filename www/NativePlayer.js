@@ -1,7 +1,7 @@
 
 console.log("player.js onloading");
 
-var { uuidv4 } = require('./util');
+var { uuidv4 } = require('./Util');
 
 var EventType = {
     onFirstFrameDecoded: "onFirstFrameDecoded",

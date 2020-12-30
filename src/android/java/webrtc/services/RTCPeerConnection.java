@@ -149,7 +149,7 @@ public class RTCPeerConnection {
                         peerConnection.getSenders()) {
                     JSONObject obj = new JSONObject();
                     try {
-                        obj.put("track", sender.track().kind());
+                        obj.put("kind", sender.track().kind());
                         ObjectMapper objectMapper = new ObjectMapper();
 
                         obj.put("parameter", objectMapper.writeValueAsString(sender.getParameters()));
@@ -375,7 +375,7 @@ public class RTCPeerConnection {
             Log.v(TAG, usage + " onIceConnectionChange " + iceConnectionState.toString());
 
             if (supervisor != null) {
-                supervisor.onObserveEvent(pc_id, Action.onICEConnectionStateChange, iceConnectionState.toString().toLowerCase(), usage);
+                supervisor.onObserveEvent(pc_id, Action.onIceConnectionStateChange, iceConnectionState.toString().toLowerCase(), usage);
             }
         }
 
@@ -401,7 +401,7 @@ public class RTCPeerConnection {
         public void onIceConnectionReceivingChange(boolean b) {
             Log.v(TAG, usage + " onIceConnectionReceivingChange " + String.valueOf(b));
             if (supervisor != null) {
-                supervisor.onObserveEvent(pc_id, Action.onIceConnectionReceivingChange, String.valueOf(b), usage);
+//                supervisor.onObserveEvent(pc_id, Action.onIceConnectionReceivingChange, String.valueOf(b), usage);
             }
         }
 
@@ -414,7 +414,7 @@ public class RTCPeerConnection {
                     //send empty candidate if complete
                     supervisor.onObserveEvent(pc_id, Action.onIceCandidate, "", usage);
                 }
-                supervisor.onObserveEvent(pc_id, Action.onIceGatheringChange, iceGatheringState.toString().toLowerCase(), usage);
+                supervisor.onObserveEvent(pc_id, Action.onIceGatheringStateChange, iceGatheringState.toString().toLowerCase(), usage);
             }
         }
 
@@ -438,20 +438,19 @@ public class RTCPeerConnection {
 
             Log.v(TAG, usage + " onIceCandidatesRemoved ");
 
-            JSONArray array = new JSONArray();
-            for (IceCandidate iceCandidate : iceCandidates) {
-                JSONObject obj = new JSONObject();
-                try {
-                    obj.put("sdpMid", iceCandidate.sdpMid);
-                    obj.put("sdpMLineIndex", iceCandidate.sdpMLineIndex);
-                    obj.put("candidate", iceCandidate.sdp);
-                    array.put(obj);
-                } catch (Exception e) {
-                    Log.e(TAG, e.toString());
-                }
-            }
-
-            supervisor.onObserveEvent(pc_id, Action.onIceCandidatesRemoved, array.toString(), usage);
+//            JSONArray array = new JSONArray();
+//            for (IceCandidate iceCandidate : iceCandidates) {
+//                JSONObject obj = new JSONObject();
+//                try {
+//                    obj.put("sdpMid", iceCandidate.sdpMid);
+//                    obj.put("sdpMLineIndex", iceCandidate.sdpMLineIndex);
+//                    obj.put("candidate", iceCandidate.sdp);
+//                    array.put(obj);
+//                } catch (Exception e) {
+//                    Log.e(TAG, e.toString());
+//                }
+//            }
+//            supervisor.onObserveEvent(pc_id, Action.onIceCandidatesRemoved, array.toString(), usage);
         }
 
         @Override
@@ -460,7 +459,7 @@ public class RTCPeerConnection {
 
             MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.cacheMediaStreamTrackWrapper(pc_id, rtpReceiver);
 
-            supervisor.onObserveEvent(pc_id, Action.onAddTrack, wrapper.toString(), usage);
+            supervisor.onObserveEvent(pc_id, Action.onTrack, wrapper.toString(), usage);
         }
 
         @Override
@@ -490,7 +489,7 @@ public class RTCPeerConnection {
 
             Log.v(TAG, usage + " onRenegotiationNeeded ");
             if (supervisor != null) {
-                supervisor.onObserveEvent(pc_id, Action.onRenegotiationNeeded, "", usage);
+                supervisor.onObserveEvent(pc_id, Action.onNegotiationNeeded, "", usage);
             }
         }
 

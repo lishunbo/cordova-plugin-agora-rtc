@@ -1,16 +1,20 @@
+//TODO: copyright
 
-
-console.log("RTCPeerConnection.js onloading");
-
-var { uuidv4, EventTarget } = require('./util');
+var { EventTarget } = require('./EventTarget');
+var { uuidv4 } = require('./Util');
 var media = require('./Media');
 
 const NativePCEventType = {
-  onIceCandidate: "onIceCandidate",
-  onICEConnectionStateChange: "onICEConnectionStateChange",
-  onConnectionStateChange: "onConnectionStateChange",
-  onSignalingStateChange: "onSignalingStateChange",
-  onAddTrack: "onAddTrack",
+  connectionstatechange: 'connectionstatechange',
+  datachannel: 'datachannel',
+  icecandidate: 'icecandidate',
+  icecandidateerror: 'icecandidateerror',
+  iceconnectionstatechange: 'iceconnectionstatechange',
+  icegatheringstatechange: 'icegatheringstatechange',
+  negotiationneeded: 'negotiationneeded',
+  signalingstatechange: 'signalingstatechange',
+  statsended: 'statsended',
+  track: 'track'
 }
 
 class RTCStatsReport {
@@ -86,15 +90,34 @@ class RTCPeerConnection extends EventTarget {
 
     this.senders = [];
 
+    this.canTrickleIceCandidates = false;
     this.connectionState = "";
+    this.currentLocalDescription = null;
+    this.currentRemoteDescription = null;
     this.iceConnectionState = "";
+    this.iceGatheringState = "";
+    this.localDescription = "";
     this.signalingState = "";
 
-    this.oniceconnectionstatechange = null;
+    //Deprecated
+    //this.onaddstream = null;
     this.onconnectionstatechange = null;
-    this.onsignalingstatechange = null;
+    this.ondatachannel = null;
     this.onicecandidate = null;
+    this.onicecandidateerror = null;
+    this.oniceconnectionstatechange = null;
+    this.onicegatheringstatechange = null;
+    this.onnegotiationneeded = null;
+    //Deprecated
+    //this.onremovestream = null;
+    this.onsignalingstatechange = null;
+    this.onstatsended = null;
     this.ontrack = null;
+    this.pendingLocalDescription = null;
+    this.pendingRemoteDescription = null;
+    this.remoteDescription = null;
+    this.sctp = null;
+    this.signalingState = null;
 
     var thiz = this;
     cordova.exec(function (ev) {
@@ -110,7 +133,7 @@ class RTCPeerConnection extends EventTarget {
 
   handleEvent(ev) {
     switch (ev.event) {
-      case NativePCEventType.onIceCandidate:
+      case NativePCEventType.icecandidate:
         var candidate = null
         if (ev.payload !== "") {
           candidate = JSON.parse(ev.payload)
@@ -120,11 +143,18 @@ class RTCPeerConnection extends EventTarget {
           this.onicecandidate({ type: "icecandidate", candidate: candidate });
         }
         break;
-      case NativePCEventType.onICEConnectionStateChange:
+      case NativePCEventType.iceconnectionstatechange:
         this.iceConnectionState = ev.payload;
         this.dispatchEvent({ type: "iceconnectionstatechange" })
         if (this.oniceconnectionstatechange != null) {
           this.oniceconnectionstatechange();
+        }
+        break;
+      case NativePCEventType.icegatheringstatechange:
+        this.iceConnectionState = ev.payload;
+        this.dispatchEvent({ type: "icegatheringstatechange" })
+        if (this.onicegatheringstatechange != null) {
+          this.onicegatheringstatechange();
         }
         break;
       case NativePCEventType.onConnectionStateChange:
@@ -134,14 +164,20 @@ class RTCPeerConnection extends EventTarget {
           this.onconnectionstatechange();
         }
         break;
-      case NativePCEventType.onSignalingStateChange:
+      case NativePCEventType.negotiationneeded:
+        this.dispatchEvent({ type: "negotiationneeded" })
+        if (this.onnegotiationneeded != null) {
+          this.onnegotiationneeded();
+        }
+        break;
+      case NativePCEventType.signalingstatechange:
         this.signalingState = ev.payload;
         this.dispatchEvent({ type: "signalingstatechange" })
         if (this.onsignalingstatechange != null) {
           this.onsignalingstatechange();
         }
         break;
-      case NativePCEventType.onAddTrack:
+      case NativePCEventType.track:
         if (!this.remoteStream) {
           this.remoteStream = new media.MediaStream();
         }

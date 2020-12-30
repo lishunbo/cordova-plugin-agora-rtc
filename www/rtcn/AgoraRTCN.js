@@ -3,10 +3,10 @@
  */
 
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('cordova-plugin-agora-rtcn.NativePlayer'), require('cordova-plugin-agora-rtcn.Media')) :
-	typeof define === 'function' && define.amd ? define(['cordova-plugin-agora-rtcn.NativePlayer', 'cordova-plugin-agora-rtcn.Media'], factory) :
-	(global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.AgoraRTC = factory(global.cordovaPluginAgoraRtcn_NativePlayer, global.cordovaPluginAgoraRtcn_Media));
-}(this, (function (cordovaPluginAgoraRtcn_NativePlayer, cordovaPluginAgoraRtcn_Media) { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('cordova-plugin-agora-android-rtc.NativePlayer'), require('cordova-plugin-agora-android-rtc.Media')) :
+	typeof define === 'function' && define.amd ? define(['cordova-plugin-agora-android-rtc.NativePlayer', 'cordova-plugin-agora-android-rtc.Media'], factory) :
+	(global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.AgoraRTC = factory(global.cordovaPluginAgoraAndroidRtc_NativePlayer, global.cordovaPluginAgoraAndroidRtc_Media));
+}(this, (function (cordovaPluginAgoraAndroidRtc_NativePlayer, cordovaPluginAgoraAndroidRtc_Media) { 'use strict';
 
 	var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
@@ -8523,7 +8523,7 @@
 	 * Agora Web SDK 的编译信息。
 	 * @public
 	 */
-	var BUILD = "v4.2.0-22-g8d4bbc8-dirty(12/16/2020, 8:28:27 PM)";
+	var BUILD = "v4.2.0-22-g8d4bbc8-dirty(12/30/2020, 7:26:49 PM)";
 	var VERSION = transferVersion("4.2.0");
 	var IS_GLOBAL_VERSION = isGlobalVersion();
 	var DEFAULT_TURN_CONFIG = {
@@ -19904,8 +19904,6 @@
 	          /**
 	           * 这里假设有 adapter.js 的存在，所有的采集直接调用 navigator.mediaDevice.getUserMedia
 	           */
-	          logger.debug("ts getUserMedia ", navigator.mediaDevices, navigator.mediaDevices.getUserMedia);
-
 	          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
 	            throw new AgoraRTCError(AgoraRTCErrorCode.NOT_SUPPORTED, "can not find getUserMedia");
 	          }
@@ -19921,11 +19919,7 @@
 	              delete config.screen.height;
 	            }
 	          }
-
-	          logger.debug("ts getUserMedia 2");
-	          logger.debug("ts getUserMedia 0", MediaStream);
 	          mediaStream = new MediaStream();
-	          logger.debug("ts getUserMedia 3");
 
 	          if (config.audioSource) {
 	            mediaStream.addTrack(config.audioSource);
@@ -19933,9 +19927,8 @@
 
 	          if (config.videoSource) {
 	            mediaStream.addTrack(config.videoSource);
-	          }
+	          } // 如果没有任何采集 constraints， 直接返回构造出来的 MediaStream
 
-	          logger.debug("ts getUserMedia 4"); // 如果没有任何采集 constraints， 直接返回构造出来的 MediaStream
 
 	          if (!config.audio && !config.video && !config.screen) {
 	            logger.debug("Using Video Source/ Audio Source");
@@ -19944,7 +19937,6 @@
 	            , mediaStream];
 	          }
 
-	          logger.debug("ts getUserMedia 5");
 	          if (!config.screen) return [3
 	          /*break*/
 	          , 5];
@@ -19990,12 +19982,7 @@
 	            /*return*/
 	            , mediaStream];
 	          }
-	          /**
-	           * 处理 麦克风/摄像头
-	           */
 
-
-	          logger.debug("ts getUserMedia 6");
 	          constraint = {
 	            video: config.video,
 	            audio: config.audio
@@ -20015,30 +20002,26 @@
 	          _a.label = 7;
 
 	        case 7:
-	          logger.debug("ts getUserMedia 7");
-	          _a.label = 8;
-
-	        case 8:
-	          _a.trys.push([8, 10,, 11]);
+	          _a.trys.push([7, 9,, 10]);
 
 	          logger.debug("[" + trackId + "] GetUserMedia", constraint);
 	          return [4
 	          /*yield*/
 	          , navigator.mediaDevices.getUserMedia(constraint)];
 
-	        case 9:
+	        case 8:
 	          stream = _a.sent();
 	          logger.debug("[" + trackId + "] GetUserMedia.done ", constraint);
 	          return [3
 	          /*break*/
-	          , 11];
+	          , 10];
 
-	        case 10:
+	        case 9:
 	          e_3 = _a.sent();
 	          unlock && unlock();
 	          throw e_3;
 
-	        case 11:
+	        case 10:
 	          if (!!constraint.audio) {
 	            HAS_GUM_AUDIO = true;
 	          }
@@ -20048,7 +20031,6 @@
 	          }
 
 	          replaceMediaStream(mediaStream, stream);
-	          logger.debug("ts getUserMedia done");
 	          unlock && unlock();
 	          return [2
 	          /*return*/
@@ -26010,7 +25992,7 @@
 	    _this.maxVolume = 100;
 	    _this.minVolume = 0;
 	    _this.audioLevel = 0;
-	    _this.audioPlayer = new cordovaPluginAgoraRtcn_NativePlayer.AudioPlayer(track);
+	    _this.audioPlayer = new cordovaPluginAgoraAndroidRtc_NativePlayer.AudioPlayer(track);
 
 	    _this.audioPlayer.getVolumeRange().then(function (range) {
 	      _this.maxVolume = range.max;
@@ -34147,7 +34129,7 @@
 	    this.videoTrack = track;
 
 	    if (this.videoPlayer === null) {
-	      this.videoPlayer = new cordovaPluginAgoraRtcn_NativePlayer.VideoPlayer();
+	      this.videoPlayer = new cordovaPluginAgoraAndroidRtc_NativePlayer.VideoPlayer();
 	    }
 
 	    if (this.videoPlayer && track) {
@@ -34185,7 +34167,7 @@
 	  NativeVideoplayer.prototype.createVideoPlayer = function () {
 	    var _this = this;
 
-	    this.videoPlayer = new cordovaPluginAgoraRtcn_NativePlayer.VideoPlayer(this.config);
+	    this.videoPlayer = new cordovaPluginAgoraAndroidRtc_NativePlayer.VideoPlayer(this.config);
 	    logger.debug("createVideoPlayer 1");
 	    this.videoPlayer.getWindowAttribute().then(function (wt) {
 	      logger.debug("createVideoPlayer 3");
@@ -35766,7 +35748,7 @@
 	            streamParameter = this.lowStreamParameter || getDefaultLowStreamParameter();
 	            return [4
 	            /*yield*/
-	            , cordovaPluginAgoraRtcn_Media.getSubVideoTrack(track._mediaStreamTrack, streamParameter.width, streamParameter.height, streamParameter.framerate)];
+	            , cordovaPluginAgoraAndroidRtc_Media.getSubVideoTrack(track._mediaStreamTrack, streamParameter.width, streamParameter.height, streamParameter.framerate)];
 
 	          case 12:
 	            lowMediaStreamTrack = _a.sent();
