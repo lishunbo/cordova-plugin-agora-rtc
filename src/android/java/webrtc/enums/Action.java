@@ -16,16 +16,16 @@ public enum Action {
 
     setSenderParameter("setSenderParameter"),
 
-    onIceCandidate("onIceCandidate"),
-    onICEConnectionStateChange("onICEConnectionStateChange"),
-    onConnectionStateChange("onConnectionStateChange"),
-    onSignalingStateChange("onSignalingStateChange"),
-    onIceGatheringChange("onIceGatheringChange"),
-    onIceConnectionReceivingChange("onIceConnectionReceivingChange"),
-    onIceCandidatesRemoved("onIceCandidatesRemoved"),
-    onRenegotiationNeeded("onRenegotiationNeeded"),
-
-    onAddTrack("onAddTrack"),
+    onConnectionStateChange("connectionstatechange"),
+    onDataChannel("datachannel"),
+    onIceCandidate("icecandidate"),
+    onIceCandidateError("icecandidateerror"),
+    onIceConnectionStateChange("iceconnectionstatechange"),
+    onIceGatheringStateChange("icegatheringstatechange"),
+    onNegotiationNeeded("negotiationneeded"),
+    onSignalingStateChange("signalingstatechange"),
+    onStatsEnded("statsended"),
+    onTrack("track"),
 
     MaxAction("maxAction");
 

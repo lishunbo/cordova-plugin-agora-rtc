@@ -115,14 +115,16 @@ public class VideoView extends SurfaceViewRenderer implements View.OnTouchListen
                 wrapper.addVideoView(that);
 
                 RendererCommon.ScalingType type = RendererCommon.ScalingType.SCALE_ASPECT_FILL;
-                switch (config.fit) {
-                    case cover:
-                        type = RendererCommon.ScalingType.SCALE_ASPECT_BALANCED;
-                        break;
-                    case contain:
-                        type = RendererCommon.ScalingType.SCALE_ASPECT_FIT;
-                        break;
-                    case fill:
+                if (config.fit != null){
+                    switch (config.fit) {
+                        case cover:
+                            type = RendererCommon.ScalingType.SCALE_ASPECT_BALANCED;
+                            break;
+                        case contain:
+                            type = RendererCommon.ScalingType.SCALE_ASPECT_FIT;
+                            break;
+                        case fill:
+                    }
                 }
 //                mainActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 

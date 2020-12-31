@@ -268,8 +268,7 @@ public class MediaDevice {
             return "";
         }
 
-        StringBuilder builder = new StringBuilder();
-        builder.append("[");
+        List<MediaStreamTrackWrapper> tracks = new LinkedList<>();
 
         if (constraints.audio != null) {
             int sampleRate = 48000;
@@ -285,7 +284,9 @@ public class MediaDevice {
             }
             MediaStreamTrackWrapper wrapper = createLocalAudioTrack(deviceID, sampleRate,
                     channelCount, aec, echoCancellation, noiseSuppression);
-            builder.append(wrapper.toString());
+            if (wrapper != null) {
+                tracks.add(wrapper);
+            }
         }
 
         if (constraints.video != null) {
@@ -294,10 +295,26 @@ public class MediaDevice {
             MediaStreamTrackWrapper wrapper = createLocalVideoTrack(constraints.video.deviceId.mean,
                     constraints.video.facingMode.mean.equals("user"), constraints.video.width.mean.intValue(),
                     constraints.video.height.mean.intValue(), constraints.video.frameRate.mean.intValue());
+
             if (wrapper != null) {
-                builder.append(wrapper.toString());
+                tracks.add(wrapper);
             }
         }
+
+        StringBuilder builder = new StringBuilder();
+        builder.append("[");
+
+        boolean first = true;
+        for (MediaStreamTrackWrapper wrapper :
+                tracks) {
+            if (first) {
+                first = false;
+            } else {
+                builder.append(",");
+            }
+            builder.append(wrapper.toString());
+        }
+
         builder.append("]");
 
 
