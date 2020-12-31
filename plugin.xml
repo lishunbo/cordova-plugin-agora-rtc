@@ -11,7 +11,7 @@
   <js-module src="www/EventTarget.js" name="EventTarget">
     <clobbers target="EventTarget" />
   </js-module>
-  <js-module src="www/NativePlayer.js" name="NativePlayer">
+  <js-module src="www/Player.js" name="Player">
     <clobbers target="Player" />
   </js-module>
   <js-module src="www/Media.js" name="Media">

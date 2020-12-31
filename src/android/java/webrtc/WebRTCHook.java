@@ -325,7 +325,7 @@ public class WebRTCHook extends CordovaPlugin {
     }
 
     boolean close(JSONArray args, final CallbackContext callbackContext) throws Exception {
-        String id = args.getString(1);
+        String id = args.getString(0);
         CallbackPCPeer peer = instances.get(id);
         assert peer != null;
         instances.remove(id);

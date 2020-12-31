@@ -1,12 +1,12 @@
 /**
- * AgoraWebSDK_N-v4.2.0-22-g8d4bbc8-dirty Copyright AgoraInc.
+ * AgoraWebSDK_N-v4.2.0-23-g3a38ec8-dirty Copyright AgoraInc.
  */
 
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('cordova-plugin-agora-android-rtc.NativePlayer'), require('cordova-plugin-agora-android-rtc.Media')) :
-	typeof define === 'function' && define.amd ? define(['cordova-plugin-agora-android-rtc.NativePlayer', 'cordova-plugin-agora-android-rtc.Media'], factory) :
-	(global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.AgoraRTC = factory(global.cordovaPluginAgoraAndroidRtc_NativePlayer, global.cordovaPluginAgoraAndroidRtc_Media));
-}(this, (function (cordovaPluginAgoraAndroidRtc_NativePlayer, cordovaPluginAgoraAndroidRtc_Media) { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('cordova-plugin-agora-android-rtc.Player'), require('cordova-plugin-agora-android-rtc.Media')) :
+	typeof define === 'function' && define.amd ? define(['cordova-plugin-agora-android-rtc.Player', 'cordova-plugin-agora-android-rtc.Media'], factory) :
+	(global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.AgoraRTC = factory(global.cordovaPluginAgoraAndroidRtc_Player, global.cordovaPluginAgoraAndroidRtc_Media));
+}(this, (function (cordovaPluginAgoraAndroidRtc_Player, cordovaPluginAgoraAndroidRtc_Media) { 'use strict';
 
 	var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
@@ -8523,7 +8523,7 @@
 	 * Agora Web SDK 的编译信息。
 	 * @public
 	 */
-	var BUILD = "v4.2.0-22-g8d4bbc8-dirty(12/30/2020, 7:26:49 PM)";
+	var BUILD = "v4.2.0-23-g3a38ec8-dirty(12/31/2020, 2:14:32 PM)";
 	var VERSION = transferVersion("4.2.0");
 	var IS_GLOBAL_VERSION = isGlobalVersion();
 	var DEFAULT_TURN_CONFIG = {
@@ -25992,7 +25992,7 @@
 	    _this.maxVolume = 100;
 	    _this.minVolume = 0;
 	    _this.audioLevel = 0;
-	    _this.audioPlayer = new cordovaPluginAgoraAndroidRtc_NativePlayer.AudioPlayer(track);
+	    _this.audioPlayer = new cordovaPluginAgoraAndroidRtc_Player.AudioPlayer(track);
 
 	    _this.audioPlayer.getVolumeRange().then(function (range) {
 	      _this.maxVolume = range.max;
@@ -34129,7 +34129,7 @@
 	    this.videoTrack = track;
 
 	    if (this.videoPlayer === null) {
-	      this.videoPlayer = new cordovaPluginAgoraAndroidRtc_NativePlayer.VideoPlayer();
+	      this.videoPlayer = new cordovaPluginAgoraAndroidRtc_Player.VideoPlayer();
 	    }
 
 	    if (this.videoPlayer && track) {
@@ -34167,7 +34167,7 @@
 	  NativeVideoplayer.prototype.createVideoPlayer = function () {
 	    var _this = this;
 
-	    this.videoPlayer = new cordovaPluginAgoraAndroidRtc_NativePlayer.VideoPlayer(this.config);
+	    this.videoPlayer = new cordovaPluginAgoraAndroidRtc_Player.VideoPlayer(this.config);
 	    logger.debug("createVideoPlayer 1");
 	    this.videoPlayer.getWindowAttribute().then(function (wt) {
 	      logger.debug("createVideoPlayer 3");

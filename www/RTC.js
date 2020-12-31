@@ -2,9 +2,10 @@
 
 var { EventTarget } = require('./EventTarget');
 var { uuidv4 } = require('./Util');
-var media = require('./Media');
 
-const NativePCEventType = {
+var WebRTCService = "WebRTC"
+
+const NativeRTCEventType = {
   connectionstatechange: 'connectionstatechange',
   datachannel: 'datachannel',
   icecandidate: 'icecandidate',
@@ -34,8 +35,6 @@ class RTCStatsReport {
   }
 }
 
-var WebRTCService = "WebRTC"
-
 class RTCRtpSendParameters {
   constructor() {
     this.degradationPreference = null;
@@ -59,7 +58,7 @@ class RTCRtpSender {
     } else {
       this.parameter = new RTCRtpSendParameters()
     }
-    this.track = new media.MediaStreamTrack(kind)
+    this.track = new MediaStreamTrack(kind)
     //internal usage for call setParameters() before setLocalDescription()
     //TODO: change this logic later
     this._modified = false
@@ -67,6 +66,7 @@ class RTCRtpSender {
   replaceTrack(track) {
     cordova.exec(function (ev) {
     }, function (ev) {
+      throw 'replaceTrack exception: ' + ev
     }, WebRTCService, 'replaceTrack',
       [this.id, this.pcid, track.id, track.kind]);
   }
@@ -123,7 +123,7 @@ class RTCPeerConnection extends EventTarget {
     cordova.exec(function (ev) {
       thiz.handleEvent(ev);
     }, function (ev) {
-      console.log("[Debug] Failed to create RTCPeerConnection object", ev);
+      throw 'createPC exception: ' + ev
     }, WebRTCService, 'createPC', [this.id, this.config]);
   }
 
@@ -133,7 +133,7 @@ class RTCPeerConnection extends EventTarget {
 
   handleEvent(ev) {
     switch (ev.event) {
-      case NativePCEventType.icecandidate:
+      case NativeRTCEventType.icecandidate:
         var candidate = null
         if (ev.payload !== "") {
           candidate = JSON.parse(ev.payload)
@@ -143,46 +143,46 @@ class RTCPeerConnection extends EventTarget {
           this.onicecandidate({ type: "icecandidate", candidate: candidate });
         }
         break;
-      case NativePCEventType.iceconnectionstatechange:
+      case NativeRTCEventType.iceconnectionstatechange:
         this.iceConnectionState = ev.payload;
         this.dispatchEvent({ type: "iceconnectionstatechange" })
         if (this.oniceconnectionstatechange != null) {
           this.oniceconnectionstatechange();
         }
         break;
-      case NativePCEventType.icegatheringstatechange:
+      case NativeRTCEventType.icegatheringstatechange:
         this.iceConnectionState = ev.payload;
         this.dispatchEvent({ type: "icegatheringstatechange" })
         if (this.onicegatheringstatechange != null) {
           this.onicegatheringstatechange();
         }
         break;
-      case NativePCEventType.onConnectionStateChange:
+      case NativeRTCEventType.onConnectionStateChange:
         this.connectionState = ev.payload;
         this.dispatchEvent({ type: "connectionstatechange" })
         if (this.onconnectionstatechange != null) {
           this.onconnectionstatechange();
         }
         break;
-      case NativePCEventType.negotiationneeded:
+      case NativeRTCEventType.negotiationneeded:
         this.dispatchEvent({ type: "negotiationneeded" })
         if (this.onnegotiationneeded != null) {
           this.onnegotiationneeded();
         }
         break;
-      case NativePCEventType.signalingstatechange:
+      case NativeRTCEventType.signalingstatechange:
         this.signalingState = ev.payload;
         this.dispatchEvent({ type: "signalingstatechange" })
         if (this.onsignalingstatechange != null) {
           this.onsignalingstatechange();
         }
         break;
-      case NativePCEventType.track:
+      case NativeRTCEventType.track:
         if (!this.remoteStream) {
-          this.remoteStream = new media.MediaStream();
+          this.remoteStream = new MediaStream();
         }
         var summary = JSON.parse(ev.payload);
-        var track = new media.MediaStreamTrack(summary.kind, summary.id);
+        var track = new MediaStreamTrack(summary.kind, summary.id);
         this.remoteStream.addTrack(track)
         this.dispatchEvent({
           type: "track",
@@ -246,7 +246,7 @@ class RTCPeerConnection extends EventTarget {
                 cordova.exec(function (ev) {
                   resolve(ev);
                 }, function (ev) {
-                  reject != null && reject("setSenderParameter exception:" + ev);
+                  reject != null && reject("setSenderParameter exception: " + ev);
                 }, WebRTCService, 'setSenderParameter',
                   [thiz.id, thiz.senders[idx].track.kind, degra,
                     maxBitrate, minBitrate, scaleDown]);
@@ -258,7 +258,7 @@ class RTCPeerConnection extends EventTarget {
         })
         resolve();
       }, function (ev) {
-        reject(ev);
+        reject != null && reject(ev);
       }, WebRTCService, 'setLocalDescription', [this.id, offer.type, offer.sdp]);
     })
   }
@@ -268,7 +268,7 @@ class RTCPeerConnection extends EventTarget {
       cordova.exec(function (ev) {
         resolve(ev);
       }, function (ev) {
-        reject != null && reject("setRemoteDescription exception:" + ev);
+        reject != null && reject("setRemoteDescription exception: " + ev);
       }, WebRTCService, 'setRemoteDescription',
         [this.id, answer.type, answer.sdp]);
     })
@@ -286,13 +286,14 @@ class RTCPeerConnection extends EventTarget {
 
   addTrack(track) {
     if (!this.localStream) {
-      this.localStream = new media.MediaStream();
+      this.localStream = new MediaStream();
     }
     this.localStream.addTrack(track);
     var sender = new RTCRtpSender(null, track.kind, this.id)
     this.senders.push(sender)
     cordova.exec(function (ev) {
     }, function (ev) {
+      throw 'addTrack exception: ' + ev
     }, WebRTCService, 'addTrack', [this.id, track.id, track.kind]);
     return sender;
   }
@@ -300,12 +301,14 @@ class RTCPeerConnection extends EventTarget {
   close() {
     cordova.exec(function (ev) {
     }, function (ev) {
+      throw 'close exception: ' + ev
     }, WebRTCService, 'close', [this.id]);
   }
 
   removeTrack(sender) {
     cordova.exec(function (ev) {
     }, function (ev) {
+      throw 'removeTrack exception: ' + ev
     }, WebRTCService, 'removeTrack',
       [this.id, sender.track.id, sender.track.kind]);
   }
@@ -313,12 +316,14 @@ class RTCPeerConnection extends EventTarget {
   getTransceivers() {
     cordova.exec(function (ev) {
     }, function (ev) {
+      throw 'getTransceivers exception: ' + ev
     }, WebRTCService, 'getTransceivers', [this.id]);
   }
 
   addTransceiver() {
     cordova.exec(function (ev) {
     }, function (ev) {
+      throw 'addTransceivers exception: ' + ev
     }, WebRTCService, 'addTransceiver', [this.id]);
   }
 
@@ -331,7 +336,7 @@ class RTCPeerConnection extends EventTarget {
       cordova.exec(function (ev) {
         resolve(new RTCStatsReport(ev));
       }, function (ev) {
-        reject(ev);
+        reject != null && reject(ev);
       }, WebRTCService, 'getStats', [this.id]);
     })
   }
