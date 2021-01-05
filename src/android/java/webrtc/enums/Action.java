@@ -2,7 +2,10 @@ package io.agora.rtcn.webrtc.enums;
 
 public enum Action {
     createPC("createPC"),
+    setConfiguration("setConfiguration"),
     createOffer("createOffer"),
+    createAnswer("createAnswer"),
+    createDataChannel("createDataChannel"),
     setLocalDescription("setLocalDescription"),
     setRemoteDescription("setRemoteDescription"),
     addIceCandidate("addIceCandidate"),
@@ -13,8 +16,10 @@ public enum Action {
     addTrack("addTrack"),
     getStats("getStats"),
     replaceTrack("replaceTrack"),
-
     setSenderParameter("setSenderParameter"),
+
+    closeDC("closeDC"),
+    sendDC("sendDC"),
 
     onConnectionStateChange("connectionstatechange"),
     onDataChannel("datachannel"),
@@ -26,6 +31,9 @@ public enum Action {
     onSignalingStateChange("signalingstatechange"),
     onStatsEnded("statsended"),
     onTrack("track"),
+    onBufferedAmountChange("bufferedamountchange"),
+    onStateChange("statechange"),
+    onMessage("message"),
 
     MaxAction("maxAction");
 

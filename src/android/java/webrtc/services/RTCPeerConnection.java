@@ -1,13 +1,12 @@
 package io.agora.rtcn.webrtc.services;
 
+import android.util.Base64;
 import android.util.Log;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.webrtc.AudioTrack;
 import org.webrtc.DataChannel;
 import org.webrtc.IceCandidate;
 import org.webrtc.MediaConstraints;
@@ -22,17 +21,22 @@ import org.webrtc.RtpReceiver;
 import org.webrtc.RtpSender;
 import org.webrtc.SdpObserver;
 import org.webrtc.SessionDescription;
-import org.webrtc.VideoTrack;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import io.agora.rtcn.media.services.MediaStreamTrackWrapper;
 import io.agora.rtcn.webrtc.enums.Action;
 import io.agora.rtcn.webrtc.enums.RTCIceCredentialType;
 import io.agora.rtcn.webrtc.models.RTCConfiguration;
+import io.agora.rtcn.webrtc.models.RTCDataChannelInit;
 import io.agora.rtcn.webrtc.models.RTCIceServer;
 import io.agora.rtcn.webrtc.models.RTCOfferOptions;
 
@@ -53,6 +57,8 @@ public class RTCPeerConnection {
     MediaStream remoteStream;
     PeerConnection.PeerConnectionState state;
 
+    Map<Integer, DataChannel> channels;
+
     public interface Supervisor {
         void onDisconnect(RTCPeerConnection pc);
 
@@ -71,38 +77,71 @@ public class RTCPeerConnection {
         this.supervisor = supervisor;
         this.pc_id = pc_id;
         Log.v(TAG, "DUALSTREAM pc_id" + pc_id);
+
         this.config = config;
+
+        this.channels = new HashMap<>();
     }
 
     public String getPc_id() {
         return pc_id;
     }
 
-    public void createInstance(MessageHandler handler) {
+    PeerConnection.RTCConfiguration generateConfiguration(RTCConfiguration config) {
         LinkedList<PeerConnection.IceServer> iceServers = new LinkedList<>();
         for (RTCIceServer iceServer : config.iceServers) {
             if (iceServer.urls == null || iceServer.urls.length == 0) {
                 continue;
             }
-            PeerConnection.IceServer.Builder builder = PeerConnection.IceServer.builder(Arrays.asList(iceServer.urls));
+            PeerConnection.IceServer.Builder builder =
+                    PeerConnection.IceServer.builder(Arrays.asList(iceServer.urls));
             if (iceServer.username != null) {
                 builder.setUsername(iceServer.username);
             }
-            if (iceServer.credential != null && (iceServer.credentialType == null || iceServer.credentialType == RTCIceCredentialType.password)) {
-                builder.setPassword(((RTCIceServer.CredentialDetailStringImp) iceServer.credential).toString());
+            if (iceServer.credential != null &&
+                    (iceServer.credentialType == null ||
+                            iceServer.credentialType == RTCIceCredentialType.password)) {
+                builder.setPassword(iceServer.credential.toString());
             }
 
             iceServers.add(builder.createIceServer());
         }
 
-        //TODO
-        peerConnection = PCFactory.factory().createPeerConnection(iceServers, new RTCObserver(this, "createPeerConnection:" + pc_id) {
+        PeerConnection.RTCConfiguration configuration =
+                new PeerConnection.RTCConfiguration(iceServers);
+        if (config.bundlePolicy != null) {
+            configuration.bundlePolicy = PeerConnection.BundlePolicy.valueOf(
+                    config.bundlePolicy.name().replace("-", "").toUpperCase());
+        }
 
-        });
+        if (config.iceCandidatePoolSize != 0) {
+            configuration.iceCandidatePoolSize = config.iceCandidatePoolSize;
+        }
+
+        if (config.iceTransportPolicy != null) {
+            configuration.iceTransportsType = PeerConnection.IceTransportsType.valueOf(
+                    config.iceTransportPolicy.name().toUpperCase());
+        }
+
+        if (config.rtcpMuxPolicy != null) {
+            configuration.rtcpMuxPolicy = PeerConnection.RtcpMuxPolicy.valueOf(
+                    config.rtcpMuxPolicy.name().toUpperCase());
+        }
+
+        return configuration;
     }
 
-    public void addTrack(String kind, MediaStreamTrackWrapper wrapper) {
-        peerConnection.addTrack(wrapper.getTrack());
+    public void createInstance(MessageHandler handler) {
+
+        //TODO
+        peerConnection = PCFactory.factory().createPeerConnection(
+                generateConfiguration(config),
+                new RTCObserver(this, "createPeerConnection:" + pc_id) {
+                });
+    }
+
+    public boolean setConfiguration(RTCConfiguration config) {
+        return peerConnection.setConfiguration(generateConfiguration(config));
     }
 
     public void createOffer(MessageHandler handler, RTCOfferOptions options) {
@@ -129,12 +168,60 @@ public class RTCPeerConnection {
                     offer = sdp.toString();
                     handler.success(offer);
                 } catch (JSONException e) {
-                    Log.e(TAG, "CreateOffer success buf to json string failed:" + e.toString());
+                    Log.e(TAG, "CreateOffer success but to json string failed:" + e.toString());
 
                     handler.error(e.toString());
                 }
             }
         }, mediaConstraints);
+    }
+
+    public void createAnswer(MessageHandler handler, RTCOfferOptions options) {
+        MediaConstraints mediaConstraints = new MediaConstraints();
+        if (options != null) {
+            if (options.iceRestart) {
+                mediaConstraints.mandatory.add(new MediaConstraints.KeyValuePair("IceRestart", "true"));
+            }
+            mediaConstraints.mandatory.add(new MediaConstraints.KeyValuePair("OfferToReceiveAudio", String.valueOf(options.offerToReceiveAudio)));
+            mediaConstraints.mandatory.add(new MediaConstraints.KeyValuePair("OfferToReceiveVideo", String.valueOf(options.offerToReceiveVideo)));
+            if (options.voiceActivityDetection) {
+                mediaConstraints.mandatory.add(new MediaConstraints.KeyValuePair("VoiceActivityDetection", "true"));
+            }
+        }
+        peerConnection.createAnswer(new RTCObserver(this, "createAnswer:" + pc_id) {
+            @Override
+            public void onCreateSuccess(SessionDescription sessionDescription) {
+                String answer = "";
+                try {
+                    JSONObject sdp = new JSONObject();
+                    sdp.put("type", "answer");
+                    sdp.put("sdp", sessionDescription.description);
+                    answer = sdp.toString();
+                    handler.success(answer);
+                } catch (JSONException e) {
+                    Log.e(TAG, "CreateAnswer success but to json string failed:" + e.toString());
+
+                    handler.error(e.toString());
+                }
+            }
+        }, mediaConstraints);
+    }
+
+    public void createDataChannel(MessageHandler handler, String label, RTCDataChannelInit config) {
+        DataChannel.Init init = new DataChannel.Init();
+        init.id = (int) config.id;
+        init.maxRetransmits = (int) config.maxRetransmits;
+        init.maxRetransmitTimeMs = (int) config.maxPacketLifeTime;
+        init.negotiated = config.negotiated;
+        init.ordered = config.ordered;
+        init.protocol = config.protocol;
+        DataChannel dataChannel = peerConnection.createDataChannel(label, init);
+        channels.put(dataChannel.id(), dataChannel);
+        dataChannel.registerObserver(new DCObserver(dataChannel));
+    }
+
+    public void addTrack(String kind, MediaStreamTrackWrapper wrapper) {
+        peerConnection.addTrack(wrapper.getTrack());
     }
 
     public void setLocalDescription(MessageHandler handler, String type, String description) {
@@ -281,6 +368,14 @@ public class RTCPeerConnection {
         }
         supervisor = null;
 
+        for (Map.Entry<Integer, DataChannel> entry :
+                channels.entrySet()) {
+            entry.getValue().unregisterObserver();
+            entry.getValue().close();
+        }
+        channels.clear();
+        channels = null;
+
         MediaStreamTrackWrapper.removeMediaStreamTrackByPCId(pc_id);
 
         pc_id = null;
@@ -290,6 +385,26 @@ public class RTCPeerConnection {
         }
         config = null;
         peerConnection = null;
+    }
+
+    public void closeDC(int dcid) {
+        DataChannel dataChannel = channels.get(dcid);
+        if (dataChannel != null) {
+            dataChannel.unregisterObserver();
+            dataChannel.close();
+            dataChannel.dispose();
+        }
+        channels.remove(dcid);
+    }
+
+    public void sendDC(int dcid, boolean binary, String msg) {
+        DataChannel dataChannel = channels.get(dcid);
+        if (dataChannel != null) {
+            ByteBuffer buf = ByteBuffer.allocateDirect(msg.length());
+            buf.put(msg.getBytes());
+            buf.rewind();
+            dataChannel.send(new DataChannel.Buffer(buf, binary));
+        }
     }
 
     public class StatsReport implements RTCStatsCollectorCallback {
@@ -480,8 +595,22 @@ public class RTCPeerConnection {
 
         @Override
         public void onDataChannel(DataChannel dataChannel) {
-
+            channels.put(dataChannel.id(), dataChannel);
             Log.v(TAG, usage + " onDataChannel ");
+            dataChannel.registerObserver(new DCObserver(dataChannel));
+            if (supervisor != null) {
+                JSONObject obj = new JSONObject();
+                try {
+                    obj.put("id", dataChannel.id());
+                    obj.put("state", dataChannel.state());
+                    obj.put("bufferedAmount", dataChannel.bufferedAmount());
+                    obj.put("label", dataChannel.label());
+                } catch (Exception e) {
+                    Log.e(TAG, "onDataChannel exception:" + e.toString());
+                }
+                supervisor.onObserveEvent(pc_id, Action.onDataChannel,
+                        obj.toString(), "");
+            }
         }
 
         @Override
@@ -515,6 +644,68 @@ public class RTCPeerConnection {
         public void onSetFailure(String s) {
 
             Log.v(TAG, usage + " onSetFailure" + s.toString());
+        }
+    }
+
+    public class DCObserver implements DataChannel.Observer {
+        DataChannel channel;
+
+        public DCObserver(DataChannel dataChannel) {
+            channel = dataChannel;
+        }
+
+        @Override
+        public void onBufferedAmountChange(long l) {
+            if (supervisor != null) {
+                JSONObject obj = new JSONObject();
+                try {
+                    obj.put("id", channel.id());
+                    obj.put("previousAmount ", l);
+                    obj.put("amount", channel.bufferedAmount());
+                } catch (Exception e) {
+                    Log.e(TAG, "onBufferedAmountChange exception:" + e.toString());
+                }
+                supervisor.onObserveEvent(pc_id, Action.onBufferedAmountChange,
+                        obj.toString(), "");
+            }
+        }
+
+        @Override
+        public void onStateChange() {
+            if (supervisor != null) {
+                JSONObject obj = new JSONObject();
+                try {
+                    obj.put("id", channel.id());
+                    obj.put("state", channel.state().name().toLowerCase());
+                } catch (Exception e) {
+                    Log.e(TAG, "onStateChange exception:" + e.toString());
+                }
+                supervisor.onObserveEvent(pc_id, Action.onStateChange,
+                        obj.toString(), "");
+            }
+        }
+
+        @Override
+        public void onMessage(DataChannel.Buffer buffer) {
+            if (supervisor != null) {
+                JSONObject obj = new JSONObject();
+                try {
+                    obj.put("id", channel.id());
+                    obj.put("binary", buffer.binary);
+                    if (!buffer.binary) {
+                        obj.put("data", StandardCharsets.UTF_8.decode(buffer.data)
+                                .toString());
+                    } else {
+                        byte[] buf = new byte[buffer.data.remaining()];
+                        buffer.data.get(buf);
+                        obj.put("data", Base64.encodeToString(buf, Base64.DEFAULT));
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "onMessage exception:" + e.toString());
+                }
+                supervisor.onObserveEvent(pc_id, Action.onMessage,
+                        obj.toString(), "");
+            }
         }
     }
 }

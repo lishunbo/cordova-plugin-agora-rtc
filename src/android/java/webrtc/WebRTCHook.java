@@ -17,6 +17,7 @@ import java.util.Map;
 import io.agora.rtcn.media.services.MediaStreamTrackWrapper;
 import io.agora.rtcn.webrtc.enums.Action;
 import io.agora.rtcn.webrtc.models.RTCConfiguration;
+import io.agora.rtcn.webrtc.models.RTCDataChannelInit;
 import io.agora.rtcn.webrtc.models.RTCOfferOptions;
 import io.agora.rtcn.webrtc.services.PCFactory;
 import io.agora.rtcn.webrtc.services.RTCPeerConnection;
@@ -57,14 +58,20 @@ public class WebRTCHook extends CordovaPlugin {
             switch (Action.valueOf(action)) {
                 case createPC:
                     return createPC(args, callbackContext);
+                case setConfiguration:
+                    return setConfiguration(args, callbackContext);
+                case createOffer:
+                    return createOffer(args, callbackContext);
+                case createAnswer:
+                    return createAnswer(args, callbackContext);
+                case createDataChannel:
+                    return createDataChannel(args, callbackContext);
                 case addTrack:
                     return addTrack(args, callbackContext);
                 case getTransceivers:
                     return getTransceivers(args);
                 case addTransceiver:
                     return addTransceiver(args);
-                case createOffer:
-                    return createOffer(args, callbackContext);
                 case setLocalDescription:
                     return setLocalDescription(args, callbackContext);
                 case setRemoteDescription:
@@ -81,6 +88,11 @@ public class WebRTCHook extends CordovaPlugin {
                     return getStats(args, callbackContext);
                 case setSenderParameter:
                     return setSenderParameter(args, callbackContext);
+
+                case closeDC:
+                    return closeDC(args, callbackContext);
+                case sendDC:
+                    return sendDC(args, callbackContext);
                 default:
                     Log.e(TAG, "Not implement action of: " + action);
                     callbackContext.error("Not implement action:" + action);
@@ -127,12 +139,96 @@ public class WebRTCHook extends CordovaPlugin {
 
         pc.createInstance(new MessageHandler());
 
-        this.instances.put(id, new CallbackPCPeer().setCallbackContext(callbackContext).setPeerConnection(pc));
+        this.instances.put(id, new CallbackPCPeer()
+                .setCallbackContext(callbackContext).setPeerConnection(pc));
 
         PluginResult result = new PluginResult(OK);
         result.setKeepCallback(true);
 
         callbackContext.sendPluginResult(result);
+        return true;
+    }
+
+    boolean setConfiguration(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        String id = args.getString(0);
+        RTCConfiguration config = RTCConfiguration.fromJson(args.getString(1));
+        assert config != null;
+
+        CallbackPCPeer peer = instances.get(id);
+        assert peer != null;
+        if (peer.pc.setConfiguration(config)) {
+            callbackContext.success();
+        } else {
+            callbackContext.error("setConfiguration failed");
+        }
+
+        return true;
+    }
+
+    boolean createOffer(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        String id = args.getString(0);
+        RTCOfferOptions options = RTCOfferOptions.fromJson(args.getString(1));
+
+        CallbackPCPeer peer = instances.get(id);
+        assert peer != null;
+        peer.pc.createOffer(new MessageHandler() {
+            @Override
+            public void success(String msg) {
+                callbackContext.success(msg);
+            }
+
+            @Override
+            public void error(String msg) {
+                callbackContext.error(msg);
+            }
+        }, options);
+
+        return true;
+    }
+
+    boolean createAnswer(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        String id = args.getString(0);
+        RTCOfferOptions options = RTCOfferOptions.fromJson(args.get(1).toString());
+
+        CallbackPCPeer peer = instances.get(id);
+        assert peer != null;
+
+        peer.pc.createAnswer(new MessageHandler() {
+            @Override
+            public void success(String msg) {
+                callbackContext.success(msg);
+            }
+
+            @Override
+            public void error(String msg) {
+                callbackContext.error(msg);
+            }
+        }, options);
+
+        return true;
+    }
+
+    boolean createDataChannel(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        String id = args.getString(0);
+        String label = args.getString(1);
+        RTCDataChannelInit init = (RTCDataChannelInit) args.get(2);
+
+        Log.d(TAG, "createDataChannel arguments" + init.toString());
+
+        CallbackPCPeer peer = instances.get(id);
+        assert peer != null;
+        peer.pc.createDataChannel(new MessageHandler() {
+            @Override
+            public void success(String msg) {
+                callbackContext.success(msg);
+            }
+
+            @Override
+            public void error(String msg) {
+                callbackContext.error(msg);
+            }
+        }, label, init);
+
         return true;
     }
 
@@ -163,27 +259,6 @@ public class WebRTCHook extends CordovaPlugin {
 
     boolean getTransceivers(JSONArray args) {
         return false;
-    }
-
-    boolean createOffer(JSONArray args, final CallbackContext callbackContext) throws JSONException {
-        String id = args.getString(0);
-        RTCOfferOptions options = RTCOfferOptions.fromJson(args.getString(1));
-
-        CallbackPCPeer peer = instances.get(id);
-        assert peer != null;
-        peer.pc.createOffer(new MessageHandler() {
-            @Override
-            public void success(String msg) {
-                callbackContext.success(msg);
-            }
-
-            @Override
-            public void error(String msg) {
-                callbackContext.error(msg);
-            }
-        }, options);
-
-        return true;
     }
 
     boolean setLocalDescription(JSONArray args, CallbackContext callbackContext) throws JSONException {
@@ -336,6 +411,33 @@ public class WebRTCHook extends CordovaPlugin {
         return true;
     }
 
+    boolean closeDC(JSONArray args, final CallbackContext callbackContext) throws Exception {
+        String id = args.getString(0);
+        int dcid = args.getInt(1);
+
+        CallbackPCPeer peer = instances.get(id);
+        assert peer != null;
+
+        peer.pc.closeDC(dcid);
+
+        callbackContext.success();
+        return true;
+    }
+
+    boolean sendDC(JSONArray args, final CallbackContext callbackContext) throws Exception {
+        String id = args.getString(0);
+        int dcid = args.getInt(1);
+        boolean binary = args.getBoolean(2);
+        String msg = args.getString(3);
+
+        CallbackPCPeer peer = instances.get(id);
+        assert peer != null;
+
+        peer.pc.sendDC(dcid, binary, msg);
+
+        callbackContext.success();
+        return true;
+    }
 
     class SupervisorImp implements RTCPeerConnection.Supervisor {
         @Override

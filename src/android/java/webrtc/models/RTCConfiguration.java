@@ -5,6 +5,7 @@ import android.util.Log;
 import io.agora.rtcn.webrtc.enums.RTCBundlePolicy;
 import io.agora.rtcn.webrtc.enums.RTCIceTransportPolicy;
 import io.agora.rtcn.webrtc.enums.RTCRtcpMuxPolicy;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,12 +28,12 @@ public class RTCConfiguration {
             return mapper.readValue(json, RTCConfiguration.class);
         } catch (JsonProcessingException e) {
 //            System.out.println(e.toString());
-            Log.e(TAG, "++++++++++++++"+ e.toString());
+            Log.e(TAG, e.toString());
         }
         return null;
     }
 
-    public String toString(){
+    public String toString() {
         ObjectMapper mapper = new ObjectMapper();
         try {
             return mapper.writeValueAsString(this);

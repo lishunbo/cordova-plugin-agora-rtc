@@ -2,6 +2,7 @@ package io.agora.rtcn.webrtc.models;
 
 import io.agora.rtcn.webrtc.enums.RTCIceCredentialType;
 import io.agora.rtcn.webrtc.interfaces.CredentialDetail;
+
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonParser;
@@ -27,7 +28,7 @@ public class RTCIceServer {
     public String[] urls;
     public String username;
 
-    public static class CredentialDetailStringImp extends CredentialDetail {
+    public static class CredentialDetailStringImp implements CredentialDetail {
         public String credential;
 
         public CredentialDetailStringImp() {

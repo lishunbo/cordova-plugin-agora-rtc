@@ -8,7 +8,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class RTCOAuthCredential extends CredentialDetail {
+public class RTCOAuthCredential implements CredentialDetail {
     static final String TAG = RTCOAuthCredential.class.getCanonicalName();
 
     public String accessToken;

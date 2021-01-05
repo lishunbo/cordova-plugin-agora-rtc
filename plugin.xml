@@ -89,6 +89,7 @@
     <source-file src="src/android/java/webrtc/models/MediaTrackConstraintSet.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
     <source-file src="src/android/java/webrtc/models/RTCCertificate.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
     <source-file src="src/android/java/webrtc/models/RTCConfiguration.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
+    <source-file src="src/android/java/webrtc/models/RTCDataChannelInit.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
     <source-file src="src/android/java/webrtc/models/RTCIceServer.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
     <source-file src="src/android/java/webrtc/models/RTCOAuthCredential.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
     <source-file src="src/android/java/webrtc/models/RTCOfferOptions.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
