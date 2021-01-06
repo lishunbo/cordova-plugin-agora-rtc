@@ -29,14 +29,47 @@ const NativeDataChannelEventType = {
   open: "open"
 }
 
+class RTCIceCandidate {
+  constructor(json) {
+    //candidate:1467250027 2 udp 2122260222 192.168.0.196 56280 typ host generation 0
+    //candidate:2641496685 1 udp 33562367 113.207.108.198 54328 typ relay raddr 0.0.0.0 rport 0 generation 0 ufrag RIxn network-cost 999
+    //candidate:1853887674 2 udp 1518280447 47.61.61.61 36768 typ srflx raddr 192.168.0.196 rport 36768 generation 0
+    //candidate:7 1 UDP 1862269695 192.168.24.208 58032 typ prflx raddr 172.16.90.123 rport 50047
+    var candidate = JSON.parse(json)
+    this.sdpMid = candidate.sdpMid
+    this.sdpMLineIndex = candidate.sdpMLineIndex
+    this.candidate = candidate.candidate
+    const sections = candidate.candidate.split(' ');
+    this.foundation = sections[0].split(':')[1]
+    this.component = sections[1] === "1" ? "rtp" : "rtcp"
+    this.protocol = sections[2]
+    this.priority = parseInt(sections[3])
+    this.address = sections[4]
+    this.port = parseInt(sections[5])
+    this.type = sections[7]
+    this.relatedAddress = null
+    this.relatedPort = null
+    this.tcpType = null
+    this.usernameFragment = null
+    if (this.type === "relay" || this.type === "srflx") {
+      this.relatedAddress = sections[9]
+      this.relatedPort = parseInt(sections[11])
+    }
+    var result = candidate.candidate.match('ufrag\\s\\w*')
+    if (result != null) {
+      this.usernameFragment = result[0].split(' ')[1]
+    }
+  }
+}
+
 class RTCStatsReport {
   constructor(json) {
     this.stats = JSON.parse(json);
   }
   forEach(callbackfn) {
-    this.stats.forEach((v, i, a) => {
-      callbackfn(v, i, a);
-    })
+    Object.keys(this.stats).forEach(key => {
+      callbackfn(this.stats[key], key, this.stats);
+    });
   }
   get(id) {
     return this.stats.find(x => x.id === id);
@@ -153,7 +186,7 @@ class RTCPeerConnection extends EventTarget {
       case NativeRTCEventType.icecandidate:
         var candidate = null
         if (ev.payload !== "") {
-          candidate = JSON.parse(ev.payload)
+          candidate = new RTCIceCandidate(ev.payload)
         }
         this.dispatchEvent({ type: "icecandidate", candidate: candidate })
         if (this.onicecandidate != null) {
@@ -503,7 +536,8 @@ class RTCPeerConnection extends EventTarget {
         resolve(new RTCStatsReport(ev));
       }, function (ev) {
         reject != null && reject(ev);
-      }, WebRTCService, 'getStats', [this.id]);
+      }, WebRTCService, 'getStats', [this.id, selector != null &&
+        selector instanceof MediaStreamTrack ? selector.id : ""]);
     })
   }
 
@@ -557,9 +591,8 @@ class RTCDataChannel extends EventTarget {
 
   send(data) {
     cordova.exec(function (ev) {
-      resolve(new RTCStatsReport(ev));
     }, function (ev) {
-      reject != null && reject(ev);
+      throw 'dataChannel send exception:' + ev
     }, WebRTCService, 'sendDC',
       [this.pcid, this.id, typeof data == String, data]);
   }

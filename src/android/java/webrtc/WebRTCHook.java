@@ -324,6 +324,7 @@ public class WebRTCHook extends CordovaPlugin {
 
     boolean getStats(JSONArray args, final CallbackContext callbackContext) throws JSONException {
         String id = args.getString(0);
+        String tid = args.getString(1);
 
         CallbackPCPeer peer = instances.get(id);
         assert peer != null;
@@ -336,7 +337,7 @@ public class WebRTCHook extends CordovaPlugin {
                     public void success(String msg) {
                         callbackContext.success(msg);
                     }
-                });
+                }, MediaStreamTrackWrapper.getMediaStreamTrackById(tid));
             }
         });
 

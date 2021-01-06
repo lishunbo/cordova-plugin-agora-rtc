@@ -358,8 +358,8 @@ public class RTCPeerConnection {
         }
     }
 
-    public void getStats(MessageHandler handler) {
-        peerConnection.getStats(new StatsReport(handler));
+    public void getStats(MessageHandler handler, MediaStreamTrackWrapper wrapper) {
+        peerConnection.getStats(new StatsReport(handler, wrapper));
     }
 
     public void dispose() {
@@ -409,28 +409,67 @@ public class RTCPeerConnection {
 
     public class StatsReport implements RTCStatsCollectorCallback {
         private MessageHandler _handler;
+        private MediaStreamTrackWrapper _wrapper;
 
-        public StatsReport(MessageHandler handler) {
+        public StatsReport(MessageHandler handler, MediaStreamTrackWrapper wrapper) {
             _handler = handler;
+            _wrapper = wrapper;
         }
 
         @Override
         public void onStatsDelivered(RTCStatsReport rtcStatsReport) {
+            String targetId = null;
+            String codecId = null;
+            String trackId = null;
+            String transportId = null;
+            String remoteId = null;
+            String mediaSourceId = null;
+            if (_wrapper != null) {
+                String targetType = _wrapper.isLocal() ? "outbound-rtp" : "inbound-rtp";
+                for (Map.Entry<String, RTCStats> stat :
+                        rtcStatsReport.getStatsMap().entrySet()) {
+                    if (stat.getValue().getType().equals(targetType) &&
+                            ((String) stat.getValue().getMembers().get("kind"))
+                                    .equals(_wrapper.getTrack().kind())) {
+                        targetId = stat.getKey();
+                        codecId = (String) stat.getValue().getMembers().get("codecId");
+                        remoteId = (String) stat.getValue().getMembers().get("remoteId");
+                        trackId = (String) stat.getValue().getMembers().get("trackId");
+                        transportId = (String) stat.getValue().getMembers().get("transportId");
+                        mediaSourceId = (String) stat.getValue().getMembers().get("mediaSourceId");
+                    }
+                }
+            }
+
             StringBuilder report = new StringBuilder();
             boolean bFirst = true;
 
             for (Map.Entry<String, RTCStats> stat :
                     rtcStatsReport.getStatsMap().entrySet()) {
-                if (!bFirst) {
-                    report.append(",");
-                } else {
-                    bFirst = false;
-                    report.append("[");
+                if (_wrapper != null) {
+                    String reportId = stat.getKey();
+                    String reportType = stat.getValue().getType();
+                    if (!(reportType.equals("certificate") || reportType.equals("candidate-pair")
+                            || reportType.equals("remote-candidate")
+                            || reportType.equals("local-candidate")
+                            || reportId.equals(targetId)
+                            || reportId.equals(codecId)
+                            || reportId.equals(trackId)
+                            || reportId.equals(transportId)
+                            || reportId.equals(remoteId)
+                            || reportId.equals(mediaSourceId))) {
+                        continue;
+                    }
                 }
-//            report.append("\"").append(stat.getKey()).append("\":");
-                report.append("{\"timestamp\":").append((long) stat.getValue().getTimestampUs() / 1000)
-                        .append(",\"type\":\"").append(stat.getValue().getType())
-                        .append("\",\"id\":\"").append(stat.getValue().getId()).append("\"");
+                report.append(bFirst ? "{" : ",");
+                if (bFirst) {
+                    bFirst = false;
+                }
+
+                report.append("\"").append(stat.getKey()).append("\":");
+                report.append("{\"id\":\"").append(stat.getValue().getId()).append("\"")
+                        .append(",\"timestamp\":").append((long) stat.getValue().getTimestampUs() / 1000)
+                        .append(",\"type\":\"").append(stat.getValue().getType()).append("\"");
 
                 Iterator it = stat.getValue().getMembers().entrySet().iterator();
                 while (it.hasNext()) {
@@ -440,7 +479,7 @@ public class RTCPeerConnection {
                 }
                 report.append("}");
             }
-            report.append("]");
+            report.append("}");
 
             _handler.success(report.toString());
         }
