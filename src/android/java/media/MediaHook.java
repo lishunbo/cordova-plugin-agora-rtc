@@ -186,7 +186,7 @@ public class MediaHook extends CordovaPlugin {
     }
 
     boolean getUserMedia(JSONArray args, final CallbackContext callbackContext) throws Exception {
-        MediaStreamConstraints constraints = MediaStreamConstraints.fromJson(args.getJSONObject(0).toString());
+        MediaStreamConstraints constraints = MediaStreamConstraints.fromJson(args.getString(0));
 
         cordova.getThreadPool().execute(new Runnable() {
             @Override

@@ -19,26 +19,25 @@ import org.webrtc.RTCStatsReport;
 import org.webrtc.RtpParameters;
 import org.webrtc.RtpReceiver;
 import org.webrtc.RtpSender;
+import org.webrtc.RtpTransceiver;
 import org.webrtc.SdpObserver;
 import org.webrtc.SessionDescription;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 import io.agora.rtcn.media.services.MediaStreamTrackWrapper;
 import io.agora.rtcn.webrtc.enums.Action;
-import io.agora.rtcn.webrtc.enums.RTCIceCredentialType;
 import io.agora.rtcn.webrtc.models.RTCConfiguration;
 import io.agora.rtcn.webrtc.models.RTCDataChannelInit;
 import io.agora.rtcn.webrtc.models.RTCIceServer;
 import io.agora.rtcn.webrtc.models.RTCOfferOptions;
+import io.agora.rtcn.webrtc.models.RtpTransceiverInit;
 
 import static org.webrtc.RtpParameters.DegradationPreference.BALANCED;
 import static org.webrtc.RtpParameters.DegradationPreference.MAINTAIN_FRAMERATE;
@@ -100,7 +99,7 @@ public class RTCPeerConnection {
             }
             if (iceServer.credential != null &&
                     (iceServer.credentialType == null ||
-                            iceServer.credentialType == RTCIceCredentialType.password)) {
+                            iceServer.credentialType.equals("password"))) {
                 builder.setPassword(iceServer.credential.toString());
             }
 
@@ -110,22 +109,26 @@ public class RTCPeerConnection {
         PeerConnection.RTCConfiguration configuration =
                 new PeerConnection.RTCConfiguration(iceServers);
         if (config.bundlePolicy != null) {
-            configuration.bundlePolicy = PeerConnection.BundlePolicy.valueOf(
-                    config.bundlePolicy.name().replace("-", "").toUpperCase());
+            switch (config.bundlePolicy) {
+                case "max-bundle":
+                    configuration.bundlePolicy = PeerConnection.BundlePolicy.MAXBUNDLE;
+                    break;
+                case "max-compat":
+                    configuration.bundlePolicy = PeerConnection.BundlePolicy.MAXCOMPAT;
+                    break;
+            }
         }
 
         if (config.iceCandidatePoolSize != 0) {
             configuration.iceCandidatePoolSize = config.iceCandidatePoolSize;
         }
 
-        if (config.iceTransportPolicy != null) {
-            configuration.iceTransportsType = PeerConnection.IceTransportsType.valueOf(
-                    config.iceTransportPolicy.name().toUpperCase());
+        if (config.iceTransportPolicy != null && config.iceTransportPolicy.equals("relay")) {
+            configuration.iceTransportsType = PeerConnection.IceTransportsType.RELAY;
         }
 
-        if (config.rtcpMuxPolicy != null) {
-            configuration.rtcpMuxPolicy = PeerConnection.RtcpMuxPolicy.valueOf(
-                    config.rtcpMuxPolicy.name().toUpperCase());
+        if (config.rtcpMuxPolicy != null && config.rtcpMuxPolicy.equals("negotiate")) {
+            configuration.rtcpMuxPolicy = PeerConnection.RtcpMuxPolicy.NEGOTIATE;
         }
 
         return configuration;
@@ -222,6 +225,52 @@ public class RTCPeerConnection {
 
     public void addTrack(String kind, MediaStreamTrackWrapper wrapper) {
         peerConnection.addTrack(wrapper.getTrack());
+    }
+
+    public void addTransceiver(MessageHandler handler, String mediaType, RtpTransceiverInit init) {
+        MediaStreamTrack.MediaType type = MediaStreamTrack.MediaType.MEDIA_TYPE_AUDIO;
+        if (mediaType.equals("video")) {
+            type = MediaStreamTrack.MediaType.MEDIA_TYPE_VIDEO;
+        }
+        handler.success(RtpTransceiverToString(peerConnection.addTransceiver(type, init.toNative())));
+    }
+
+    public void addTransceiver(MessageHandler handler, MediaStreamTrackWrapper wrapper,
+                               RtpTransceiverInit init) {
+        handler.success(RtpTransceiverToString(peerConnection.addTransceiver(wrapper.getTrack(),
+                init.toNative())));
+    }
+
+    String RtpTransceiverToString(RtpTransceiver rtpTransceiver) {
+        JSONObject obj = new JSONObject();
+        try {
+            obj.put("currentDirection", rtpTransceiver.getCurrentDirection());
+            obj.put("direction", RtpTransceiverDirectionToString(
+                    rtpTransceiver.getDirection()));
+            obj.put("mid", rtpTransceiver.getMid());
+            obj.put("receiver", rtpTransceiver.getReceiver());
+            obj.put("sender", rtpTransceiver.getSender());
+            obj.put("mediaType",
+                    rtpTransceiver.getMediaType() ==
+                            MediaStreamTrack.MediaType.MEDIA_TYPE_AUDIO ? "audio" : "video");
+        } catch (Exception e) {
+            Log.e(TAG, "RtpTransceiverToString:" + e.toString());
+        }
+        return obj.toString();
+    }
+
+    String RtpTransceiverDirectionToString(
+            RtpTransceiver.RtpTransceiverDirection direction) {
+        switch (direction) {
+            case SEND_ONLY:
+                return "sendonly";
+            case RECV_ONLY:
+                return "recvonly";
+            case INACTIVE:
+                return "inactive";
+            default:
+                return "sendrecv";
+        }
     }
 
     public void setLocalDescription(MessageHandler handler, String type, String description) {

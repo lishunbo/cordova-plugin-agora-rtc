@@ -2,10 +2,6 @@ package io.agora.rtcn.webrtc.models;
 
 import android.util.Log;
 
-import io.agora.rtcn.webrtc.enums.RTCBundlePolicy;
-import io.agora.rtcn.webrtc.enums.RTCIceTransportPolicy;
-import io.agora.rtcn.webrtc.enums.RTCRtcpMuxPolicy;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,13 +10,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class RTCConfiguration {
     static final String TAG = RTCConfiguration.class.getCanonicalName();
 
-    public RTCBundlePolicy bundlePolicy;
+    public String bundlePolicy;
     public RTCCertificate[] certificates;
     public int iceCandidatePoolSize;
     public RTCIceServer[] iceServers;
-    public RTCIceTransportPolicy iceTransportPolicy;
+    public String iceTransportPolicy;
     public String peerIdentity;
-    public RTCRtcpMuxPolicy rtcpMuxPolicy;
+    public String rtcpMuxPolicy;
+//    public String sdpSemantics;
 
     public static RTCConfiguration fromJson(String json) {
         ObjectMapper mapper = new ObjectMapper();

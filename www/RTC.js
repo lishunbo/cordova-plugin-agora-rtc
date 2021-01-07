@@ -35,6 +35,12 @@ class RTCIceCandidate {
     //candidate:2641496685 1 udp 33562367 113.207.108.198 54328 typ relay raddr 0.0.0.0 rport 0 generation 0 ufrag RIxn network-cost 999
     //candidate:1853887674 2 udp 1518280447 47.61.61.61 36768 typ srflx raddr 192.168.0.196 rport 36768 generation 0
     //candidate:7 1 UDP 1862269695 192.168.24.208 58032 typ prflx raddr 172.16.90.123 rport 50047
+    //candidate:1 1 TCP 2128609279 10.0.1.1 9 typ host tcptype active
+    //candidate:2 1 TCP 2124414975 10.0.1.1 8998 typ host tcptype passive
+    //candidate:3 1 TCP 2120220671 10.0.1.1 8999 typ host tcptype so
+    //candidate:4 1 TCP 1688207359 192.0.2.3 9 typ srflx raddr 10.0.1.1  rport 9 tcptype active
+    //candidate:5 1 TCP 1684013055 192.0.2.3 45664 typ srflx raddr  10.0.1.1 rport 8998 tcptype passive
+    //candidate:6 1 TCP 1692401663 192.0.2.3 45687 typ srflx raddr  10.0.1.1 rport 8999 tcptype so
     var candidate = JSON.parse(json)
     this.sdpMid = candidate.sdpMid
     this.sdpMLineIndex = candidate.sdpMLineIndex
@@ -55,9 +61,21 @@ class RTCIceCandidate {
       this.relatedAddress = sections[9]
       this.relatedPort = parseInt(sections[11])
     }
-    var result = candidate.candidate.match('ufrag\\s\\w*')
-    if (result != null) {
-      this.usernameFragment = result[0].split(' ')[1]
+    var ufrag = candidate.candidate.match('ufrag\\s\\w*')
+    if (ufrag != null) {
+      this.usernameFragment = ufrag[0].split(' ')[1]
+    }
+    var tcptype = candidate.candidate.match('tcptype\\s\\w*')
+    if (tcptype != null) {
+      this.tcpType = tcptype[0].split(' ')[1]
+    }
+  }
+
+  toJSON() {
+    return {
+      candidate: this.candidate,
+      sdpMid: this.sdpMid,
+      sdpMLineIndex: this.sdpMLineIndex
     }
   }
 }
@@ -87,6 +105,7 @@ class RTCRtpSendParameters {
     this.transactionId = null;
   }
 }
+
 
 class RTCRtpSender {
   constructor(parameter, track, pcid, id) {
@@ -120,6 +139,49 @@ class RTCRtpSender {
   setParameters(parameters) {
     this.parameter = parameters
     this._modified = true
+  }
+}
+
+class RTCRtpReceiver {
+  constructor() {
+    this.rtcpTransport = null
+    this.track = null;
+    this.transport = null;
+
+  }
+  getContributingSources() {
+
+  }
+  getParameters() {
+
+  }
+  getStats() {
+
+  }
+  getSynchronizationSources() {
+
+  }
+  static getCapabilities(kind) {
+
+  }
+}
+
+class RTCRtpTransceiver {
+  constructor() {
+    this.currentDirection = null
+    this.direction = "sendrecv"
+    this.mid = null;
+    this.receiver = null;
+    this.sender = null;
+    this.kind = null;
+  }
+
+  setCodecPreferences(codecs) {
+
+  }
+
+  stop() {
+
   }
 }
 
@@ -395,7 +457,7 @@ class RTCPeerConnection extends EventTarget {
         }
       })
       cordova.exec(function (ev) {
-        resolve(JSON.parse(ev))
+        resolve()
       }, function (ev) {
         reject != null && reject("setConfiguration exception:" + ev);
       }, WebRTCService, 'setConfiguration', [this.id, configuration]);
@@ -497,6 +559,35 @@ class RTCPeerConnection extends EventTarget {
     return sender;
   }
 
+  addTransceiver(trackOrKind, init) {
+    throw 'AddTransceiver is only available with Unified Plan SdpSemantics'
+    if (trackOrKind == null) {
+      throw new TypeError('trackOrKind null')
+    }
+    var mediaType = false
+    if (typeof trackOrKind === 'string') {
+      if (!(trackOrKind === 'audio' || trackOrKind === 'video')) {
+        throw new TypeError('trackOrKind mediaType invalid')
+      }
+      mediaType = true
+    } else if (!(trackOrKind instanceof MediaStreamTrack)) {
+      throw new TypeError('trackOrKind not MediaStreamTrack')
+    }
+    if (init == null) {
+      init = {}
+    }
+
+    var result = new RTCRtpTransceiver();
+    cordova.exec(function (ev) {
+      var transceiver = JSON.parse(ev)
+      console.log(transceiver)
+    }, function (ev) {
+      throw 'addTransceivers exception: ' + ev
+    }, WebRTCService, 'addTransceiver',
+      [this.id, mediaType, mediaType ? trackOrKind : trackOrKind.id, init]);
+    return result
+  }
+
   close() {
     cordova.exec(function (ev) {
     }, function (ev) {
@@ -517,13 +608,6 @@ class RTCPeerConnection extends EventTarget {
     }, function (ev) {
       throw 'getTransceivers exception: ' + ev
     }, WebRTCService, 'getTransceivers', [this.id]);
-  }
-
-  addTransceiver() {
-    cordova.exec(function (ev) {
-    }, function (ev) {
-      throw 'addTransceivers exception: ' + ev
-    }, WebRTCService, 'addTransceiver', [this.id]);
   }
 
   getSenders() {

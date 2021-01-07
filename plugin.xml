@@ -79,10 +79,6 @@
     <source-file src="src/android/java/player/PlayerHook.java" target-dir="src/io/agora/rtcn/player"/>
     <!-- RTC -->
     <source-file src="src/android/java/webrtc/enums/Action.java" target-dir="src/io/agora/rtcn/webrtc/enums"/>
-    <source-file src="src/android/java/webrtc/enums/RTCBundlePolicy.java" target-dir="src/io/agora/rtcn/webrtc/enums"/>
-    <source-file src="src/android/java/webrtc/enums/RTCIceCredentialType.java" target-dir="src/io/agora/rtcn/webrtc/enums"/>
-    <source-file src="src/android/java/webrtc/enums/RTCIceTransportPolicy.java" target-dir="src/io/agora/rtcn/webrtc/enums"/>
-    <source-file src="src/android/java/webrtc/enums/RTCRtcpMuxPolicy.java" target-dir="src/io/agora/rtcn/webrtc/enums"/>
     <source-file src="src/android/java/webrtc/interfaces/CredentialDetail.java" target-dir="src/io/agora/rtcn/webrtc/interfaces"/>
     <source-file src="src/android/java/webrtc/models/MediaStreamConstraints.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
     <source-file src="src/android/java/webrtc/models/MediaTrackConstraints.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
@@ -93,6 +89,11 @@
     <source-file src="src/android/java/webrtc/models/RTCIceServer.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
     <source-file src="src/android/java/webrtc/models/RTCOAuthCredential.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
     <source-file src="src/android/java/webrtc/models/RTCOfferOptions.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
+    <source-file src="src/android/java/webrtc/models/RTCRtpEncodingParameters.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
+    <source-file src="src/android/java/webrtc/models/RTCRtpParameters.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
+    <source-file src="src/android/java/webrtc/models/RTCRtpReceiveParameters.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
+    <source-file src="src/android/java/webrtc/models/RTCRtpSendParameters.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
+    <source-file src="src/android/java/webrtc/models/RtpTransceiverInit.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
     <source-file src="src/android/java/webrtc/models/SessionDescription.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
     <source-file src="src/android/java/webrtc/services/PCFactory.java" target-dir="src/io/agora/rtcn/webrtc/services"/>
     <source-file src="src/android/java/webrtc/services/RTCPeerConnection.java" target-dir="src/io/agora/rtcn/webrtc/services"/>

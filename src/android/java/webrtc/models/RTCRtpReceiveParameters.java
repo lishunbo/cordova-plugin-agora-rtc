@@ -6,24 +6,19 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.util.List;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class RTCDataChannelInit {
-    static final String TAG = RTCDataChannelInit.class.getCanonicalName();
+public class RTCRtpReceiveParameters extends RTCRtpParameters {
 
-    public long id;
-    public long maxPacketLifeTime;
-    public long maxRetransmits;
-    public boolean negotiated;
-    public boolean ordered;
-    public String priority;
-    public String protocol;
+    public List< RTCRtpDecodingParameters> encodings;
 
-    public static RTCDataChannelInit fromJson(String json) {
+    public static RTCRtpReceiveParameters fromJson(String json) {
         ObjectMapper mapper = new ObjectMapper();
         try {
-            return mapper.readValue(json, RTCDataChannelInit.class);
+            return mapper.readValue(json, RTCRtpReceiveParameters.class);
         } catch (JsonProcessingException e) {
-            Log.e(TAG, "RTCDataChannelInit parseJson failed: " + e.toString());
+            Log.e(TAG, "RTCRtpReceiveParameters parseJson failed: " + e.toString());
         }
         return null;
     }
@@ -37,5 +32,9 @@ public class RTCDataChannelInit {
         }
 
         return "{}";
+    }
+
+    public class RTCRtpDecodingParameters{
+        public String rid;
     }
 }

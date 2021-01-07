@@ -53,6 +53,11 @@ cordova emulate android
 
 - 插件平台正常工作之后才能调用WebRTC相关功能之前，即收到onDeviceReady事件
 - WebRTC API中列出支持的类只能插件内部使用，不能与webview互通
+- 不建议使用MediaStream对象，目前只作为填充接口使用，仅用于传递MediaStreamTrack
+- 谨慎使用同步返回的接口，大多数接口属于异步接口，直接使用返回值可能得到空值
+- 有些接口是会Exception的，需要用户catch之后正确处理，RTC类型的异常未返回
+- 枚举类型入参未校验，使用时需要注意
+- SDP格式仅支持Plan B，不支持Unified Plan
 
 ---
 

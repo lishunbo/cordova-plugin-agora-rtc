@@ -18,7 +18,9 @@ import io.agora.rtcn.media.services.MediaStreamTrackWrapper;
 import io.agora.rtcn.webrtc.enums.Action;
 import io.agora.rtcn.webrtc.models.RTCConfiguration;
 import io.agora.rtcn.webrtc.models.RTCDataChannelInit;
+import io.agora.rtcn.webrtc.models.RTCIceServer;
 import io.agora.rtcn.webrtc.models.RTCOfferOptions;
+import io.agora.rtcn.webrtc.models.RtpTransceiverInit;
 import io.agora.rtcn.webrtc.services.PCFactory;
 import io.agora.rtcn.webrtc.services.RTCPeerConnection;
 
@@ -71,7 +73,7 @@ public class WebRTCHook extends CordovaPlugin {
                 case getTransceivers:
                     return getTransceivers(args);
                 case addTransceiver:
-                    return addTransceiver(args);
+                    return addTransceiver(args, callbackContext);
                 case setLocalDescription:
                     return setLocalDescription(args, callbackContext);
                 case setRemoteDescription:
@@ -123,16 +125,13 @@ public class WebRTCHook extends CordovaPlugin {
     boolean createPC(JSONArray args, final CallbackContext callbackContext) throws JSONException {
         String id = args.getString(0);
 
-        RTCConfiguration cfg = null;
-        if (args.length() > 1) {
-            String json = args.get(1).toString();
-            if (json.length() != 0) {
-                cfg = RTCConfiguration.fromJson(json);
-            }
-        }
+        RTCConfiguration cfg = RTCConfiguration.fromJson(args.getString(1));
         if (cfg == null) {
             Log.e(TAG, "Invalid RTCConfiguration, using default");
             cfg = new RTCConfiguration();
+        }
+        if (cfg.iceServers == null) {
+            cfg.iceServers = new RTCIceServer[]{};
         }
 
         RTCPeerConnection pc = new RTCPeerConnection(new SupervisorImp(), id, cfg);
@@ -188,7 +187,7 @@ public class WebRTCHook extends CordovaPlugin {
 
     boolean createAnswer(JSONArray args, final CallbackContext callbackContext) throws JSONException {
         String id = args.getString(0);
-        RTCOfferOptions options = RTCOfferOptions.fromJson(args.get(1).toString());
+        RTCOfferOptions options = RTCOfferOptions.fromJson(args.getString(1));
 
         CallbackPCPeer peer = instances.get(id);
         assert peer != null;
@@ -253,8 +252,39 @@ public class WebRTCHook extends CordovaPlugin {
         return true;
     }
 
-    boolean addTransceiver(JSONArray args) {
-        return false;
+    boolean addTransceiver(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        String id = args.getString(0);
+        boolean mediaType = args.getBoolean(1);
+        RtpTransceiverInit config = RtpTransceiverInit.fromJson(args.getString(3));
+        assert config != null;
+
+        CallbackPCPeer peer = instances.get(id);
+        assert peer != null;
+        MessageHandler handler = new MessageHandler() {
+            @Override
+            public void success(String msg) {
+                callbackContext.success(msg);
+            }
+
+            @Override
+            public void success() {
+                callbackContext.success();
+            }
+
+            @Override
+            public void error(String msg) {
+                callbackContext.error(msg);
+            }
+        };
+        if (mediaType) {
+            peer.pc.addTransceiver(handler, args.getString(2), config);
+        } else {
+            peer.pc.addTransceiver(handler,
+                    MediaStreamTrackWrapper.getMediaStreamTrackById(args.getString(2)),
+                    config);
+        }
+
+        return true;
     }
 
     boolean getTransceivers(JSONArray args) {

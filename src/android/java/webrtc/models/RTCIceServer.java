@@ -1,8 +1,5 @@
 package io.agora.rtcn.webrtc.models;
 
-import io.agora.rtcn.webrtc.enums.RTCIceCredentialType;
-import io.agora.rtcn.webrtc.interfaces.CredentialDetail;
-
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonParser;
@@ -14,6 +11,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import java.io.IOException;
 
+import io.agora.rtcn.webrtc.interfaces.CredentialDetail;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RTCIceServer {
 //    static final String TAG = RTCIceServer.class.getCanonicalName();
@@ -22,7 +21,7 @@ public class RTCIceServer {
     @JsonDeserialize(using = CredentialDetailDeserializer.class)
     public CredentialDetail credential;
 
-    public RTCIceCredentialType credentialType;
+    public String credentialType;
 
     @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
     public String[] urls;
