@@ -123,6 +123,10 @@ public class WebRTCHook extends CordovaPlugin {
     }
 
     boolean createPC(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        PluginResult result = new PluginResult(OK);
+        result.setKeepCallback(true);
+        callbackContext.sendPluginResult(result);
+
         String id = args.getString(0);
 
         RTCConfiguration cfg = RTCConfiguration.fromJson(args.getString(1));
@@ -136,15 +140,11 @@ public class WebRTCHook extends CordovaPlugin {
 
         RTCPeerConnection pc = new RTCPeerConnection(new SupervisorImp(), id, cfg);
 
-        pc.createInstance(new MessageHandler());
-
         this.instances.put(id, new CallbackPCPeer()
                 .setCallbackContext(callbackContext).setPeerConnection(pc));
 
-        PluginResult result = new PluginResult(OK);
-        result.setKeepCallback(true);
+        pc.createInstance();
 
-        callbackContext.sendPluginResult(result);
         return true;
     }
 
@@ -155,11 +155,17 @@ public class WebRTCHook extends CordovaPlugin {
 
         CallbackPCPeer peer = instances.get(id);
         assert peer != null;
-        if (peer.pc.setConfiguration(config)) {
-            callbackContext.success();
-        } else {
-            callbackContext.error("setConfiguration failed");
-        }
+        peer.pc.setConfiguration(new MessageHandler() {
+            @Override
+            public void success(String msg) {
+                callbackContext.success(msg);
+            }
+
+            @Override
+            public void error(String msg) {
+                callbackContext.error(msg);
+            }
+        }, config);
 
         return true;
     }

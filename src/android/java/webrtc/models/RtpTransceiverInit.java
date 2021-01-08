@@ -46,16 +46,18 @@ public class RtpTransceiverInit {
     public RtpTransceiver.RtpTransceiverInit toNative() {
         RtpTransceiver.RtpTransceiverDirection direction =
                 RtpTransceiver.RtpTransceiverDirection.SEND_RECV;
-        switch (this.direction) {
-            case "sendonly":
-                direction = RtpTransceiver.RtpTransceiverDirection.SEND_ONLY;
-                break;
-            case "recvonly":
-                direction = RtpTransceiver.RtpTransceiverDirection.RECV_ONLY;
-                break;
-            case "inactive":
-                direction = RtpTransceiver.RtpTransceiverDirection.INACTIVE;
-                break;
+        if (this.direction != null) {
+            switch (this.direction) {
+                case "sendonly":
+                    direction = RtpTransceiver.RtpTransceiverDirection.SEND_ONLY;
+                    break;
+                case "recvonly":
+                    direction = RtpTransceiver.RtpTransceiverDirection.RECV_ONLY;
+                    break;
+                case "inactive":
+                    direction = RtpTransceiver.RtpTransceiverDirection.INACTIVE;
+                    break;
+            }
         }
         List<RtpParameters.Encoding> encodings = new LinkedList<>();
         if (sendEncodings == null) {

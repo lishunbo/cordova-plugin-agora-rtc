@@ -23,6 +23,7 @@ const NativeRTCEventType = {
   //internal
   localSDP: 'localSDP',
   remoteSDP: 'remoteSDP',
+  configuration: 'configuration',
 }
 
 const NativeDataChannelEventType = {
@@ -36,7 +37,7 @@ const NativeDataChannelEventType = {
 class RTCIceCandidate {
   constructor(json) {
     //candidate:1467250027 2 udp 2122260222 192.168.0.196 56280 typ host generation 0
-    //candidate:2641496685 1 udp 33562367 113.207.108.198 54328 typ relay raddr 0.0.0.0 rport 0 generation 0 ufrag RIxn network-cost 999
+    //candidate:2641496685 1 udp 41885695 113.207.108.198 37285 typ relay raddr 0.0.0.0 rport 0 generation 0 ufrag EBk/ network-id 3 network-c
     //candidate:1853887674 2 udp 1518280447 47.61.61.61 36768 typ srflx raddr 192.168.0.196 rport 36768 generation 0
     //candidate:7 1 UDP 1862269695 192.168.24.208 58032 typ prflx raddr 172.16.90.123 rport 50047
     //candidate:1 1 TCP 2128609279 10.0.1.1 9 typ host tcptype active
@@ -65,11 +66,11 @@ class RTCIceCandidate {
       this.relatedAddress = sections[9]
       this.relatedPort = parseInt(sections[11])
     }
-    var ufrag = candidate.candidate.match('ufrag\\s\\w*')
+    var ufrag = candidate.candidate.match('ufrag\\s\\w.*\\s')
     if (ufrag != null) {
       this.usernameFragment = ufrag[0].split(' ')[1]
     }
-    var tcptype = candidate.candidate.match('tcptype\\s\\w*')
+    var tcptype = candidate.candidate.match('tcptype\\s\\w.*\\s')
     if (tcptype != null) {
       this.tcpType = tcptype[0].split(' ')[1]
     }
@@ -375,6 +376,9 @@ class RTCPeerConnection extends EventTarget {
       case NativeRTCEventType.remoteSDP:
         this.remoteDescription = JSON.parse(ev.payload)
         break;
+      case NativeRTCEventType.configuration:
+        this.config = JSON.parse(ev.payload)
+        break;
       default:
         console.log(
           "[Debug] not implement RTCPeerConnection event handler" + ev.event);
@@ -466,7 +470,9 @@ class RTCPeerConnection extends EventTarget {
           return
         }
       })
+      var thiz = this
       cordova.exec(function (ev) {
+        thiz.config = JSON.parse(ev)
         resolve()
       }, function (ev) {
         reject != null && reject("setConfiguration exception:" +

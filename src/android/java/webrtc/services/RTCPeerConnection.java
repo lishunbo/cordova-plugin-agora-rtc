@@ -26,10 +26,8 @@ import org.webrtc.SessionDescription;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -37,10 +35,10 @@ import io.agora.rtcn.media.services.MediaStreamTrackWrapper;
 import io.agora.rtcn.webrtc.enums.Action;
 import io.agora.rtcn.webrtc.models.RTCConfiguration;
 import io.agora.rtcn.webrtc.models.RTCDataChannelInit;
-import io.agora.rtcn.webrtc.models.RTCIceServer;
 import io.agora.rtcn.webrtc.models.RTCOfferOptions;
 import io.agora.rtcn.webrtc.models.RtpTransceiverInit;
 
+import static io.agora.rtcn.webrtc.models.RTCConfiguration.RTCConfigurationToString;
 import static org.webrtc.RtpParameters.DegradationPreference.BALANCED;
 import static org.webrtc.RtpParameters.DegradationPreference.MAINTAIN_FRAMERATE;
 import static org.webrtc.RtpParameters.DegradationPreference.MAINTAIN_RESOLUTION;
@@ -88,65 +86,24 @@ public class RTCPeerConnection {
         return pc_id;
     }
 
-    PeerConnection.RTCConfiguration generateConfiguration(RTCConfiguration config) {
-        LinkedList<PeerConnection.IceServer> iceServers = new LinkedList<>();
-        for (RTCIceServer iceServer : config.iceServers) {
-            if (iceServer.urls == null || iceServer.urls.length == 0) {
-                continue;
-            }
-            PeerConnection.IceServer.Builder builder =
-                    PeerConnection.IceServer.builder(Arrays.asList(iceServer.urls));
-            if (iceServer.username != null) {
-                builder.setUsername(iceServer.username);
-            }
-            if (iceServer.credential != null &&
-                    (iceServer.credentialType == null ||
-                            iceServer.credentialType.equals("password"))) {
-                builder.setPassword(iceServer.credential.toString());
-            }
+    public void createInstance() {
 
-            iceServers.add(builder.createIceServer());
-        }
-
-        PeerConnection.RTCConfiguration configuration =
-                new PeerConnection.RTCConfiguration(iceServers);
-        if (config.bundlePolicy != null) {
-            switch (config.bundlePolicy) {
-                case "max-bundle":
-                    configuration.bundlePolicy = PeerConnection.BundlePolicy.MAXBUNDLE;
-                    break;
-                case "max-compat":
-                    configuration.bundlePolicy = PeerConnection.BundlePolicy.MAXCOMPAT;
-                    break;
-            }
-        }
-
-        if (config.iceCandidatePoolSize != 0) {
-            configuration.iceCandidatePoolSize = config.iceCandidatePoolSize;
-        }
-
-        if (config.iceTransportPolicy != null && config.iceTransportPolicy.equals("relay")) {
-            configuration.iceTransportsType = PeerConnection.IceTransportsType.RELAY;
-        }
-
-        if (config.rtcpMuxPolicy != null && config.rtcpMuxPolicy.equals("negotiate")) {
-            configuration.rtcpMuxPolicy = PeerConnection.RtcpMuxPolicy.NEGOTIATE;
-        }
-
-        return configuration;
-    }
-
-    public void createInstance(MessageHandler handler) {
-
-        //TODO
+        PeerConnection.RTCConfiguration configuration = config.toNative();
         peerConnection = PCFactory.factory().createPeerConnection(
-                generateConfiguration(config),
+                configuration,
                 new RTCObserver(this, "createPeerConnection:" + pc_id) {
                 });
+        supervisor.onObserveEvent(pc_id, Action.onConfiguration,
+                RTCConfigurationToString(configuration), "");
     }
 
-    public boolean setConfiguration(RTCConfiguration config) {
-        return peerConnection.setConfiguration(generateConfiguration(config));
+    public void setConfiguration(MessageHandler handler, RTCConfiguration config) {
+        PeerConnection.RTCConfiguration configuration = config.toNative();
+        if (peerConnection.setConfiguration(configuration)) {
+            handler.success(RTCConfigurationToString(configuration));
+        } else {
+            handler.error("setConfiguration failed");
+        }
     }
 
     public void createOffer(MessageHandler handler, RTCOfferOptions options) {
@@ -615,11 +572,11 @@ public class RTCPeerConnection {
             Log.v(TAG, "DUALSTREAM pc_id" + pc_id + " " + newState.toString());
             state = newState;
             if (supervisor != null) {
-                supervisor.onObserveEvent(pc_id, Action.onConnectionStateChange, newState.toString().toLowerCase(), usage);
                 if (newState == PeerConnection.PeerConnectionState.CONNECTED) {
                     supervisor.onObserveEvent(pc_id, Action.onRemoteSDP,
                             SessionDescriptionToString(peerConnection.getRemoteDescription()), usage);
                 }
+                supervisor.onObserveEvent(pc_id, Action.onConnectionStateChange, newState.toString().toLowerCase(), usage);
             }
             if (newState == PeerConnection.PeerConnectionState.CLOSED ||
                     newState == PeerConnection.PeerConnectionState.FAILED) {
@@ -646,9 +603,9 @@ public class RTCPeerConnection {
             if (supervisor != null) {
                 if (iceGatheringState == PeerConnection.IceGatheringState.COMPLETE) {
                     //send empty candidate if complete
-                    supervisor.onObserveEvent(pc_id, Action.onIceCandidate, "", usage);
                     supervisor.onObserveEvent(pc_id, Action.onLocalSDP,
                             SessionDescriptionToString(peerConnection.getLocalDescription()), usage);
+                    supervisor.onObserveEvent(pc_id, Action.onIceCandidate, "", usage);
                 }
                 supervisor.onObserveEvent(pc_id, Action.onIceGatheringStateChange, iceGatheringState.toString().toLowerCase(), usage);
             }
