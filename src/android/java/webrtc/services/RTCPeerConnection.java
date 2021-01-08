@@ -5,6 +5,7 @@ import android.util.Log;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.webrtc.DataChannel;
@@ -29,6 +30,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import io.agora.rtcn.media.services.MediaStreamTrackWrapper;
@@ -163,20 +165,37 @@ public class RTCPeerConnection {
         peerConnection.createOffer(new RTCObserver(this, "createOffer:" + pc_id) {
             @Override
             public void onCreateSuccess(SessionDescription sessionDescription) {
-                String offer = "";
-                try {
-                    JSONObject sdp = new JSONObject();
-                    sdp.put("type", "offer");
-                    sdp.put("sdp", sessionDescription.description);
-                    offer = sdp.toString();
-                    handler.success(offer);
-                } catch (JSONException e) {
-                    Log.e(TAG, "CreateOffer success but to json string failed:" + e.toString());
-
-                    handler.error(e.toString());
+                String offer = SessionDescriptionToString(sessionDescription);
+                if (offer == null) {
+                    handler.error("cannot SessionDescriptionToString offer");
+                    return;
                 }
+                handler.success(offer);
             }
         }, mediaConstraints);
+    }
+
+    String SessionDescriptionToString(SessionDescription sessionDescription) {
+
+        JSONObject sdp = new JSONObject();
+        try {
+            String type = "offer";
+            switch (sessionDescription.type) {
+                case ANSWER:
+                    type = "answer";
+                    break;
+                case PRANSWER:
+                    type = "pranswer";
+                    break;
+            }
+            sdp.put("type", type);
+            sdp.put("sdp", sessionDescription.description);
+        } catch (JSONException e) {
+            Log.e(TAG, "CreateOffer success but to json string failed:" + e.toString());
+
+            return null;
+        }
+        return sdp.toString();
     }
 
     public void createAnswer(MessageHandler handler, RTCOfferOptions options) {
@@ -194,18 +213,12 @@ public class RTCPeerConnection {
         peerConnection.createAnswer(new RTCObserver(this, "createAnswer:" + pc_id) {
             @Override
             public void onCreateSuccess(SessionDescription sessionDescription) {
-                String answer = "";
-                try {
-                    JSONObject sdp = new JSONObject();
-                    sdp.put("type", "answer");
-                    sdp.put("sdp", sessionDescription.description);
-                    answer = sdp.toString();
-                    handler.success(answer);
-                } catch (JSONException e) {
-                    Log.e(TAG, "CreateAnswer success but to json string failed:" + e.toString());
-
-                    handler.error(e.toString());
+                String answer = SessionDescriptionToString(sessionDescription);
+                if (answer == null) {
+                    handler.error("cannot SessionDescriptionToString answer");
+                    return;
                 }
+                handler.success(answer);
             }
         }, mediaConstraints);
     }
@@ -271,6 +284,20 @@ public class RTCPeerConnection {
             default:
                 return "sendrecv";
         }
+    }
+
+    public void getTransceiver(MessageHandler handler) {
+        List<RtpTransceiver> rtpTransceivers = peerConnection.getTransceivers();
+        if (rtpTransceivers == null) {
+            handler.error("cannot getTransceivers");
+            return;
+        }
+
+        JSONArray array = new JSONArray();
+        for (RtpTransceiver transceiver : rtpTransceivers) {
+            array.put(RtpTransceiverToString(transceiver));
+        }
+        handler.success(array.toString());
     }
 
     public void setLocalDescription(MessageHandler handler, String type, String description) {
@@ -589,6 +616,10 @@ public class RTCPeerConnection {
             state = newState;
             if (supervisor != null) {
                 supervisor.onObserveEvent(pc_id, Action.onConnectionStateChange, newState.toString().toLowerCase(), usage);
+                if (newState == PeerConnection.PeerConnectionState.CONNECTED) {
+                    supervisor.onObserveEvent(pc_id, Action.onRemoteSDP,
+                            SessionDescriptionToString(peerConnection.getRemoteDescription()), usage);
+                }
             }
             if (newState == PeerConnection.PeerConnectionState.CLOSED ||
                     newState == PeerConnection.PeerConnectionState.FAILED) {
@@ -616,6 +647,8 @@ public class RTCPeerConnection {
                 if (iceGatheringState == PeerConnection.IceGatheringState.COMPLETE) {
                     //send empty candidate if complete
                     supervisor.onObserveEvent(pc_id, Action.onIceCandidate, "", usage);
+                    supervisor.onObserveEvent(pc_id, Action.onLocalSDP,
+                            SessionDescriptionToString(peerConnection.getLocalDescription()), usage);
                 }
                 supervisor.onObserveEvent(pc_id, Action.onIceGatheringStateChange, iceGatheringState.toString().toLowerCase(), usage);
             }

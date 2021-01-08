@@ -71,7 +71,7 @@ public class WebRTCHook extends CordovaPlugin {
                 case addTrack:
                     return addTrack(args, callbackContext);
                 case getTransceivers:
-                    return getTransceivers(args);
+                    return getTransceivers(args, callbackContext);
                 case addTransceiver:
                     return addTransceiver(args, callbackContext);
                 case setLocalDescription:
@@ -287,8 +287,29 @@ public class WebRTCHook extends CordovaPlugin {
         return true;
     }
 
-    boolean getTransceivers(JSONArray args) {
-        return false;
+    boolean getTransceivers(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        String id = args.getString(0);
+
+        CallbackPCPeer peer = instances.get(id);
+        assert peer != null;
+        peer.pc.getTransceiver(new MessageHandler() {
+            @Override
+            public void success(String msg) {
+                callbackContext.success(msg);
+            }
+
+            @Override
+            public void success() {
+                callbackContext.success();
+            }
+
+            @Override
+            public void error(String msg) {
+                callbackContext.error(msg);
+            }
+        });
+
+        return true;
     }
 
     boolean setLocalDescription(JSONArray args, CallbackContext callbackContext) throws JSONException {

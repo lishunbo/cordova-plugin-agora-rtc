@@ -19,6 +19,10 @@ const NativeRTCEventType = {
   bufferedamountchange: 'bufferedamountchange',
   statechange: 'statechange',
   message: 'message',
+
+  //internal
+  localSDP: 'localSDP',
+  remoteSDP: 'remoteSDP',
 }
 
 const NativeDataChannelEventType = {
@@ -365,6 +369,12 @@ class RTCPeerConnection extends EventTarget {
           })
         }
         break;
+      case NativeRTCEventType.localSDP:
+        this.localDescription = JSON.parse(ev.payload)
+        break;
+      case NativeRTCEventType.remoteSDP:
+        this.remoteDescription = JSON.parse(ev.payload)
+        break;
       default:
         console.log(
           "[Debug] not implement RTCPeerConnection event handler" + ev.event);
@@ -459,7 +469,9 @@ class RTCPeerConnection extends EventTarget {
       cordova.exec(function (ev) {
         resolve()
       }, function (ev) {
-        reject != null && reject("setConfiguration exception:" + ev);
+        reject != null && reject("setConfiguration exception:" +
+          'Attempted to modify the PeerConnection\'s ' +
+          'configuration in an unsupported way.');
       }, WebRTCService, 'setConfiguration', [this.id, configuration]);
     })
   }
@@ -560,7 +572,8 @@ class RTCPeerConnection extends EventTarget {
   }
 
   addTransceiver(trackOrKind, init) {
-    throw 'AddTransceiver is only available with Unified Plan SdpSemantics'
+    throw 'addTransceiver is only available with Unified Plan SdpSemantics'
+    // waiting for support 
     if (trackOrKind == null) {
       throw new TypeError('trackOrKind null')
     }
@@ -604,6 +617,7 @@ class RTCPeerConnection extends EventTarget {
   }
 
   getTransceivers() {
+    throw 'getTransceivers is only available with Unified Plan SdpSemantics'
     cordova.exec(function (ev) {
     }, function (ev) {
       throw 'getTransceivers exception: ' + ev

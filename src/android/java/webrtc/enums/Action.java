@@ -34,6 +34,8 @@ public enum Action {
     onBufferedAmountChange("bufferedamountchange"),
     onStateChange("statechange"),
     onMessage("message"),
+    onLocalSDP("localSDP"),
+    onRemoteSDP("remoteSDP"),
 
     MaxAction("maxAction");
 
