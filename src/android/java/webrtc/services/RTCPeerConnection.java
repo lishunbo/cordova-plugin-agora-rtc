@@ -218,7 +218,7 @@ public class RTCPeerConnection {
             obj.put("id", sender.id());
             obj.put("track", wrapper);
             obj.put("dtmf", dtmf);
-            obj.put("parameters", RtpParametersToString(sender.getParameters()));
+            obj.put("parameters", RtpParametersToString(sender.getParameters(), sender.track().kind()));
         } catch (Exception e) {
             Log.v(TAG, "RtpSenderToString exception: " + e.toString());
             return null;
@@ -697,8 +697,10 @@ public class RTCPeerConnection {
             JSONObject obj = new JSONObject();
             try {
                 obj.put("id", receiver.id());
-                obj.put("track", wrapper.toJSONObject());
-                obj.put("parameters", RtpParametersToString(receiver.getParameters()));
+                if (wrapper != null) {
+                    obj.put("track", wrapper.toJSONObject());
+                }
+                obj.put("parameters", RtpParametersToString(receiver.getParameters(), receiver.track().kind()));
             } catch (Exception e) {
                 Log.v(TAG, "RtpReceiverToString exception: " + e.toString());
                 return "{}";

@@ -42,7 +42,7 @@ public class RTCRtpSendParameters extends RTCRtpParameters {
         return "{}";
     }
 
-    public static JSONObject RtpParametersToString(RtpParameters parameters) {
+    public static JSONObject RtpParametersToString(RtpParameters parameters, String kind) {
         JSONObject obj = new JSONObject();
 
         try {
@@ -51,12 +51,19 @@ public class RTCRtpSendParameters extends RTCRtpParameters {
             for (RtpParameters.Codec codec : parameters.codecs) {
                 JSONObject o = new JSONObject();
                 o.put("payloadType", codec.payloadType);
-                o.put("name", codec.name);
+                o.put("mimeType", kind + "/" + codec.name);
                 o.put("clockRate", codec.clockRate);
-                o.put("numChannels", codec.numChannels);
-                o.put("payloadType", codec.payloadType);
+                o.put("channels", codec.numChannels);
+                StringBuilder builder = new StringBuilder();
+                int size = 0;
                 for (Map.Entry<String, String> kv : codec.parameters.entrySet()) {
-                    o.put(kv.getKey(), kv.getValue());
+                    builder.append(kv.getKey()).append('=').append(kv.getValue());
+                    if (++size < codec.parameters.size()) {
+                        builder.append(';');
+                    }
+                }
+                if (codec.parameters.size() > 0) {
+                    o.put("sdpFmtpLine", builder.toString());
                 }
                 codecs.put(o);
             }
