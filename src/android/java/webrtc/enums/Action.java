@@ -37,6 +37,8 @@ public enum Action {
     onLocalSDP("localSDP"),
     onRemoteSDP("remoteSDP"),
     onConfiguration("configuration"),
+    onSender("sender"),
+    onReceiver("receiver"),
 
     MaxAction("maxAction");
 

@@ -39,6 +39,7 @@ import io.agora.rtcn.webrtc.models.RTCOfferOptions;
 import io.agora.rtcn.webrtc.models.RtpTransceiverInit;
 
 import static io.agora.rtcn.webrtc.models.RTCConfiguration.RTCConfigurationToString;
+import static io.agora.rtcn.webrtc.models.RTCRtpSendParameters.RtpParametersToString;
 import static org.webrtc.RtpParameters.DegradationPreference.BALANCED;
 import static org.webrtc.RtpParameters.DegradationPreference.MAINTAIN_FRAMERATE;
 import static org.webrtc.RtpParameters.DegradationPreference.MAINTAIN_RESOLUTION;
@@ -193,8 +194,36 @@ public class RTCPeerConnection {
         dataChannel.registerObserver(new DCObserver(dataChannel));
     }
 
-    public void addTrack(String kind, MediaStreamTrackWrapper wrapper) {
-        peerConnection.addTrack(wrapper.getTrack());
+    public void addTrack(MessageHandler handler, String kind, MediaStreamTrackWrapper wrapper) {
+        RtpSender sender = peerConnection.addTrack(wrapper.getTrack());
+        String result = RtpSenderToString(sender, wrapper);
+        if (result != null) {
+            handler.success(result);
+        } else {
+            handler.error("json exception");
+        }
+    }
+
+    String RtpSenderToString(RtpSender sender, MediaStreamTrackWrapper wrapper) {
+        JSONObject obj = new JSONObject();
+        try {
+            JSONObject dtmf = new JSONObject();
+            if (sender.dtmf() != null) {
+                dtmf.put("canInsertDTMF", sender.dtmf().canInsertDtmf());
+                dtmf.put("toneBuffer", sender.dtmf().tones());
+            } else {
+                dtmf = null;
+            }
+
+            obj.put("id", sender.id());
+            obj.put("track", wrapper);
+            obj.put("dtmf", dtmf);
+            obj.put("parameters", RtpParametersToString(sender.getParameters()));
+        } catch (Exception e) {
+            Log.v(TAG, "RtpSenderToString exception: " + e.toString());
+            return null;
+        }
+        return obj.toString();
     }
 
     public void addTransceiver(MessageHandler handler, String mediaType, RtpTransceiverInit init) {
@@ -575,6 +604,14 @@ public class RTCPeerConnection {
                 if (newState == PeerConnection.PeerConnectionState.CONNECTED) {
                     supervisor.onObserveEvent(pc_id, Action.onRemoteSDP,
                             SessionDescriptionToString(peerConnection.getRemoteDescription()), usage);
+                    for (RtpSender sender : peerConnection.getSenders()) {
+                        supervisor.onObserveEvent(pc_id, Action.onSender,
+                                RtpSenderToString(sender, null), usage);
+                    }
+                    for (RtpReceiver receiver : peerConnection.getReceivers()) {
+                        supervisor.onObserveEvent(pc_id, Action.onReceiver,
+                                RtpReceiverToString(receiver, null), usage);
+                    }
                 }
                 supervisor.onObserveEvent(pc_id, Action.onConnectionStateChange, newState.toString().toLowerCase(), usage);
             }
@@ -652,7 +689,21 @@ public class RTCPeerConnection {
 
             MediaStreamTrackWrapper wrapper = MediaStreamTrackWrapper.cacheMediaStreamTrackWrapper(pc_id, rtpReceiver);
 
-            supervisor.onObserveEvent(pc_id, Action.onTrack, wrapper.toString(), usage);
+            supervisor.onObserveEvent(pc_id, Action.onTrack,
+                    RtpReceiverToString(rtpReceiver, wrapper), usage);
+        }
+
+        String RtpReceiverToString(RtpReceiver receiver, MediaStreamTrackWrapper wrapper) {
+            JSONObject obj = new JSONObject();
+            try {
+                obj.put("id", receiver.id());
+                obj.put("track", wrapper.toJSONObject());
+                obj.put("parameters", RtpParametersToString(receiver.getParameters()));
+            } catch (Exception e) {
+                Log.v(TAG, "RtpReceiverToString exception: " + e.toString());
+                return "{}";
+            }
+            return obj.toString();
         }
 
         @Override

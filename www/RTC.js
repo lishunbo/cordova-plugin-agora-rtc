@@ -24,6 +24,8 @@ const NativeRTCEventType = {
   localSDP: 'localSDP',
   remoteSDP: 'remoteSDP',
   configuration: 'configuration',
+  sender: "sender",
+  receiver: "receiver",
 }
 
 const NativeDataChannelEventType = {
@@ -102,15 +104,15 @@ class RTCStatsReport {
   }
 }
 
-class RTCRtpSendParameters {
+class RTCRtpParameters {
   constructor() {
+    this.codecs = null;
+    this.headerExtensions = null;
+    this.rtcp = null;
     this.degradationPreference = null;
     this.encodings = null;
-    this.priority = null;
-    this.transactionId = null;
   }
 }
-
 
 class RTCRtpSender {
   constructor(parameter, track, pcid, id) {
@@ -124,9 +126,10 @@ class RTCRtpSender {
     if (parameter) {
       this.parameter = parameter
     } else {
-      this.parameter = new RTCRtpSendParameters()
+      this.parameter = new RTCRtpParameters()
     }
     this.track = track
+    this.dtmf = null;
     //internal usage for call setParameters() before setLocalDescription()
     //TODO: change this logic later
     this._modified = false
@@ -145,23 +148,46 @@ class RTCRtpSender {
     this.parameter = parameters
     this._modified = true
   }
+  getStats() {
+    var thiz = this
+    return new Promise((resolve, reject) => {
+      if (thiz.track == null || thiz.id == null) {
+        reject != null && reject('invalid track');
+      }
+      cordova.exec(function (ev) {
+        resolve(new RTCStatsReport(ev));
+      }, function (ev) {
+        reject != null && reject(ev);
+      }, WebRTCService, 'getStats', [this.pcid, this.track.id]);
+    })
+  }
 }
 
 class RTCRtpReceiver {
-  constructor() {
-    this.rtcpTransport = null
-    this.track = null;
-    this.transport = null;
-
+  constructor(pcid, id, track, parameters) {
+    this.pcid = pcid
+    this.id = id
+    this.track = track;
+    this.parameters = parameters
   }
   getContributingSources() {
 
   }
   getParameters() {
-
+    return this.parameters;
   }
   getStats() {
-
+    var thiz = this
+    return new Promise((resolve, reject) => {
+      if (thiz.track == null || thiz.id == null) {
+        reject != null && reject('invalid track');
+      }
+      cordova.exec(function (ev) {
+        resolve(new RTCStatsReport(ev));
+      }, function (ev) {
+        reject != null && reject(ev);
+      }, WebRTCService, 'getStats', [this.pcid, this.track.id]);
+    })
   }
   getSynchronizationSources() {
 
@@ -171,24 +197,24 @@ class RTCRtpReceiver {
   }
 }
 
-class RTCRtpTransceiver {
-  constructor() {
-    this.currentDirection = null
-    this.direction = "sendrecv"
-    this.mid = null;
-    this.receiver = null;
-    this.sender = null;
-    this.kind = null;
-  }
+// class RTCRtpTransceiver {
+//   constructor() {
+//     this.currentDirection = null
+//     this.direction = "sendrecv"
+//     this.mid = null;
+//     this.receiver = null;
+//     this.sender = null;
+//     this.kind = null;
+//   }
 
-  setCodecPreferences(codecs) {
+//   setCodecPreferences(codecs) {
 
-  }
+//   }
 
-  stop() {
+//   stop() {
 
-  }
-}
+//   }
+// }
 
 class RTCPeerConnection extends EventTarget {
   constructor(config) {
@@ -205,6 +231,7 @@ class RTCPeerConnection extends EventTarget {
     this.remoteStream = null;
 
     this.senders = [];
+    this.receivers = [];
 
     this.connectionState = "";
     this.currentLocalDescription = null;
@@ -274,7 +301,7 @@ class RTCPeerConnection extends EventTarget {
           this.onicegatheringstatechange({ type: "icegatheringstatechange" });
         }
         break;
-      case NativeRTCEventType.onConnectionStateChange:
+      case NativeRTCEventType.connectionstatechange:
         this.connectionState = ev.payload;
         this.dispatchEvent({ type: "connectionstatechange" })
         if (this.onconnectionstatechange != null) {
@@ -310,8 +337,11 @@ class RTCPeerConnection extends EventTarget {
         if (!this.remoteStream) {
           this.remoteStream = new MediaStream();
         }
-        var summary = JSON.parse(ev.payload);
-        var track = new MediaStreamTrack(summary.kind, summary.id);
+        var receiver = JSON.parse(ev.payload);
+        console.log("ontrack 233", receiver, ev.payload)
+        this.receivers.push(new RTCRtpReceiver(
+          this.id, receiver.id, receiver.track, receiver.parameters))
+        var track = new MediaStreamTrack(receiver.track.kind, receiver.track.id);
         this.remoteStream.addTrack(track)
         this.dispatchEvent({
           type: "track",
@@ -378,6 +408,32 @@ class RTCPeerConnection extends EventTarget {
         break;
       case NativeRTCEventType.configuration:
         this.config = JSON.parse(ev.payload)
+        break;
+      case NativeRTCEventType.sender:
+        var args = JSON.parse(ev.payload)
+        var sender = this.senders.find(e => e.id === args.id)
+        if (sender != null) {
+          sender.dtmf = args.dtmf
+          sender.parameter.degradationPreference =
+            args.parameters.degradationPreference
+          sender.parameter.encodings = args.parameters.encodings
+          sender.parameter.codecs = args.parameters.codecs
+          sender.parameter.headerExtensions = args.parameters.headerExtensions
+          sender.parameter.rtcp = args.parameters.rtcp
+        }
+        break;
+      case NativeRTCEventType.receiver:
+        var args = JSON.parse(ev.payload)
+        var receiver = this.receivers.find(e => e.id === args.id)
+        if (receiver != null) {
+          receiver.parameters.degradationPreference =
+            args.parameters.degradationPreference
+          receiver.parameters.encodings = args.parameters.encodings
+          receiver.parameters.codecs = args.parameters.codecs
+          receiver.parameters.headerExtensions =
+            args.parameters.headerExtensions
+          receiver.parameters.rtcp = args.parameters.rtcp
+        }
         break;
       default:
         console.log(
@@ -569,8 +625,17 @@ class RTCPeerConnection extends EventTarget {
     this.localStream.addTrack(track);
     var sender = new RTCRtpSender(null, track, this.id)
     this.senders.push(sender)
+    var thiz = this
     cordova.exec(function (ev) {
-
+      var args = JSON.parse(ev)
+      sender.id = args.id
+      sender.dtmf = args.dtmf
+      sender.parameter.degradationPreference =
+        args.parameters.degradationPreference
+      sender.parameter.encodings = args.parameters.encodings
+      sender.parameter.codecs = args.parameters.codecs
+      sender.parameter.headerExtensions = args.parameters.headerExtensions
+      sender.parameter.rtcp = args.parameters.rtcp
     }, function (ev) {
       throw 'addTrack exception: ' + ev
     }, WebRTCService, 'addTrack', [this.id, track.id, track.kind]);
@@ -632,6 +697,10 @@ class RTCPeerConnection extends EventTarget {
 
   getSenders() {
     return this.senders
+  }
+
+  getReceivers() {
+    return this.receivers
   }
 
   getStats(selector) {

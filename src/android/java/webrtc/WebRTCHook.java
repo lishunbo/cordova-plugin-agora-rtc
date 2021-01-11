@@ -252,9 +252,18 @@ public class WebRTCHook extends CordovaPlugin {
 
         CallbackPCPeer peer = instances.get(id);
         assert peer != null;
-        peer.pc.addTrack(kind, wrapper);
+        peer.pc.addTrack(new MessageHandler() {
+            @Override
+            public void success(String msg) {
+                callbackContext.success(msg);
+            }
 
-        callbackContext.success(wrapper.toString());
+            @Override
+            public void error(String msg) {
+                callbackContext.error(msg);
+            }
+        }, kind, wrapper);
+
         return true;
     }
 
