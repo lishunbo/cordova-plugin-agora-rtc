@@ -58,6 +58,7 @@ cordova emulate android
 - 有些接口是会Exception的，需要用户catch之后正确处理，RTC类型的异常未返回
 - 枚举类型入参未校验，使用时需要注意
 - SDP格式仅支持Plan B，不支持Unified Plan
+- 如果WebView中需要使用http/websocket，请在AndroidManifest. xml中application段中添加android:usesCleartextTraffic="true"
 
 ---
 
