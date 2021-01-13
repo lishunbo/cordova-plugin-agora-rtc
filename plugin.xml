@@ -99,6 +99,7 @@
     <source-file src="src/android/java/webrtc/services/RTCPeerConnection.java" target-dir="src/io/agora/rtcn/webrtc/services"/>
     <source-file src="src/android/java/webrtc/Config.java" target-dir="src/io/agora/rtcn/webrtc"/>
     <source-file src="src/android/java/webrtc/WebRTCHook.java" target-dir="src/io/agora/rtcn/webrtc"/>
+    <source-file src="src/android/java/WebsocketClient.java" target-dir="src/io/agora/rtcn/"/>
     <!-- resources -->
     <resource-file src="libs/libwebrtc.aar" target="libs/libwebrtc.aar" />
     <!-- framework -->

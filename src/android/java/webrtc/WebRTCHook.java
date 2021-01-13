@@ -14,6 +14,7 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.agora.rtcn.WebsocketClient;
 import io.agora.rtcn.media.services.MediaStreamTrackWrapper;
 import io.agora.rtcn.webrtc.enums.Action;
 import io.agora.rtcn.webrtc.models.RTCConfiguration;
@@ -30,6 +31,8 @@ public class WebRTCHook extends CordovaPlugin {
     static final String TAG = "WebRTCHook";
 
     Map<String, CallbackPCPeer> instances = new HashMap<>();
+
+    Map<String, WebsocketClient> wsClients = new HashMap<>();
 
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
@@ -95,6 +98,13 @@ public class WebRTCHook extends CordovaPlugin {
                     return closeDC(args, callbackContext);
                 case sendDC:
                     return sendDC(args, callbackContext);
+
+                case createWS:
+                    return createWS(args, callbackContext);
+                case closeWS:
+                    return closeWS(args, callbackContext);
+                case sendWS:
+                    return sendWS(args, callbackContext);
                 default:
                     Log.e(TAG, "Not implement action of: " + action);
                     callbackContext.error("Not implement action:" + action);
@@ -501,6 +511,48 @@ public class WebRTCHook extends CordovaPlugin {
         assert peer != null;
 
         peer.pc.sendDC(dcid, binary, msg);
+
+        callbackContext.success();
+        return true;
+    }
+
+    boolean createWS(JSONArray args, final CallbackContext callbackContext) throws Exception {
+        String id = args.getString(0);
+        String uri = args.getString(1);
+
+        WebsocketClient client = new WebsocketClient(
+                uri, cordova.getContext().getResources(), callbackContext);
+
+        wsClients.put(id, client);
+
+        PluginResult result = new PluginResult(OK);
+        result.setKeepCallback(true);
+        callbackContext.sendPluginResult(result);
+        return true;
+    }
+
+    boolean sendWS(JSONArray args, final CallbackContext callbackContext) throws Exception {
+        String id = args.getString(0);
+        String data = args.getString(1);
+
+        WebsocketClient client = wsClients.get(id);
+        if (client != null) {
+            client.send(data);
+        }
+
+        callbackContext.success();
+        return true;
+    }
+
+    boolean closeWS(JSONArray args, final CallbackContext callbackContext) throws Exception {
+        String id = args.getString(0);
+
+        WebsocketClient client = wsClients.get(id);
+        wsClients.remove(id);
+
+        if (client != null) {
+            client.close();
+        }
 
         callbackContext.success();
         return true;

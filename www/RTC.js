@@ -771,11 +771,73 @@ class RTCDataChannel extends EventTarget {
   }
 }
 
+class WebSocket extends EventTarget {
+  constructor(uri) {
+    super();
+    this.onopen = null
+    this.onclose = null
+    this.onerror = null
+    this.onmessage = null
+
+    var thiz = this;
+    cordova.exec(function (ev) {
+      thiz.handleEvent(ev);
+    }, function (ev) {
+      throw 'createWS exception: ' + ev
+    }, WebRTCService, 'createWS', [this.id, uri]);
+  }
+
+  handleEvent(ev) {
+    console.log('wsclient', ev);
+    switch (ev.event) {
+      case 'message':
+        this.dispatchEvent({ type: "message", data: ev.payload })
+        if (this.onmessage != null) {
+          this.onmessage({ type: "message", data: ev.payload });
+        }
+        break;
+      case 'open':
+        this.dispatchEvent({ type: "open" })
+        if (this.onopen != null) {
+          this.onopen({ type: "open", data: ev.payload });
+        }
+        break;
+
+      case 'error':
+        this.dispatchEvent({ type: "error" })
+        if (this.onerror != null) {
+          this.onerror({ type: "error", data: ev.payload });
+        }
+        break;
+      case 'close':
+        this.dispatchEvent({ type: "close" })
+        if (this.onclose != null) {
+          this.onclose({ type: "close", data: ev.payload });
+        }
+        break;
+    }
+  }
+
+  close() {
+
+  }
+
+  send(data) {
+    cordova.exec(e => {
+    }, e => {
+      throw 'sendWS exception:' + e
+    }, WebRTCService, 'sendWS', [this.id, data])
+  }
+
+}
+
+
 cordova.addConstructor(function () {
   // console.log("RTCPeerConnection.js addConstructor");
   window.RTCRtpSender = RTCRtpSender;
   window.RTCPeerConnection = RTCPeerConnection;
   window.webkitRTCPeerConnection = RTCPeerConnection;
+  window.WebSocket = WebSocket;
 
   return window.RTCPeerConnection;
 });

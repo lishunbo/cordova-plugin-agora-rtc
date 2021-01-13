@@ -40,6 +40,10 @@ public enum Action {
     onSender("sender"),
     onReceiver("receiver"),
 
+    createWS("createWS"),
+    closeWS("closeWS"),
+    sendWS("sendWS"),
+
     MaxAction("maxAction");
 
     private String name;
