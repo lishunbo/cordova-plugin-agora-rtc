@@ -59,6 +59,7 @@ cordova emulate android
 - 枚举类型入参未校验，使用时需要注意
 - SDP格式仅支持Plan B，不支持Unified Plan
 - 如果WebView中需要使用http/websocket，请在AndroidManifest. xml中application段中添加android:usesCleartextTraffic="true"
+- DataChannel不支持直接发送Blob，需要获取内容后发送(如String， ArrayBuffer)，注意单次发送数据大小不要超过max-message-size(默认256KB, 以SDP中指定大小为准)，实测ordered情况下1400较快
 
 ---
 

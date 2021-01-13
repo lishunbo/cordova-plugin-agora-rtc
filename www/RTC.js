@@ -354,7 +354,7 @@ class RTCPeerConnection extends EventTarget {
         }
         break;
       case NativeRTCEventType.bufferedamountchange:
-        var msg = JSON.parse(ev.payload)
+        var msg = ev.payload
         var dc = this.channels[msg.id]
         if (dc != null) {
           dc.bufferedAmount = msg.amount
@@ -366,7 +366,7 @@ class RTCPeerConnection extends EventTarget {
         }
         break;
       case NativeRTCEventType.statechange:
-        var msg = JSON.parse(ev.payload)
+        var msg = ev.payload
         var dc = this.channels[msg.id]
         if (dc != null) {
           dc.readyState = msg.state
@@ -388,15 +388,19 @@ class RTCPeerConnection extends EventTarget {
         }
         break;
       case NativeRTCEventType.message:
-        var msg = JSON.parse(ev.payload)
+        var msg = ev.payload
         var dc = this.channels[msg.id]
         if (dc != null) {
+          var data = msg.data
+          if (msg.binary) {
+            data = atob(msg.data)
+          }
           dc.dispatchEvent({
             type: "message",
-            data: msg.data,
+            data: data,
           })
           dc.onmessage != null && dc.onmessage({
-            type: "message", data: msg.data
+            type: "message", data: data
           })
         }
         break;
@@ -731,7 +735,7 @@ class RTCDataChannel extends EventTarget {
     super();
 
     this.pcid = pcid
-    this.binaryType = 'blob'
+    this.binaryType = 'arraybuffer'
     this.bufferedAmount = init.bufferedAmount
     this.bufferedAmountLowThreshold = 0
     this.id = init.id;

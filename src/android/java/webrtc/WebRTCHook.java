@@ -523,8 +523,6 @@ public class WebRTCHook extends CordovaPlugin {
                 return;
             }
 
-            Log.v(TAG, usage + " onObserveEvent " + action + " " + message);
-
             JSONObject obj = new JSONObject();
             try {
                 obj.put("event", action.toString());
@@ -536,6 +534,29 @@ public class WebRTCHook extends CordovaPlugin {
             PluginResult result = new PluginResult(OK, obj);
             result.setKeepCallback(true);
             peer.context.sendPluginResult(result);
+        }
+
+        @Override
+        public void onObserveEvent(String id, Action action, JSONObject message, String usage) {
+            CallbackPCPeer peer = instances.get(id);
+            if (peer == null) {
+                return;
+            }
+
+            JSONObject obj = new JSONObject();
+            try {
+                obj.put("event", action.toString());
+                obj.put("id", id);
+                obj.put("type", "object");
+                obj.put("payload", message);
+            } catch (Exception e) {
+                Log.e(TAG, "event exception:" + action);
+            }
+            PluginResult result = new PluginResult(OK, obj);
+            result.setKeepCallback(true);
+            peer.context.sendPluginResult(result);
+            obj.remove("payload");
+            obj = null;
         }
     }
 

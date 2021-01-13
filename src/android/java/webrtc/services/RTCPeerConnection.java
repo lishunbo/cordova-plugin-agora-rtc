@@ -63,6 +63,8 @@ public class RTCPeerConnection {
         void onDisconnect(RTCPeerConnection pc);
 
         void onObserveEvent(String id, Action action, String message, String usage);
+
+        void onObserveEvent(String id, Action action, JSONObject message, String usage);
     }
 
     public interface MessageHandler {
@@ -462,7 +464,7 @@ public class RTCPeerConnection {
     public void sendDC(int dcid, boolean binary, String msg) {
         DataChannel dataChannel = channels.get(dcid);
         if (dataChannel != null) {
-            ByteBuffer buf = ByteBuffer.allocateDirect(msg.length());
+            ByteBuffer buf = ByteBuffer.allocateDirect(msg.getBytes().length);
             buf.put(msg.getBytes());
             buf.rewind();
             dataChannel.send(new DataChannel.Buffer(buf, binary));
@@ -797,12 +799,13 @@ public class RTCPeerConnection {
                     Log.e(TAG, "onBufferedAmountChange exception:" + e.toString());
                 }
                 supervisor.onObserveEvent(pc_id, Action.onBufferedAmountChange,
-                        obj.toString(), "");
+                        obj, "");
             }
         }
 
         @Override
         public void onStateChange() {
+            Log.e(TAG, "state change " + channel.state());
             if (supervisor != null) {
                 JSONObject obj = new JSONObject();
                 try {
@@ -812,7 +815,7 @@ public class RTCPeerConnection {
                     Log.e(TAG, "onStateChange exception:" + e.toString());
                 }
                 supervisor.onObserveEvent(pc_id, Action.onStateChange,
-                        obj.toString(), "");
+                        obj, "");
             }
         }
 
@@ -835,7 +838,7 @@ public class RTCPeerConnection {
                     Log.e(TAG, "onMessage exception:" + e.toString());
                 }
                 supervisor.onObserveEvent(pc_id, Action.onMessage,
-                        obj.toString(), "");
+                        obj, "");
             }
         }
     }
