@@ -215,8 +215,9 @@ public class WebRTCHook extends CordovaPlugin {
 
     boolean createDataChannel(JSONArray args, final CallbackContext callbackContext) throws JSONException {
         String id = args.getString(0);
-        String label = args.getString(1);
-        RTCDataChannelInit init = (RTCDataChannelInit) args.get(2);
+        String uuid = args.getString(1);
+        String label = args.getString(2);
+        RTCDataChannelInit init = RTCDataChannelInit.fromJson(args.getString(3));
 
         Log.d(TAG, "createDataChannel arguments" + init.toString());
 
@@ -224,7 +225,7 @@ public class WebRTCHook extends CordovaPlugin {
         assert peer != null;
         peer.pc.createDataChannel(new MessageHandler() {
             @Override
-            public void success(String msg) {
+            public void success(JSONObject msg) {
                 callbackContext.success(msg);
             }
 
@@ -232,7 +233,7 @@ public class WebRTCHook extends CordovaPlugin {
             public void error(String msg) {
                 callbackContext.error(msg);
             }
-        }, label, init);
+        }, uuid, label, init);
 
         return true;
     }
@@ -480,7 +481,7 @@ public class WebRTCHook extends CordovaPlugin {
 
     boolean closeDC(JSONArray args, final CallbackContext callbackContext) throws Exception {
         String id = args.getString(0);
-        int dcid = args.getInt(1);
+        String dcid = args.getString(1);
 
         CallbackPCPeer peer = instances.get(id);
         assert peer != null;
@@ -493,7 +494,7 @@ public class WebRTCHook extends CordovaPlugin {
 
     boolean sendDC(JSONArray args, final CallbackContext callbackContext) throws Exception {
         String id = args.getString(0);
-        int dcid = args.getInt(1);
+        String dcid = args.getString(1);
         boolean binary = args.getBoolean(2);
         String msg = args.getString(3);
 
@@ -567,6 +568,11 @@ public class WebRTCHook extends CordovaPlugin {
 
         @Override
         public void success(String msg) {
+        }
+
+        @Override
+        public void success(JSONObject obj) {
+
         }
 
         @Override

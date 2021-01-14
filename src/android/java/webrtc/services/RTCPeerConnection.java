@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import io.agora.rtcn.media.services.MediaStreamTrackWrapper;
 import io.agora.rtcn.webrtc.enums.Action;
@@ -57,7 +58,7 @@ public class RTCPeerConnection {
     MediaStream remoteStream;
     PeerConnection.PeerConnectionState state;
 
-    Map<Integer, DataChannel> channels;
+    Map<String, DataChannel> channels;
 
     public interface Supervisor {
         void onDisconnect(RTCPeerConnection pc);
@@ -71,6 +72,8 @@ public class RTCPeerConnection {
         void success();
 
         void success(String msg);
+
+        void success(JSONObject obj);
 
         void error(String msg);
     }
@@ -183,7 +186,7 @@ public class RTCPeerConnection {
         }, mediaConstraints);
     }
 
-    public void createDataChannel(MessageHandler handler, String label, RTCDataChannelInit config) {
+    public void createDataChannel(MessageHandler handler, String uuid, String label, RTCDataChannelInit config) throws JSONException {
         DataChannel.Init init = new DataChannel.Init();
         init.id = (int) config.id;
         init.maxRetransmits = (int) config.maxRetransmits;
@@ -192,8 +195,15 @@ public class RTCPeerConnection {
         init.ordered = config.ordered;
         init.protocol = config.protocol;
         DataChannel dataChannel = peerConnection.createDataChannel(label, init);
-        channels.put(dataChannel.id(), dataChannel);
-        dataChannel.registerObserver(new DCObserver(dataChannel));
+        channels.put(uuid, dataChannel);
+        dataChannel.registerObserver(new DCObserver(uuid, dataChannel));
+
+        JSONObject obj = new JSONObject();
+        obj.put("uuid", uuid);
+        obj.put("id", dataChannel.id());
+        obj.put("label", dataChannel.label());
+        obj.put("readyState", dataChannel.state().toString().toLowerCase());
+        handler.success(obj);
     }
 
     public void addTrack(MessageHandler handler, String kind, MediaStreamTrackWrapper wrapper) {
@@ -432,7 +442,7 @@ public class RTCPeerConnection {
         }
         supervisor = null;
 
-        for (Map.Entry<Integer, DataChannel> entry :
+        for (Map.Entry<String, DataChannel> entry :
                 channels.entrySet()) {
             entry.getValue().unregisterObserver();
             entry.getValue().close();
@@ -451,7 +461,7 @@ public class RTCPeerConnection {
         peerConnection = null;
     }
 
-    public void closeDC(int dcid) {
+    public void closeDC(String dcid) {
         DataChannel dataChannel = channels.get(dcid);
         if (dataChannel != null) {
             dataChannel.unregisterObserver();
@@ -461,11 +471,15 @@ public class RTCPeerConnection {
         channels.remove(dcid);
     }
 
-    public void sendDC(int dcid, boolean binary, String msg) {
+    public void sendDC(String dcid, boolean binary, String msg) {
         DataChannel dataChannel = channels.get(dcid);
         if (dataChannel != null) {
-            ByteBuffer buf = ByteBuffer.allocateDirect(msg.getBytes().length);
-            buf.put(msg.getBytes());
+            byte[] data = msg.getBytes();
+            if (binary) {
+                data = Base64.decode(msg, Base64.DEFAULT);
+            }
+            ByteBuffer buf = ByteBuffer.allocateDirect(data.length);
+            buf.put(data);
             buf.rewind();
             dataChannel.send(new DataChannel.Buffer(buf, binary));
         }
@@ -728,12 +742,14 @@ public class RTCPeerConnection {
 
         @Override
         public void onDataChannel(DataChannel dataChannel) {
-            channels.put(dataChannel.id(), dataChannel);
+            String uuid = UUID.randomUUID().toString();
+            channels.put(uuid, dataChannel);
             Log.v(TAG, usage + " onDataChannel ");
-            dataChannel.registerObserver(new DCObserver(dataChannel));
+            dataChannel.registerObserver(new DCObserver(uuid, dataChannel));
             if (supervisor != null) {
                 JSONObject obj = new JSONObject();
                 try {
+                    obj.put("uuid", uuid);
                     obj.put("id", dataChannel.id());
                     obj.put("state", dataChannel.state());
                     obj.put("bufferedAmount", dataChannel.bufferedAmount());
@@ -781,10 +797,12 @@ public class RTCPeerConnection {
     }
 
     public class DCObserver implements DataChannel.Observer {
+        String uuid;
         DataChannel channel;
 
-        public DCObserver(DataChannel dataChannel) {
-            channel = dataChannel;
+        public DCObserver(String uuid, DataChannel dataChannel) {
+            this.uuid = uuid;
+            this.channel = dataChannel;
         }
 
         @Override
@@ -792,6 +810,7 @@ public class RTCPeerConnection {
             if (supervisor != null) {
                 JSONObject obj = new JSONObject();
                 try {
+                    obj.put("uuid", uuid);
                     obj.put("id", channel.id());
                     obj.put("previousAmount ", l);
                     obj.put("amount", channel.bufferedAmount());
@@ -809,7 +828,10 @@ public class RTCPeerConnection {
             if (supervisor != null) {
                 JSONObject obj = new JSONObject();
                 try {
-                    obj.put("id", channel.id());
+                    obj.put("uuid", uuid);
+                    if (channel.state() == DataChannel.State.OPEN) {
+                        obj.put("id", channel.id());
+                    }
                     obj.put("state", channel.state().name().toLowerCase());
                 } catch (Exception e) {
                     Log.e(TAG, "onStateChange exception:" + e.toString());
@@ -824,7 +846,7 @@ public class RTCPeerConnection {
             if (supervisor != null) {
                 JSONObject obj = new JSONObject();
                 try {
-                    obj.put("id", channel.id());
+                    obj.put("uuid", uuid);
                     obj.put("binary", buffer.binary);
                     if (!buffer.binary) {
                         obj.put("data", StandardCharsets.UTF_8.decode(buffer.data)

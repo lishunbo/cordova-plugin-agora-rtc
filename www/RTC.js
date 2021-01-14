@@ -323,11 +323,11 @@ class RTCPeerConnection extends EventTarget {
         break;
       case NativeRTCEventType.datachannel:
         var info = JSON.parse(ev.payload)
-        var dc = new RTCDataChannel(this.id, info.label, {
+        var dc = new RTCDataChannel(this.id, info.uuid, info.label, {
           id: info.id, state: info.state,
           bufferedAmount: info.bufferedAmount
         })
-        this.channels[info.id] = dc
+        this.channels[info.uuid] = dc
         this.dispatchEvent({ type: "datachannel", channel: dc })
         if (this.ondatachannel != null) {
           this.ondatachannel({ type: 'datachannel', channel: dc });
@@ -367,8 +367,11 @@ class RTCPeerConnection extends EventTarget {
         break;
       case NativeRTCEventType.statechange:
         var msg = ev.payload
-        var dc = this.channels[msg.id]
+        var dc = this.channels[msg.uuid]
         if (dc != null) {
+          if (msg.id != null) {
+            dc.id = msg.id
+          }
           dc.readyState = msg.state
           var dce = { type: msg.state }
           switch (msg.state) {
@@ -389,11 +392,11 @@ class RTCPeerConnection extends EventTarget {
         break;
       case NativeRTCEventType.message:
         var msg = ev.payload
-        var dc = this.channels[msg.id]
+        var dc = this.channels[msg.uuid]
         if (dc != null) {
           var data = msg.data
           if (msg.binary) {
-            data = atob(msg.data)
+            data = Uint8Array.from(atob(msg.data), c => c.charCodeAt(0)).buffer
           }
           dc.dispatchEvent({
             type: "message",
@@ -493,14 +496,24 @@ class RTCPeerConnection extends EventTarget {
     if (options.id == null) {
       options.id = -1
     }
+    if (options.ordered == null) {
+      options.ordered = true
+    }
+    if (options.protocol == null) {
+      options.protocol = ""
+    }
 
-    var dc = new RTCDataChannel(this.id, label, options)
+    var dc = new RTCDataChannel(this.id, uuidv4(), label, options)
 
-    cordova.exec(function (ev) {
-      resolve(JSON.parse(ev))
+    var thiz = this
+    cordova.exec(function (obj) {
+      dc.id = obj.id
+      dc.label = obj.label
+      dc.readyState = obj.readyState
+      thiz.channels[dc.uuid] = dc
     }, function (ev) {
-      reject != null && reject("createDataChannel exception:" + ev);
-    }, WebRTCService, 'createDataChannel', [this.id, label, options]);
+      throw "createDataChannel exception:" + ev;
+    }, WebRTCService, 'createDataChannel', [this.id, dc.uuid, label, options]);
 
     return dc
   }
@@ -731,10 +744,11 @@ class RTCPeerConnection extends EventTarget {
 }
 
 class RTCDataChannel extends EventTarget {
-  constructor(pcid, label, init) {
+  constructor(pcid, uuid, label, init) {
     super();
 
     this.pcid = pcid
+    this.uuid = uuid
     this.binaryType = 'arraybuffer'
     this.bufferedAmount = init.bufferedAmount
     this.bufferedAmountLowThreshold = 0
@@ -763,15 +777,23 @@ class RTCDataChannel extends EventTarget {
       resolve(new RTCStatsReport(ev));
     }, function (ev) {
       reject != null && reject(ev);
-    }, WebRTCService, 'closeDC', [this.pcid, this.id]);
+    }, WebRTCService, 'closeDC', [this.pcid, this.uuid]);
   }
 
   send(data) {
+    var binary = true
+    if (typeof data == 'string') {
+      binary = false;
+    } else if (data instanceof ArrayBuffer) {
+      data = btoa(String.fromCharCode(...new Uint8Array(data)))
+    } else {
+      throw new TypeError('not supported data type')
+    }
     cordova.exec(function (ev) {
     }, function (ev) {
       throw 'dataChannel send exception:' + ev
     }, WebRTCService, 'sendDC',
-      [this.pcid, this.id, typeof data == String, data]);
+      [this.pcid, this.uuid, binary, data]);
   }
 }
 
