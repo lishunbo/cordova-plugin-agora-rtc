@@ -15,7 +15,76 @@ const NativeRTCEventType = {
   negotiationneeded: 'negotiationneeded',
   signalingstatechange: 'signalingstatechange',
   statsended: 'statsended',
-  track: 'track'
+  track: 'track',
+  bufferedamountchange: 'bufferedamountchange',
+  statechange: 'statechange',
+  message: 'message',
+
+  //internal
+  localSDP: 'localSDP',
+  remoteSDP: 'remoteSDP',
+  configuration: 'configuration',
+  sender: "sender",
+  receiver: "receiver",
+}
+
+const NativeDataChannelEventType = {
+  bufferedamountlow: "bufferedamountlow",
+  close: "close",
+  error: "error",
+  message: "message",
+  open: "open"
+}
+
+class RTCIceCandidate {
+  constructor(json) {
+    //candidate:1467250027 2 udp 2122260222 192.168.0.196 56280 typ host generation 0
+    //candidate:2641496685 1 udp 41885695 113.207.108.198 37285 typ relay raddr 0.0.0.0 rport 0 generation 0 ufrag EBk/ network-id 3 network-c
+    //candidate:1853887674 2 udp 1518280447 47.61.61.61 36768 typ srflx raddr 192.168.0.196 rport 36768 generation 0
+    //candidate:7 1 UDP 1862269695 192.168.24.208 58032 typ prflx raddr 172.16.90.123 rport 50047
+    //candidate:1 1 TCP 2128609279 10.0.1.1 9 typ host tcptype active
+    //candidate:2 1 TCP 2124414975 10.0.1.1 8998 typ host tcptype passive
+    //candidate:3 1 TCP 2120220671 10.0.1.1 8999 typ host tcptype so
+    //candidate:4 1 TCP 1688207359 192.0.2.3 9 typ srflx raddr 10.0.1.1  rport 9 tcptype active
+    //candidate:5 1 TCP 1684013055 192.0.2.3 45664 typ srflx raddr  10.0.1.1 rport 8998 tcptype passive
+    //candidate:6 1 TCP 1692401663 192.0.2.3 45687 typ srflx raddr  10.0.1.1 rport 8999 tcptype so
+    var candidate = JSON.parse(json)
+    this.sdpMid = candidate.sdpMid
+    this.sdpMLineIndex = candidate.sdpMLineIndex
+    this.candidate = candidate.candidate
+    const sections = candidate.candidate.split(' ');
+    this.foundation = sections[0].split(':')[1]
+    this.component = sections[1] === "1" ? "rtp" : "rtcp"
+    this.protocol = sections[2]
+    this.priority = parseInt(sections[3])
+    this.address = sections[4]
+    this.port = parseInt(sections[5])
+    this.type = sections[7]
+    this.relatedAddress = null
+    this.relatedPort = null
+    this.tcpType = null
+    this.usernameFragment = null
+    if (this.type === "relay" || this.type === "srflx") {
+      this.relatedAddress = sections[9]
+      this.relatedPort = parseInt(sections[11])
+    }
+    var ufrag = candidate.candidate.match('ufrag\\s\\w.*\\s')
+    if (ufrag != null) {
+      this.usernameFragment = ufrag[0].split(' ')[1]
+    }
+    var tcptype = candidate.candidate.match('tcptype\\s\\w.*\\s')
+    if (tcptype != null) {
+      this.tcpType = tcptype[0].split(' ')[1]
+    }
+  }
+
+  toJSON() {
+    return {
+      candidate: this.candidate,
+      sdpMid: this.sdpMid,
+      sdpMLineIndex: this.sdpMLineIndex
+    }
+  }
 }
 
 class RTCStatsReport {
@@ -23,9 +92,9 @@ class RTCStatsReport {
     this.stats = JSON.parse(json);
   }
   forEach(callbackfn) {
-    this.stats.forEach((v, i, a) => {
-      callbackfn(v, i, a);
-    })
+    Object.keys(this.stats).forEach(key => {
+      callbackfn(this.stats[key], key, this.stats);
+    });
   }
   get(id) {
     return this.stats.find(x => x.id === id);
@@ -35,17 +104,18 @@ class RTCStatsReport {
   }
 }
 
-class RTCRtpSendParameters {
+class RTCRtpParameters {
   constructor() {
+    this.codecs = null;
+    this.headerExtensions = null;
+    this.rtcp = null;
     this.degradationPreference = null;
     this.encodings = null;
-    this.priority = null;
-    this.transactionId = null;
   }
 }
 
 class RTCRtpSender {
-  constructor(parameter, kind, pcid, id) {
+  constructor(parameter, track, pcid, id) {
     if (id) {
       console.log("create by id " + id);
       this.id = id;
@@ -56,9 +126,10 @@ class RTCRtpSender {
     if (parameter) {
       this.parameter = parameter
     } else {
-      this.parameter = new RTCRtpSendParameters()
+      this.parameter = new RTCRtpParameters()
     }
-    this.track = new MediaStreamTrack(kind)
+    this.track = track
+    this.dtmf = null;
     //internal usage for call setParameters() before setLocalDescription()
     //TODO: change this logic later
     this._modified = false
@@ -77,11 +148,82 @@ class RTCRtpSender {
     this.parameter = parameters
     this._modified = true
   }
+  getStats() {
+    var thiz = this
+    return new Promise((resolve, reject) => {
+      if (thiz.track == null || thiz.id == null) {
+        reject != null && reject('invalid track');
+      }
+      cordova.exec(function (ev) {
+        resolve(new RTCStatsReport(ev));
+      }, function (ev) {
+        reject != null && reject(ev);
+      }, WebRTCService, 'getStats', [this.pcid, this.track.id]);
+    })
+  }
 }
+
+class RTCRtpReceiver {
+  constructor(pcid, id, track, parameters) {
+    this.pcid = pcid
+    this.id = id
+    this.track = track;
+    this.parameters = parameters
+  }
+  getContributingSources() {
+
+  }
+  getParameters() {
+    return this.parameters;
+  }
+  getStats() {
+    var thiz = this
+    return new Promise((resolve, reject) => {
+      if (thiz.track == null || thiz.id == null) {
+        reject != null && reject('invalid track');
+      }
+      cordova.exec(function (ev) {
+        resolve(new RTCStatsReport(ev));
+      }, function (ev) {
+        reject != null && reject(ev);
+      }, WebRTCService, 'getStats', [this.pcid, this.track.id]);
+    })
+  }
+  getSynchronizationSources() {
+
+  }
+  static getCapabilities(kind) {
+
+  }
+}
+
+// class RTCRtpTransceiver {
+//   constructor() {
+//     this.currentDirection = null
+//     this.direction = "sendrecv"
+//     this.mid = null;
+//     this.receiver = null;
+//     this.sender = null;
+//     this.kind = null;
+//   }
+
+//   setCodecPreferences(codecs) {
+
+//   }
+
+//   stop() {
+
+//   }
+// }
 
 class RTCPeerConnection extends EventTarget {
   constructor(config) {
     super();
+
+    if (config == null) {
+      config = {}
+    }
+
     this.id = uuidv4();
     this.config = config;
 
@@ -89,8 +231,8 @@ class RTCPeerConnection extends EventTarget {
     this.remoteStream = null;
 
     this.senders = [];
+    this.receivers = [];
 
-    this.canTrickleIceCandidates = false;
     this.connectionState = "";
     this.currentLocalDescription = null;
     this.currentRemoteDescription = null;
@@ -119,6 +261,8 @@ class RTCPeerConnection extends EventTarget {
     this.sctp = null;
     this.signalingState = null;
 
+    this.channels = {}
+
     var thiz = this;
     cordova.exec(function (ev) {
       thiz.handleEvent(ev);
@@ -136,7 +280,7 @@ class RTCPeerConnection extends EventTarget {
       case NativeRTCEventType.icecandidate:
         var candidate = null
         if (ev.payload !== "") {
-          candidate = JSON.parse(ev.payload)
+          candidate = new RTCIceCandidate(ev.payload)
         }
         this.dispatchEvent({ type: "icecandidate", candidate: candidate })
         if (this.onicecandidate != null) {
@@ -147,49 +291,155 @@ class RTCPeerConnection extends EventTarget {
         this.iceConnectionState = ev.payload;
         this.dispatchEvent({ type: "iceconnectionstatechange" })
         if (this.oniceconnectionstatechange != null) {
-          this.oniceconnectionstatechange();
+          this.oniceconnectionstatechange({ type: "iceconnectionstatechange" });
         }
         break;
       case NativeRTCEventType.icegatheringstatechange:
         this.iceConnectionState = ev.payload;
         this.dispatchEvent({ type: "icegatheringstatechange" })
         if (this.onicegatheringstatechange != null) {
-          this.onicegatheringstatechange();
+          this.onicegatheringstatechange({ type: "icegatheringstatechange" });
         }
         break;
-      case NativeRTCEventType.onConnectionStateChange:
+      case NativeRTCEventType.connectionstatechange:
         this.connectionState = ev.payload;
         this.dispatchEvent({ type: "connectionstatechange" })
         if (this.onconnectionstatechange != null) {
-          this.onconnectionstatechange();
+          this.onconnectionstatechange({ type: "connectionstatechange" });
         }
         break;
       case NativeRTCEventType.negotiationneeded:
         this.dispatchEvent({ type: "negotiationneeded" })
         if (this.onnegotiationneeded != null) {
-          this.onnegotiationneeded();
+          this.onnegotiationneeded({ type: "negotiationneeded" });
         }
         break;
       case NativeRTCEventType.signalingstatechange:
         this.signalingState = ev.payload;
         this.dispatchEvent({ type: "signalingstatechange" })
         if (this.onsignalingstatechange != null) {
-          this.onsignalingstatechange();
+          this.onsignalingstatechange({ type: "signalingstatechange" });
+        }
+        break;
+      case NativeRTCEventType.datachannel:
+        var info = JSON.parse(ev.payload)
+        var dc = new RTCDataChannel(this.id, info.uuid, info.label, {
+          id: info.id, state: info.state,
+          bufferedAmount: info.bufferedAmount
+        })
+        this.channels[info.uuid] = dc
+        this.dispatchEvent({ type: "datachannel", channel: dc })
+        if (this.ondatachannel != null) {
+          this.ondatachannel({ type: 'datachannel', channel: dc });
         }
         break;
       case NativeRTCEventType.track:
         if (!this.remoteStream) {
           this.remoteStream = new MediaStream();
         }
-        var summary = JSON.parse(ev.payload);
-        var track = new MediaStreamTrack(summary.kind, summary.id);
+        var receiver = JSON.parse(ev.payload);
+        console.log("ontrack 233", receiver, ev.payload)
+        this.receivers.push(new RTCRtpReceiver(
+          this.id, receiver.id, receiver.track, receiver.parameters))
+        var track = new MediaStreamTrack(receiver.track.kind, receiver.track.id);
         this.remoteStream.addTrack(track)
         this.dispatchEvent({
           type: "track",
           track: track, streams: [this.remoteStream]
         })
         if (this.ontrack != null) {
-          this.ontrack({ track: track, streams: [this.remoteStream] });
+          this.ontrack({
+            type: "track", track: track, streams: [this.remoteStream]
+          });
+        }
+        break;
+      case NativeRTCEventType.bufferedamountchange:
+        var msg = ev.payload
+        var dc = this.channels[msg.id]
+        if (dc != null) {
+          dc.bufferedAmount = msg.amount
+          if (dc.bufferedAmount <= dc.bufferedAmountLowThreshold) {
+            dc.dispatchEvent({ type: 'bufferedAmountLow' })
+            dc.onbufferedamountlow != null &&
+              dc.onbufferedamountlow({ type: 'bufferedAmountLow' })
+          }
+        }
+        break;
+      case NativeRTCEventType.statechange:
+        var msg = ev.payload
+        var dc = this.channels[msg.uuid]
+        if (dc != null) {
+          if (msg.id != null) {
+            dc.id = msg.id
+          }
+          dc.readyState = msg.state
+          var dce = { type: msg.state }
+          switch (msg.state) {
+            case 'connecting':
+              break;
+            case 'open':
+              dc.onopen != null && dc.onopen(dce)
+              break;
+            case 'closing':
+              dc.onclosing != null && dc.onclosing(dce)
+              break;
+            case 'closed':
+              dc.onclose != null && dc.onclose(dce)
+              break;
+          }
+          dc.dispatchEvent(dce)
+        }
+        break;
+      case NativeRTCEventType.message:
+        var msg = ev.payload
+        var dc = this.channels[msg.uuid]
+        if (dc != null) {
+          var data = msg.data
+          if (msg.binary) {
+            data = Uint8Array.from(atob(msg.data), c => c.charCodeAt(0)).buffer
+          }
+          dc.dispatchEvent({
+            type: "message",
+            data: data,
+          })
+          dc.onmessage != null && dc.onmessage({
+            type: "message", data: data
+          })
+        }
+        break;
+      case NativeRTCEventType.localSDP:
+        this.localDescription = JSON.parse(ev.payload)
+        break;
+      case NativeRTCEventType.remoteSDP:
+        this.remoteDescription = JSON.parse(ev.payload)
+        break;
+      case NativeRTCEventType.configuration:
+        this.config = JSON.parse(ev.payload)
+        break;
+      case NativeRTCEventType.sender:
+        var args = JSON.parse(ev.payload)
+        var sender = this.senders.find(e => e.id === args.id)
+        if (sender != null) {
+          sender.dtmf = args.dtmf
+          sender.parameter.degradationPreference =
+            args.parameters.degradationPreference
+          sender.parameter.encodings = args.parameters.encodings
+          sender.parameter.codecs = args.parameters.codecs
+          sender.parameter.headerExtensions = args.parameters.headerExtensions
+          sender.parameter.rtcp = args.parameters.rtcp
+        }
+        break;
+      case NativeRTCEventType.receiver:
+        var args = JSON.parse(ev.payload)
+        var receiver = this.receivers.find(e => e.id === args.id)
+        if (receiver != null) {
+          receiver.parameters.degradationPreference =
+            args.parameters.degradationPreference
+          receiver.parameters.encodings = args.parameters.encodings
+          receiver.parameters.codecs = args.parameters.codecs
+          receiver.parameters.headerExtensions =
+            args.parameters.headerExtensions
+          receiver.parameters.rtcp = args.parameters.rtcp
         }
         break;
       default:
@@ -198,20 +448,118 @@ class RTCPeerConnection extends EventTarget {
     }
   }
 
-  createOffer(config) {
+  createOffer(options) {
     return new Promise((resolve, reject) => {
       cordova.exec(function (ev) {
         resolve(JSON.parse(ev))
       }, function (ev) {
         reject != null && reject("createOffer exception:" + ev);
-      }, WebRTCService, 'createOffer', [this.id, config]);
+      }, WebRTCService, 'createOffer', [this.id, options]);
     })
   }
 
-  setLocalDescription(offer) {
+  createAnswer(options) {
+    return new Promise((resolve, reject) => {
+      cordova.exec(function (ev) {
+        resolve(JSON.parse(ev))
+      }, function (ev) {
+        reject != null && reject("createAnswer exception:" + ev);
+      }, WebRTCService, 'createAnswer', [this.id, options]);
+    })
+  }
+
+  createDataChannel(label, options) {
+    if (this.connectionState == "closed") {
+      throw "createDataChannel InvalidStateError"
+    }
+    if (label == null || label.length > 65535 || (options != null && (
+      (options.maxPacketLifeTime != null &&
+        options.maxPacketLifeTime > 65535) ||
+      (options.maxRetransmits != null &&
+        options.maxRetransmits > 65535) ||
+      (options.id != null &&
+        options.id > 65534)))) {
+      throw "createDataChannel invalid argument"
+    }
+    if (options == null) {
+      options = {}
+    }
+    if (options.maxPacketLifeTime != null && options.maxRetransmits != null) {
+      throw "createDataChannel SyntaxError"
+    }
+    if (options.maxPacketLifeTime == null) {
+      options.maxPacketLifeTime = -1
+    }
+    if (options.maxRetransmits == null) {
+      options.maxRetransmits = -1
+    }
+    if (options.id == null) {
+      options.id = -1
+    }
+    if (options.ordered == null) {
+      options.ordered = true
+    }
+    if (options.protocol == null) {
+      options.protocol = ""
+    }
+
+    var dc = new RTCDataChannel(this.id, uuidv4(), label, options)
+
+    var thiz = this
+    cordova.exec(function (obj) {
+      dc.id = obj.id
+      dc.label = obj.label
+      dc.readyState = obj.readyState
+      thiz.channels[dc.uuid] = dc
+    }, function (ev) {
+      throw "createDataChannel exception:" + ev;
+    }, WebRTCService, 'createDataChannel', [this.id, dc.uuid, label, options]);
+
+    return dc
+  }
+
+  setConfiguration(configuration) {
+    return new Promise((resolve, reject) => {
+      if (configuration == null) {
+        configuration = {}
+      }
+      if (configuration.iceServers == null ||
+        configuration.iceServers.length == 0) {
+        reject != null && reject("setConfiguration invalid iceServers")
+        return
+      }
+      if (configuration.iceCandidatePoolSize != null && (
+        configuration.iceCandidatePoolSize < 0 ||
+        configuration.iceCandidatePoolSize > 65535)) {
+        reject != null && reject("setConfiguration invalid " +
+          " iceCandidatePoolSize")
+        return
+      }
+      configuration.iceServers.forEach(iceServer => {
+        if (iceServer.credentialType != null &&
+          iceServer.credentialType !== "password") {
+          reject != null &&
+            reject("setConfiguration not support credentialType")
+          return
+        }
+      })
+      var thiz = this
+      cordova.exec(function (ev) {
+        thiz.config = JSON.parse(ev)
+        resolve()
+      }, function (ev) {
+        reject != null && reject("setConfiguration exception:" +
+          'Attempted to modify the PeerConnection\'s ' +
+          'configuration in an unsupported way.');
+      }, WebRTCService, 'setConfiguration', [this.id, configuration]);
+    })
+  }
+
+  setLocalDescription(local) {
     var thiz = this;
     return new Promise((resolve, reject) => {
       cordova.exec(function (ev) {
+        thiz.localDescription = local
         var senders = JSON.parse(ev)
         senders.forEach(sender => {
           if (sender && sender.parameter) {
@@ -219,10 +567,11 @@ class RTCPeerConnection extends EventTarget {
             var idx = thiz.senders.findIndex(
               sdr => sdr.track.kind === sender.kind)
             if (idx == -1) {
-              thiz.senders.push(new RTCRtpSender(param, sender.kind, thiz.id))
+              throw 'found track which not create by addTrack' + send.kind
+              // thiz.senders.push(new RTCRtpSender(param, sender.kind, thiz.id))
             } else {
               //TODO: validy usage of modified
-              if (thiz.senders[idx].modified) {
+              if (thiz.senders[idx]._modified) {
                 // DegradationPreference, android supported:
                 // DISABLED, MAINTAIN_FRAMERATE,MAINTAIN_RESOLUTION,BALANCED
                 var degra = "BALANCED";
@@ -252,25 +601,27 @@ class RTCPeerConnection extends EventTarget {
                     maxBitrate, minBitrate, scaleDown]);
               }
               thiz.senders[idx].parameter = param
-              thiz.senders[idx].modified = false
+              thiz.senders[idx]._modified = false
             }
           }
         })
         resolve();
       }, function (ev) {
         reject != null && reject(ev);
-      }, WebRTCService, 'setLocalDescription', [this.id, offer.type, offer.sdp]);
+      }, WebRTCService, 'setLocalDescription', [this.id, local.type, local.sdp]);
     })
   }
 
-  setRemoteDescription(answer) {
+  setRemoteDescription(remote) {
+    var thiz = this
     return new Promise((resolve, reject) => {
       cordova.exec(function (ev) {
+        thiz.remoteDescription = remote
         resolve(ev);
       }, function (ev) {
         reject != null && reject("setRemoteDescription exception: " + ev);
       }, WebRTCService, 'setRemoteDescription',
-        [this.id, answer.type, answer.sdp]);
+        [this.id, remote.type, remote.sdp]);
     })
   }
 
@@ -289,13 +640,53 @@ class RTCPeerConnection extends EventTarget {
       this.localStream = new MediaStream();
     }
     this.localStream.addTrack(track);
-    var sender = new RTCRtpSender(null, track.kind, this.id)
+    var sender = new RTCRtpSender(null, track, this.id)
     this.senders.push(sender)
+    var thiz = this
     cordova.exec(function (ev) {
+      var args = JSON.parse(ev)
+      sender.id = args.id
+      sender.dtmf = args.dtmf
+      sender.parameter.degradationPreference =
+        args.parameters.degradationPreference
+      sender.parameter.encodings = args.parameters.encodings
+      sender.parameter.codecs = args.parameters.codecs
+      sender.parameter.headerExtensions = args.parameters.headerExtensions
+      sender.parameter.rtcp = args.parameters.rtcp
     }, function (ev) {
       throw 'addTrack exception: ' + ev
     }, WebRTCService, 'addTrack', [this.id, track.id, track.kind]);
     return sender;
+  }
+
+  addTransceiver(trackOrKind, init) {
+    throw 'addTransceiver is only available with Unified Plan SdpSemantics'
+    // waiting for support 
+    if (trackOrKind == null) {
+      throw new TypeError('trackOrKind null')
+    }
+    var mediaType = false
+    if (typeof trackOrKind === 'string') {
+      if (!(trackOrKind === 'audio' || trackOrKind === 'video')) {
+        throw new TypeError('trackOrKind mediaType invalid')
+      }
+      mediaType = true
+    } else if (!(trackOrKind instanceof MediaStreamTrack)) {
+      throw new TypeError('trackOrKind not MediaStreamTrack')
+    }
+    if (init == null) {
+      init = {}
+    }
+
+    var result = new RTCRtpTransceiver();
+    cordova.exec(function (ev) {
+      var transceiver = JSON.parse(ev)
+      console.log(transceiver)
+    }, function (ev) {
+      throw 'addTransceivers exception: ' + ev
+    }, WebRTCService, 'addTransceiver',
+      [this.id, mediaType, mediaType ? trackOrKind : trackOrKind.id, init]);
+    return result
   }
 
   close() {
@@ -314,21 +705,19 @@ class RTCPeerConnection extends EventTarget {
   }
 
   getTransceivers() {
+    throw 'getTransceivers is only available with Unified Plan SdpSemantics'
     cordova.exec(function (ev) {
     }, function (ev) {
       throw 'getTransceivers exception: ' + ev
     }, WebRTCService, 'getTransceivers', [this.id]);
   }
 
-  addTransceiver() {
-    cordova.exec(function (ev) {
-    }, function (ev) {
-      throw 'addTransceivers exception: ' + ev
-    }, WebRTCService, 'addTransceiver', [this.id]);
-  }
-
   getSenders() {
     return this.senders
+  }
+
+  getReceivers() {
+    return this.receivers
   }
 
   getStats(selector) {
@@ -337,7 +726,8 @@ class RTCPeerConnection extends EventTarget {
         resolve(new RTCStatsReport(ev));
       }, function (ev) {
         reject != null && reject(ev);
-      }, WebRTCService, 'getStats', [this.id]);
+      }, WebRTCService, 'getStats', [this.id, selector != null &&
+        selector instanceof MediaStreamTrack ? selector.id : ""]);
     })
   }
 
@@ -351,6 +741,60 @@ class RTCPeerConnection extends EventTarget {
    * Be aware that this feature may cease to work at any time.
    */
   //addStream(stream) { }
+}
+
+class RTCDataChannel extends EventTarget {
+  constructor(pcid, uuid, label, init) {
+    super();
+
+    this.pcid = pcid
+    this.uuid = uuid
+    this.binaryType = 'arraybuffer'
+    this.bufferedAmount = init.bufferedAmount
+    this.bufferedAmountLowThreshold = 0
+    this.id = init.id;
+    this.label = label;
+    this.maxPacketLifeTime = init.maxPacketLifeTime;
+    this.maxRetransmits = init.maxRetransmits;
+    this.negotiated = init.negotiated;
+    this.onbufferedamountlow = null;
+    this.onclose = null;
+    this.onclosing = null;
+    this.onerror = null;
+    this.onmessage = null;
+    this.onopen = null;
+    this.ordered = init.ordered;
+    this.priority = init.priority;
+    this.protocol = init.protocol;
+    this.readyState = init.state == null ? "" : init.state;
+  }
+
+  close() {
+    if (this.onclosing != null) {
+      this.onclosing();
+    }
+    cordova.exec(function (ev) {
+      resolve(new RTCStatsReport(ev));
+    }, function (ev) {
+      reject != null && reject(ev);
+    }, WebRTCService, 'closeDC', [this.pcid, this.uuid]);
+  }
+
+  send(data) {
+    var binary = true
+    if (typeof data == 'string') {
+      binary = false;
+    } else if (data instanceof ArrayBuffer) {
+      data = btoa(String.fromCharCode(...new Uint8Array(data)))
+    } else {
+      throw new TypeError('not supported data type')
+    }
+    cordova.exec(function (ev) {
+    }, function (ev) {
+      throw 'dataChannel send exception:' + ev
+    }, WebRTCService, 'sendDC',
+      [this.pcid, this.uuid, binary, data]);
+  }
 }
 
 cordova.addConstructor(function () {

@@ -2,30 +2,23 @@ package io.agora.rtcn.webrtc.models;
 
 import android.util.Log;
 
-import io.agora.rtcn.webrtc.interfaces.CredentialDetail;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.util.List;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class RTCOAuthCredential implements CredentialDetail {
-    static final String TAG = RTCOAuthCredential.class.getCanonicalName();
+public class RTCRtpReceiveParameters extends RTCRtpParameters {
 
-    public String accessToken;
-    public String macKey;
+    public List< RTCRtpDecodingParameters> encodings;
 
-    public RTCOAuthCredential() {
-    }
-
-    public static RTCOAuthCredential fromJson(String json) {
-
+    public static RTCRtpReceiveParameters fromJson(String json) {
         ObjectMapper mapper = new ObjectMapper();
         try {
-            RTCOAuthCredential obj = mapper.readValue(json, RTCOAuthCredential.class);
-            return obj;
+            return mapper.readValue(json, RTCRtpReceiveParameters.class);
         } catch (JsonProcessingException e) {
-//            System.out.println(e.toString());
-            Log.e(TAG, e.toString());
+            Log.e(TAG, "RTCRtpReceiveParameters parseJson failed: " + e.toString());
         }
         return null;
     }
@@ -39,5 +32,9 @@ public class RTCOAuthCredential implements CredentialDetail {
         }
 
         return "{}";
+    }
+
+    public class RTCRtpDecodingParameters{
+        public String rid;
     }
 }

@@ -1,7 +1,5 @@
 package io.agora.rtcn.webrtc.models;
 
-import io.agora.rtcn.webrtc.enums.RTCIceCredentialType;
-import io.agora.rtcn.webrtc.interfaces.CredentialDetail;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonParser;
@@ -11,7 +9,13 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.io.IOException;
+import java.util.Arrays;
+
+import io.agora.rtcn.webrtc.interfaces.CredentialDetail;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RTCIceServer {
@@ -21,13 +25,39 @@ public class RTCIceServer {
     @JsonDeserialize(using = CredentialDetailDeserializer.class)
     public CredentialDetail credential;
 
-    public RTCIceCredentialType credentialType;
+    public String credentialType;
 
     @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
     public String[] urls;
     public String username;
 
-    public static class CredentialDetailStringImp extends CredentialDetail {
+    @Override
+    public String toString() {
+        return toJSONObject().toString();
+    }
+
+    public JSONObject toJSONObject() {
+        JSONObject obj = new JSONObject();
+        try {
+            JSONArray ua = new JSONArray();
+            for (String u : urls) {
+                ua.put(u);
+            }
+            obj.put("urls", ua);
+            if (username.length() > 0) {
+                obj.put("username", username);
+            }
+            if (credential != null) {
+                obj.put("credentialType", credentialType);
+                obj.put("credential", credential);
+            }
+        } catch (Exception e) {
+
+        }
+        return obj;
+    }
+
+    public static class CredentialDetailStringImp implements CredentialDetail {
         public String credential;
 
         public CredentialDetailStringImp() {

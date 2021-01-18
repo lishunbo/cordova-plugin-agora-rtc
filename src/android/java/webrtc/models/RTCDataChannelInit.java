@@ -2,30 +2,28 @@ package io.agora.rtcn.webrtc.models;
 
 import android.util.Log;
 
-import io.agora.rtcn.webrtc.interfaces.CredentialDetail;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class RTCOAuthCredential implements CredentialDetail {
-    static final String TAG = RTCOAuthCredential.class.getCanonicalName();
+public class RTCDataChannelInit {
+    static final String TAG = RTCDataChannelInit.class.getCanonicalName();
 
-    public String accessToken;
-    public String macKey;
+    public long id;
+    public long maxPacketLifeTime;
+    public long maxRetransmits;
+    public boolean negotiated;
+    public boolean ordered;
+    public String priority;
+    public String protocol;
 
-    public RTCOAuthCredential() {
-    }
-
-    public static RTCOAuthCredential fromJson(String json) {
-
+    public static RTCDataChannelInit fromJson(String json) {
         ObjectMapper mapper = new ObjectMapper();
         try {
-            RTCOAuthCredential obj = mapper.readValue(json, RTCOAuthCredential.class);
-            return obj;
+            return mapper.readValue(json, RTCDataChannelInit.class);
         } catch (JsonProcessingException e) {
-//            System.out.println(e.toString());
-            Log.e(TAG, e.toString());
+            Log.e(TAG, "RTCDataChannelInit parseJson failed: " + e.toString());
         }
         return null;
     }

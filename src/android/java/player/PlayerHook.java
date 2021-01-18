@@ -183,13 +183,7 @@ public class PlayerHook extends CordovaPlugin implements Supervisor {
     boolean createVideoPlayer(JSONArray args, final CallbackContext callbackContext) throws JSONException {
         String id = args.getString(0);
 
-        PlayConfig cfg = null;
-        if (args.length() > 1) {
-            String json = args.get(1).toString();
-            if (json.length() != 0) {
-                cfg = PlayConfig.fromJson(json);
-            }
-        }
+        PlayConfig cfg = PlayConfig.fromJson(args.getString(1));
         if (cfg == null) {
             Log.e(TAG, "Invalid PlayConfig, using default");
             cfg = new PlayConfig();
@@ -211,7 +205,7 @@ public class PlayerHook extends CordovaPlugin implements Supervisor {
         String id = args.getString(0);
 
         PlayConfig cfg = null;
-        String json = args.get(1).toString();
+        String json = args.getString(1);
         if (json.length() != 0) {
             cfg = PlayConfig.fromJson(json);
         }

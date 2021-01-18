@@ -76,6 +76,17 @@ public class MediaStreamTrackWrapper {
         return obj.toString();
     }
 
+    public JSONObject toJSONObject() {
+        JSONObject obj = new JSONObject();
+        try {
+            obj.put("kind", this.track.kind());
+            obj.put("id", this.id);
+        } catch (Exception e) {
+            Log.e(TAG, "MediaStreamTrackWrapper toString exception: " + e.toString());
+        }
+        return obj;
+    }
+
     public void close() {
         if (object == null) {
             return;
