@@ -67,7 +67,7 @@ plugman install --platform android --project . --plugin https://github.com/lishu
 
 ## 当前版本插件已支持的功能
 
-WebRTC API列表摘自MDN和lib.dom.d.ts，支持的WebRTC API见[详细文档](./WebRTC_API_List.xlsx)
+WebRTC API列表摘自MDN和lib.dom.d.ts，支持的WebRTC API见[详细文档](./WebRTC_API_List.md)
 
 支持的视频编码格式（不支持x64类型cpu）
 
