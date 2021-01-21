@@ -26,19 +26,19 @@
   <platform name="android">
     <config-file target="config.xml" parent="/*">
       <feature name="Media">
-        <param name="android-package" value="io.agora.rtcn.media.MediaHook"/>
+        <param name="android-package" value="io.agora.rtc.media.MediaHook"/>
         <param name="onload" value="true" />
       </feature>
     </config-file>
     <config-file target="config.xml" parent="/*">
       <feature name="Player">
-        <param name="android-package" value="io.agora.rtcn.player.PlayerHook"/>
+        <param name="android-package" value="io.agora.rtc.player.PlayerHook"/>
         <param name="onload" value="true" />
       </feature>
     </config-file>
     <config-file target="config.xml" parent="/*">
       <feature name="WebRTC">
-        <param name="android-package" value="io.agora.rtcn.webrtc.WebRTCHook"/>
+        <param name="android-package" value="io.agora.rtc.webrtc.WebRTCHook"/>
         <param name="onload" value="true" />
       </feature>
     </config-file>
