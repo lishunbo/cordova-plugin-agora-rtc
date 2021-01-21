@@ -1,4 +1,4 @@
-package io.agora.rtcn.webrtc.models;
+package io.agora.rtc.webrtc.models;
 
 import android.util.Log;
 
@@ -67,6 +67,6 @@ public class RtpTransceiverInit {
             encodings.add(parameter.toNative());
         }
         return new RtpTransceiver.RtpTransceiverInit(direction,
-                Collections.emptyList(), encodings);
+                Collections.<String>emptyList(), encodings);
     }
 }

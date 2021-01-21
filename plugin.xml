@@ -57,48 +57,48 @@
       <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     </config-file>
     <config-file target="AndroidManifest.xml" parent="/manifest/application">
-      <service android:foregroundServiceType="mediaProjection" android:name="io.agora.rtcn.media.services.ScreenCaptureService"/>
+      <service android:foregroundServiceType="mediaProjection" android:name="io.agora.rtc.media.services.ScreenCaptureService"/>
     </config-file>
     <!-- Media -->
-    <source-file src="src/android/java/media/enums/Action.java" target-dir="src/io/agora/rtcn/media/enums"/>
-    <source-file src="src/android/java/media/enums/EMessage.java" target-dir="src/io/agora/rtcn/media/enums"/>
-    <source-file src="src/android/java/media/models/MediaDeviceInfo.java" target-dir="src/io/agora/rtcn/media/models"/>
-    <source-file src="src/android/java/media/services/MediaDevice.java" target-dir="src/io/agora/rtcn/media/services"/>
-    <source-file src="src/android/java/media/services/MediaStreamTrackWrapper.java" target-dir="src/io/agora/rtcn/media/services"/>
-    <source-file src="src/android/java/media/services/ScreenCaptureService.java" target-dir="src/io/agora/rtcn/media/services"/>
-    <source-file src="src/android/java/media/MediaHook.java" target-dir="src/io/agora/rtcn/media"/>
+    <source-file src="src/android/java/media/enums/Action.java" target-dir="src/io/agora/rtc/media/enums"/>
+    <source-file src="src/android/java/media/enums/EMessage.java" target-dir="src/io/agora/rtc/media/enums"/>
+    <source-file src="src/android/java/media/models/MediaDeviceInfo.java" target-dir="src/io/agora/rtc/media/models"/>
+    <source-file src="src/android/java/media/services/MediaDevice.java" target-dir="src/io/agora/rtc/media/services"/>
+    <source-file src="src/android/java/media/services/MediaStreamTrackWrapper.java" target-dir="src/io/agora/rtc/media/services"/>
+    <source-file src="src/android/java/media/services/ScreenCaptureService.java" target-dir="src/io/agora/rtc/media/services"/>
+    <source-file src="src/android/java/media/MediaHook.java" target-dir="src/io/agora/rtc/media"/>
     <!-- Player -->
-    <source-file src="src/android/java/player/enums/Action.java" target-dir="src/io/agora/rtcn/player/enums"/>
-    <source-file src="src/android/java/player/enums/PlayConfigFit.java" target-dir="src/io/agora/rtcn/player/enums"/>
-    <source-file src="src/android/java/player/interfaces/Player.java" target-dir="src/io/agora/rtcn/player/interfaces"/>
-    <source-file src="src/android/java/player/interfaces/Supervisor.java" target-dir="src/io/agora/rtcn/player/interfaces"/>
-    <source-file src="src/android/java/player/models/PlayConfig.java" target-dir="src/io/agora/rtcn/player/models"/>
-    <source-file src="src/android/java/player/models/ProxyVideoSink.java" target-dir="src/io/agora/rtcn/player/models"/>
-    <source-file src="src/android/java/player/services/AudioPlayer.java" target-dir="src/io/agora/rtcn/player/services"/>
-    <source-file src="src/android/java/player/services/VideoView.java" target-dir="src/io/agora/rtcn/player/services"/>
-    <source-file src="src/android/java/player/PlayerHook.java" target-dir="src/io/agora/rtcn/player"/>
+    <source-file src="src/android/java/player/enums/Action.java" target-dir="src/io/agora/rtc/player/enums"/>
+    <source-file src="src/android/java/player/enums/PlayConfigFit.java" target-dir="src/io/agora/rtc/player/enums"/>
+    <source-file src="src/android/java/player/interfaces/Player.java" target-dir="src/io/agora/rtc/player/interfaces"/>
+    <source-file src="src/android/java/player/interfaces/Supervisor.java" target-dir="src/io/agora/rtc/player/interfaces"/>
+    <source-file src="src/android/java/player/models/PlayConfig.java" target-dir="src/io/agora/rtc/player/models"/>
+    <source-file src="src/android/java/player/models/ProxyVideoSink.java" target-dir="src/io/agora/rtc/player/models"/>
+    <source-file src="src/android/java/player/services/AudioPlayer.java" target-dir="src/io/agora/rtc/player/services"/>
+    <source-file src="src/android/java/player/services/VideoView.java" target-dir="src/io/agora/rtc/player/services"/>
+    <source-file src="src/android/java/player/PlayerHook.java" target-dir="src/io/agora/rtc/player"/>
     <!-- RTC -->
-    <source-file src="src/android/java/webrtc/enums/Action.java" target-dir="src/io/agora/rtcn/webrtc/enums"/>
-    <source-file src="src/android/java/webrtc/interfaces/CredentialDetail.java" target-dir="src/io/agora/rtcn/webrtc/interfaces"/>
-    <source-file src="src/android/java/webrtc/models/MediaStreamConstraints.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
-    <source-file src="src/android/java/webrtc/models/MediaTrackConstraints.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
-    <source-file src="src/android/java/webrtc/models/MediaTrackConstraintSet.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
-    <source-file src="src/android/java/webrtc/models/RTCCertificate.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
-    <source-file src="src/android/java/webrtc/models/RTCConfiguration.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
-    <source-file src="src/android/java/webrtc/models/RTCDataChannelInit.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
-    <source-file src="src/android/java/webrtc/models/RTCIceServer.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
-    <source-file src="src/android/java/webrtc/models/RTCOAuthCredential.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
-    <source-file src="src/android/java/webrtc/models/RTCOfferOptions.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
-    <source-file src="src/android/java/webrtc/models/RTCRtpEncodingParameters.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
-    <source-file src="src/android/java/webrtc/models/RTCRtpParameters.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
-    <source-file src="src/android/java/webrtc/models/RTCRtpReceiveParameters.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
-    <source-file src="src/android/java/webrtc/models/RTCRtpSendParameters.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
-    <source-file src="src/android/java/webrtc/models/RtpTransceiverInit.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
-    <source-file src="src/android/java/webrtc/models/SessionDescription.java" target-dir="src/io/agora/rtcn/webrtc/models"/>
-    <source-file src="src/android/java/webrtc/services/PCFactory.java" target-dir="src/io/agora/rtcn/webrtc/services"/>
-    <source-file src="src/android/java/webrtc/services/RTCPeerConnection.java" target-dir="src/io/agora/rtcn/webrtc/services"/>
-    <source-file src="src/android/java/webrtc/Config.java" target-dir="src/io/agora/rtcn/webrtc"/>
-    <source-file src="src/android/java/webrtc/WebRTCHook.java" target-dir="src/io/agora/rtcn/webrtc"/>
+    <source-file src="src/android/java/webrtc/enums/Action.java" target-dir="src/io/agora/rtc/webrtc/enums"/>
+    <source-file src="src/android/java/webrtc/interfaces/CredentialDetail.java" target-dir="src/io/agora/rtc/webrtc/interfaces"/>
+    <source-file src="src/android/java/webrtc/models/MediaStreamConstraints.java" target-dir="src/io/agora/rtc/webrtc/models"/>
+    <source-file src="src/android/java/webrtc/models/MediaTrackConstraints.java" target-dir="src/io/agora/rtc/webrtc/models"/>
+    <source-file src="src/android/java/webrtc/models/MediaTrackConstraintSet.java" target-dir="src/io/agora/rtc/webrtc/models"/>
+    <source-file src="src/android/java/webrtc/models/RTCCertificate.java" target-dir="src/io/agora/rtc/webrtc/models"/>
+    <source-file src="src/android/java/webrtc/models/RTCConfiguration.java" target-dir="src/io/agora/rtc/webrtc/models"/>
+    <source-file src="src/android/java/webrtc/models/RTCDataChannelInit.java" target-dir="src/io/agora/rtc/webrtc/models"/>
+    <source-file src="src/android/java/webrtc/models/RTCIceServer.java" target-dir="src/io/agora/rtc/webrtc/models"/>
+    <source-file src="src/android/java/webrtc/models/RTCOAuthCredential.java" target-dir="src/io/agora/rtc/webrtc/models"/>
+    <source-file src="src/android/java/webrtc/models/RTCOfferOptions.java" target-dir="src/io/agora/rtc/webrtc/models"/>
+    <source-file src="src/android/java/webrtc/models/RTCRtpEncodingParameters.java" target-dir="src/io/agora/rtc/webrtc/models"/>
+    <source-file src="src/android/java/webrtc/models/RTCRtpParameters.java" target-dir="src/io/agora/rtc/webrtc/models"/>
+    <source-file src="src/android/java/webrtc/models/RTCRtpReceiveParameters.java" target-dir="src/io/agora/rtc/webrtc/models"/>
+    <source-file src="src/android/java/webrtc/models/RTCRtpSendParameters.java" target-dir="src/io/agora/rtc/webrtc/models"/>
+    <source-file src="src/android/java/webrtc/models/RtpTransceiverInit.java" target-dir="src/io/agora/rtc/webrtc/models"/>
+    <source-file src="src/android/java/webrtc/models/SessionDescription.java" target-dir="src/io/agora/rtc/webrtc/models"/>
+    <source-file src="src/android/java/webrtc/services/PCFactory.java" target-dir="src/io/agora/rtc/webrtc/services"/>
+    <source-file src="src/android/java/webrtc/services/RTCPeerConnection.java" target-dir="src/io/agora/rtc/webrtc/services"/>
+    <source-file src="src/android/java/webrtc/Config.java" target-dir="src/io/agora/rtc/webrtc"/>
+    <source-file src="src/android/java/webrtc/WebRTCHook.java" target-dir="src/io/agora/rtc/webrtc"/>
     <!-- resources -->
     <resource-file src="libs/libwebrtc.aar" target="libs/libwebrtc.aar" />
     <!-- framework -->

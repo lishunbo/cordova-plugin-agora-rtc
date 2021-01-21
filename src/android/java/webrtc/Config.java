@@ -1,4 +1,4 @@
-package io.agora.rtcn.webrtc;
+package io.agora.rtc.webrtc;
 
 public class Config {
     public static final boolean logInternalMessage = true;

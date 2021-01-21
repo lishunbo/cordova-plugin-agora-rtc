@@ -1,4 +1,4 @@
-package io.agora.rtcn.player.interfaces;
+package io.agora.rtc.player.interfaces;
 
 public interface Player {
     void onActivityPause();

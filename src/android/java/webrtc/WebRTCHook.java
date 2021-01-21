@@ -1,4 +1,4 @@
-package io.agora.rtcn.webrtc;
+package io.agora.rtc.webrtc;
 
 import android.util.Log;
 
@@ -14,15 +14,15 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Map;
 
-import io.agora.rtcn.media.services.MediaStreamTrackWrapper;
-import io.agora.rtcn.webrtc.enums.Action;
-import io.agora.rtcn.webrtc.models.RTCConfiguration;
-import io.agora.rtcn.webrtc.models.RTCDataChannelInit;
-import io.agora.rtcn.webrtc.models.RTCIceServer;
-import io.agora.rtcn.webrtc.models.RTCOfferOptions;
-import io.agora.rtcn.webrtc.models.RtpTransceiverInit;
-import io.agora.rtcn.webrtc.services.PCFactory;
-import io.agora.rtcn.webrtc.services.RTCPeerConnection;
+import io.agora.rtc.media.services.MediaStreamTrackWrapper;
+import io.agora.rtc.webrtc.enums.Action;
+import io.agora.rtc.webrtc.models.RTCConfiguration;
+import io.agora.rtc.webrtc.models.RTCDataChannelInit;
+import io.agora.rtc.webrtc.models.RTCIceServer;
+import io.agora.rtc.webrtc.models.RTCOfferOptions;
+import io.agora.rtc.webrtc.models.RtpTransceiverInit;
+import io.agora.rtc.webrtc.services.PCFactory;
+import io.agora.rtc.webrtc.services.RTCPeerConnection;
 
 import static org.apache.cordova.PluginResult.Status.OK;
 

@@ -1,8 +1,8 @@
-package io.agora.rtcn.webrtc.models;
+package io.agora.rtc.webrtc.models;
 
 import android.util.Log;
 
-import io.agora.rtcn.webrtc.interfaces.CredentialDetail;
+import io.agora.rtc.webrtc.interfaces.CredentialDetail;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

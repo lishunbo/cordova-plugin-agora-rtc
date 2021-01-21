@@ -1,4 +1,4 @@
-package io.agora.rtcn.webrtc.services;
+package io.agora.rtc.webrtc.services;
 
 import android.content.Context;
 import android.util.Log;
@@ -15,7 +15,7 @@ import org.webrtc.audio.JavaAudioDeviceModule;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import io.agora.rtcn.media.services.MediaDevice;
+import io.agora.rtc.media.services.MediaDevice;
 
 
 public class PCFactory {

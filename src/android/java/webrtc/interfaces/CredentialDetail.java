@@ -1,7 +1,7 @@
-package io.agora.rtcn.webrtc.interfaces;
+package io.agora.rtc.webrtc.interfaces;
 
-import io.agora.rtcn.webrtc.models.RTCIceServer;
-import io.agora.rtcn.webrtc.models.RTCOAuthCredential;
+import io.agora.rtc.webrtc.models.RTCIceServer;
+import io.agora.rtc.webrtc.models.RTCOAuthCredential;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 

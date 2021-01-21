@@ -1,4 +1,4 @@
-package io.agora.rtcn.media.services;
+package io.agora.rtc.media.services;
 
 import android.util.Log;
 
@@ -21,7 +21,7 @@ import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import io.agora.rtcn.player.services.VideoView;
+import io.agora.rtc.player.services.VideoView;
 
 public class MediaStreamTrackWrapper {
     static final String TAG = MediaStreamTrackWrapper.class.getCanonicalName();

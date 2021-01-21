@@ -1,4 +1,4 @@
-package io.agora.rtcn.webrtc.models;
+package io.agora.rtc.webrtc.models;
 
 public class MediaTrackConstraints extends MediaTrackConstraintSet {
 

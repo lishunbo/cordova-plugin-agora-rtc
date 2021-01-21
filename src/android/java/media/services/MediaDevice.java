@@ -1,4 +1,4 @@
-package io.agora.rtcn.media.services;
+package io.agora.rtc.media.services;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
@@ -32,12 +32,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 
-import io.agora.rtcn.media.enums.EMessage;
-import io.agora.rtcn.media.models.MediaDeviceInfo;
-import io.agora.rtcn.webrtc.models.MediaStreamConstraints;
-import io.agora.rtcn.webrtc.models.MediaTrackConstraintSet;
-import io.agora.rtcn.webrtc.models.MediaTrackConstraints;
-import io.agora.rtcn.webrtc.services.PCFactory;
+import io.agora.rtc.media.enums.EMessage;
+import io.agora.rtc.media.models.MediaDeviceInfo;
+import io.agora.rtc.webrtc.models.MediaStreamConstraints;
+import io.agora.rtc.webrtc.models.MediaTrackConstraintSet;
+import io.agora.rtc.webrtc.models.MediaTrackConstraints;
+import io.agora.rtc.webrtc.services.PCFactory;
 
 public class MediaDevice {
     private final static String TAG = MediaDevice.class.getCanonicalName();

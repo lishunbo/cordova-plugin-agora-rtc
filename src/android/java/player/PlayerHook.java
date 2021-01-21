@@ -1,4 +1,4 @@
-package io.agora.rtcn.player;
+package io.agora.rtc.player;
 
 import android.content.Intent;
 import android.net.Uri;
@@ -18,13 +18,13 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Map;
 
-import io.agora.rtcn.media.services.MediaDevice;
-import io.agora.rtcn.player.enums.Action;
-import io.agora.rtcn.player.interfaces.Player;
-import io.agora.rtcn.player.interfaces.Supervisor;
-import io.agora.rtcn.player.models.PlayConfig;
-import io.agora.rtcn.player.services.AudioPlayer;
-import io.agora.rtcn.player.services.VideoView;
+import io.agora.rtc.media.services.MediaDevice;
+import io.agora.rtc.player.enums.Action;
+import io.agora.rtc.player.interfaces.Player;
+import io.agora.rtc.player.interfaces.Supervisor;
+import io.agora.rtc.player.models.PlayConfig;
+import io.agora.rtc.player.services.AudioPlayer;
+import io.agora.rtc.player.services.VideoView;
 
 import static org.apache.cordova.PluginResult.Status.OK;
 

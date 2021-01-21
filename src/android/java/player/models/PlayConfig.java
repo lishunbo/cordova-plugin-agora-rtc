@@ -1,4 +1,4 @@
-package io.agora.rtcn.player.models;
+package io.agora.rtc.player.models;
 
 import android.util.Log;
 
@@ -6,8 +6,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.agora.rtcn.player.enums.PlayConfigFit;
-import io.agora.rtcn.webrtc.models.RTCConfiguration;
+import io.agora.rtc.player.enums.PlayConfigFit;
+import io.agora.rtc.webrtc.models.RTCConfiguration;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PlayConfig {

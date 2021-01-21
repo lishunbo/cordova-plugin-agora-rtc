@@ -1,4 +1,4 @@
-package io.agora.rtcn.webrtc.models;
+package io.agora.rtc.webrtc.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;

@@ -1,4 +1,4 @@
-package io.agora.rtcn.media.enums;
+package io.agora.rtc.media.enums;
 
 public enum Action {
     eventChannel("eventChannel"),

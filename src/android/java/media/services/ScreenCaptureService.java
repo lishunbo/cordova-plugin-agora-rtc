@@ -1,4 +1,4 @@
-package io.agora.rtcn.media.services;
+package io.agora.rtc.media.services;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -11,7 +11,7 @@ import android.os.IBinder;
 
 import java.util.UUID;
 
-import io.agora.rtcn.media.MediaHook;
+import io.agora.rtc.media.MediaHook;
 
 /*
  * Android 10 need "android:foregroundServiceType="mediaProjection"" permission

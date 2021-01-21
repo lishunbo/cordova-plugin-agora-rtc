@@ -1,4 +1,4 @@
-package io.agora.rtcn.webrtc.models;
+package io.agora.rtc.webrtc.models;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -15,7 +15,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.util.Arrays;
 
-import io.agora.rtcn.webrtc.interfaces.CredentialDetail;
+import io.agora.rtc.webrtc.interfaces.CredentialDetail;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RTCIceServer {

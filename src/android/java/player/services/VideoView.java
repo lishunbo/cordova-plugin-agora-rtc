@@ -1,4 +1,4 @@
-package io.agora.rtcn.player.services;
+package io.agora.rtc.player.services;
 
 import android.app.Activity;
 import android.graphics.PixelFormat;
@@ -15,12 +15,12 @@ import org.webrtc.RendererCommon;
 import org.webrtc.SurfaceViewRenderer;
 import org.webrtc.VideoTrack;
 
-import io.agora.rtcn.media.services.MediaDevice;
-import io.agora.rtcn.player.interfaces.Player;
-import io.agora.rtcn.player.models.PlayConfig;
-import io.agora.rtcn.player.models.ProxyVideoSink;
-import io.agora.rtcn.webrtc.services.PCFactory;
-import io.agora.rtcn.media.services.MediaStreamTrackWrapper;
+import io.agora.rtc.media.services.MediaDevice;
+import io.agora.rtc.player.interfaces.Player;
+import io.agora.rtc.player.models.PlayConfig;
+import io.agora.rtc.player.models.ProxyVideoSink;
+import io.agora.rtc.webrtc.services.PCFactory;
+import io.agora.rtc.media.services.MediaStreamTrackWrapper;
 
 import static android.content.Context.WINDOW_SERVICE;
 
@@ -101,8 +101,8 @@ public class VideoView extends SurfaceViewRenderer implements View.OnTouchListen
         params.y = y;
     }
 
-    public void play(CallbackContext context) {
-        VideoView that = this;
+    public void play(final CallbackContext context) {
+        final VideoView that = this;
         mainActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -191,7 +191,7 @@ public class VideoView extends SurfaceViewRenderer implements View.OnTouchListen
     }
 
     public void close() {
-        VideoView that = this;
+        final VideoView that = this;
         mainActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -221,7 +221,7 @@ public class VideoView extends SurfaceViewRenderer implements View.OnTouchListen
     @Override
     public void onActivityPause() {
 
-        VideoView that = this;
+        final VideoView that = this;
         mainActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -232,7 +232,7 @@ public class VideoView extends SurfaceViewRenderer implements View.OnTouchListen
 
     @Override
     public void onActivityResume() {
-        VideoView that = this;
+        final VideoView that = this;
         mainActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {

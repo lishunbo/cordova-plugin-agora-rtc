@@ -1,4 +1,4 @@
-package io.agora.rtcn.webrtc.enums;
+package io.agora.rtc.webrtc.enums;
 
 public enum Action {
     createPC("createPC"),

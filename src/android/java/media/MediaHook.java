@@ -1,4 +1,4 @@
-package io.agora.rtcn.media;
+package io.agora.rtc.media;
 
 import android.Manifest;
 import android.annotation.TargetApi;
@@ -16,12 +16,12 @@ import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
 
-import io.agora.rtcn.media.enums.Action;
-import io.agora.rtcn.media.enums.EMessage;
-import io.agora.rtcn.media.services.MediaDevice;
-import io.agora.rtcn.media.services.MediaStreamTrackWrapper;
-import io.agora.rtcn.media.services.ScreenCaptureService;
-import io.agora.rtcn.webrtc.models.MediaStreamConstraints;
+import io.agora.rtc.media.enums.Action;
+import io.agora.rtc.media.enums.EMessage;
+import io.agora.rtc.media.services.MediaDevice;
+import io.agora.rtc.media.services.MediaStreamTrackWrapper;
+import io.agora.rtc.media.services.ScreenCaptureService;
+import io.agora.rtc.webrtc.models.MediaStreamConstraints;
 
 import static android.app.Activity.RESULT_OK;
 import static org.apache.cordova.PluginResult.Status.OK;
@@ -186,7 +186,7 @@ public class MediaHook extends CordovaPlugin {
     }
 
     boolean getUserMedia(JSONArray args, final CallbackContext callbackContext) throws Exception {
-        MediaStreamConstraints constraints = MediaStreamConstraints.fromJson(args.getString(0));
+        final MediaStreamConstraints constraints = MediaStreamConstraints.fromJson(args.getString(0));
 
         cordova.getThreadPool().execute(new Runnable() {
             @Override

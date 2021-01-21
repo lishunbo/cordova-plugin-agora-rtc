@@ -1,4 +1,4 @@
-package io.agora.rtcn.media.models;
+package io.agora.rtc.media.models;
 
 import android.util.Log;
 

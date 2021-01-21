@@ -1,4 +1,4 @@
-package io.agora.rtcn.player.enums;
+package io.agora.rtc.player.enums;
 
 public enum Action {
     createVideoPlayer("createVideoPlayer"),

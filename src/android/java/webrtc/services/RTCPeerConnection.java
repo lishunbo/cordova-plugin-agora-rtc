@@ -1,4 +1,4 @@
-package io.agora.rtcn.webrtc.services;
+package io.agora.rtc.webrtc.services;
 
 import android.util.Base64;
 import android.util.Log;
@@ -32,15 +32,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import io.agora.rtcn.media.services.MediaStreamTrackWrapper;
-import io.agora.rtcn.webrtc.enums.Action;
-import io.agora.rtcn.webrtc.models.RTCConfiguration;
-import io.agora.rtcn.webrtc.models.RTCDataChannelInit;
-import io.agora.rtcn.webrtc.models.RTCOfferOptions;
-import io.agora.rtcn.webrtc.models.RtpTransceiverInit;
+import io.agora.rtc.media.services.MediaStreamTrackWrapper;
+import io.agora.rtc.webrtc.enums.Action;
+import io.agora.rtc.webrtc.models.RTCConfiguration;
+import io.agora.rtc.webrtc.models.RTCDataChannelInit;
+import io.agora.rtc.webrtc.models.RTCOfferOptions;
+import io.agora.rtc.webrtc.models.RtpTransceiverInit;
 
-import static io.agora.rtcn.webrtc.models.RTCConfiguration.RTCConfigurationToString;
-import static io.agora.rtcn.webrtc.models.RTCRtpSendParameters.RtpParametersToString;
+import static io.agora.rtc.webrtc.models.RTCConfiguration.RTCConfigurationToString;
+import static io.agora.rtc.webrtc.models.RTCRtpSendParameters.RtpParametersToString;
 import static org.webrtc.RtpParameters.DegradationPreference.BALANCED;
 import static org.webrtc.RtpParameters.DegradationPreference.MAINTAIN_FRAMERATE;
 import static org.webrtc.RtpParameters.DegradationPreference.MAINTAIN_RESOLUTION;
