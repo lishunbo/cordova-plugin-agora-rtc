@@ -837,7 +837,7 @@ cordova.addConstructor(function () {
   window.RTCRtpSender = RTCRtpSender;
   window.RTCPeerConnection = RTCPeerConnection;
   window.webkitRTCPeerConnection = RTCPeerConnection;
-  window.WebSocket = WebSocket;
+  window.SecureWebSocket = WebSocket;
 
   return window.RTCPeerConnection;
 });
